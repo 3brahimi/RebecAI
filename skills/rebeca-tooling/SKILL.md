@@ -1,0 +1,461 @@
+---
+name: rebeca-tooling
+version: 1.0.0
+description: Cross-platform Python library for RMC operations, rule triage, scoring, and reporting
+trigger_phrases:
+  - "download rmc"
+  - "run rmc"
+  - "verify rebeca"
+  - "score rule"
+  - "triage rule"
+  - "generate report"
+---
+
+# Rebeca Tooling Skill
+
+## Purpose
+
+This skill provides a cross-platform Python library for all Rebeca model checking operations, including:
+- RMC download and execution
+- Rule status classification and triage
+- COLREG fallback mapping
+- Single-rule scoring and aggregate reporting
+- Installation and verification utilities
+
+## When to Use
+
+Use this skill when you need to:
+- Download or execute the RMC model checker
+- Classify Legata rule formalization status
+- Generate provisional properties from COLREG text
+- Score verification results
+- Generate aggregate reports
+- Install or verify toolchain artifacts
+
+## Library Location
+
+All Python modules are in `lib/` subdirectory of this skill:
+```
+skills/rebeca-tooling/
+├── SKILL.md (this file)
+└── lib/
+    ├── __init__.py
+    ├── download_rmc.py
+    ├── run_rmc.py
+    ├── install_artifacts.py
+    ├── verify_installation.py
+    ├── pre_run_rmc_check.py
+    ├── setup_agent.py
+    ├── classify_rule_status.py
+    ├── colreg_fallback_mapper.py
+    ├── score_single_rule.py
+    └── generate_report.py
+```
+
+## Python Library Usage
+
+### Import from Skill
+
+```python
+import sys
+from pathlib import Path
+
+# Add skill's lib to path
+skill_path = Path("~/.claude/skills/rebeca-tooling").expanduser()
+sys.path.insert(0, str(skill_path))
+
+from lib import (
+    download_rmc,
+    run_rmc,
+    pre_run_rmc_check,
+    RuleStatusClassifier,
+    COLREGFallbackMapper
+)
+```
+
+### RMC Operations
+
+#### Download RMC
+
+```python
+from lib import download_rmc
+
+# Download latest release
+result = download_rmc(
+    url="https://github.com/rebeca-lang/org.rebecalang.rmc/releases/latest",
+    dest_dir=".claude/rmc"
+)
+
+# Download specific version
+result = download_rmc(
+    url="https://github.com/rebeca-lang/org.rebecalang.rmc/releases",
+    dest_dir=".claude/rmc",
+    tag="2.14"
+)
+
+# Exit codes:
+# 0: Success
+# 1: Checksum mismatch
+# 2: Download failed
+```
+
+#### Run RMC Verification
+
+```python
+from lib import run_rmc
+
+result = run_rmc(
+    jar=".claude/rmc/rmc.jar",
+    model="path/to/model.rebeca",
+    property_file="path/to/property.property",
+    output_dir="verification_output",
+    timeout_seconds=120,
+    jvm_opts=["-Xmx2g"]
+)
+
+# Exit codes:
+# 0: Success (parse + compile)
+# 1: Invalid inputs
+# 3: Timeout
+# 4: C++ compilation failed
+# 5: Rebeca parse failed
+```
+
+#### Auto-Provision RMC
+
+```python
+from lib import pre_run_rmc_check
+
+# Ensures RMC is available, downloads if needed
+result = pre_run_rmc_check(rmc_destination=".claude/rmc")
+
+# Exit codes:
+# 0: RMC available
+# 2: Download failed
+```
+
+### Rule Triage
+
+#### Classify Rule Status
+
+```python
+from lib import RuleStatusClassifier
+
+classifier = RuleStatusClassifier()
+result = classifier.classify("path/to/rule.legata")
+
+# Returns dict with:
+# - status: formalized|incomplete|incorrect|not-formalized|todo-placeholder
+# - clause_count: number of clauses
+# - evidence: list of findings
+# - defects: list of defects
+# - next_action: recommended action
+```
+
+#### COLREG Fallback Mapping
+
+```python
+from lib import COLREGFallbackMapper
+
+mapper = COLREGFallbackMapper()
+result = mapper.map_rule(
+    rule_id="Rule-99",
+    colreg_text="Every vessel shall maintain a proper lookout"
+)
+
+# Returns dict with:
+# - provisional_property: Rebeca property text
+# - confidence: high|medium|low
+# - assumptions: list of assumptions
+# - requires_manual_review: bool
+# - mapping_path: "colreg-fallback"
+```
+
+### Scoring and Reporting
+
+#### Score Single Rule
+
+```python
+from lib.score_single_rule import score_rule
+
+result = score_rule(
+    rule_id="Rule-22",
+    verify_status="pass",  # pass|fail|timeout|blocked|unknown
+    model_path="model.rebeca",
+    property_path="property.property"
+)
+
+# Returns dict with:
+# - score_total: 0-100
+# - score_breakdown: {syntax, semantic_alignment, verification_outcome, hallucination_penalty}
+# - status: formalized|incomplete|incorrect|not-formalized|todo-placeholder
+# - confidence: 0.0-1.0
+```
+
+#### Generate Aggregate Report
+
+```python
+from lib.generate_report import generate_report
+
+generate_report(
+    input_scores="results.json",
+    output_dir="reports/",
+    format="both"  # json|markdown|both
+)
+
+# Generates:
+# - reports/aggregate_report.json
+# - reports/aggregate_report.md
+```
+
+### Installation Utilities
+
+#### Install Artifacts
+
+```python
+from lib import install_artifacts
+
+result = install_artifacts(
+    target_root=".claude",
+    mode="all"  # agent|skill|all
+)
+
+# Exit codes:
+# 0: Success
+# 1: Installation failed
+```
+
+#### Verify Installation
+
+```python
+from lib import verify_installation
+
+result = verify_installation(target_root=".claude")
+
+# Exit codes:
+# 0: All artifacts present
+# 1: Missing artifacts
+```
+
+#### Complete Setup
+
+```python
+from lib import setup_agent
+
+result = setup_agent(
+    target_root=".claude",
+    rmc_tag=None,  # Use latest, or specify "2.14"
+    skip_verify=False
+)
+
+# Exit codes:
+# 0: Success
+# 1: Prerequisites missing
+# 2: RMC download failed
+# 3: RMC verification failed
+# 4: Artifact installation failed
+```
+
+## CLI Usage
+
+All modules have command-line interfaces:
+
+### RMC Operations
+
+```bash
+# Download RMC
+python3 ~/.claude/skills/rebeca-tooling/lib/download_rmc.py \
+  --url https://github.com/rebeca-lang/org.rebecalang.rmc/releases/latest \
+  --dest-dir .claude/rmc
+
+# Run verification
+python3 ~/.claude/skills/rebeca-tooling/lib/run_rmc.py \
+  --jar .claude/rmc/rmc.jar \
+  --model model.rebeca \
+  --property property.property \
+  --output-dir output \
+  --timeout-seconds 120 \
+  --jvm-opt "-Xmx2g"
+
+# Pre-run check
+python3 ~/.claude/skills/rebeca-tooling/lib/pre_run_rmc_check.py
+```
+
+### Rule Triage
+
+```bash
+# Classify rule status
+python3 ~/.claude/skills/rebeca-tooling/lib/classify_rule_status.py \
+  --legata-path legata/Rule-22.legata \
+  --output-json
+
+# COLREG fallback mapping
+python3 ~/.claude/skills/rebeca-tooling/lib/colreg_fallback_mapper.py \
+  --rule-id Rule-99 \
+  --colreg-text "Every vessel shall maintain a proper lookout" \
+  --output-json
+```
+
+### Scoring and Reporting
+
+```bash
+# Score single rule
+python3 ~/.claude/skills/rebeca-tooling/lib/score_single_rule.py \
+  --rule-id Rule-22 \
+  --verify-status pass \
+  --output-json
+
+# Generate report
+python3 ~/.claude/skills/rebeca-tooling/lib/generate_report.py \
+  --input-scores results.json \
+  --output-dir reports/ \
+  --format both
+```
+
+### Installation
+
+```bash
+# Complete setup
+python3 ~/.claude/skills/rebeca-tooling/lib/setup_agent.py \
+  --target-root .claude \
+  --rmc-tag 2.14
+
+# Install artifacts only
+python3 ~/.claude/skills/rebeca-tooling/lib/install_artifacts.py \
+  --target-root .claude \
+  --mode all
+
+# Verify installation
+python3 ~/.claude/skills/rebeca-tooling/lib/verify_installation.py .claude
+```
+
+## Platform Support
+
+All modules work identically on:
+- **Windows** (Python 3.8+ with g++/MinGW or WSL2)
+- **macOS** (Python 3.8+ with Xcode Command Line Tools)
+- **Linux** (Python 3.8+ with build-essential)
+
+## Prerequisites
+
+- Python 3.8+
+- Java 11+ (for RMC)
+- C++ compiler (g++ or clang, for RMC C++ compilation)
+
+## Error Handling Pattern
+
+```python
+from lib import run_rmc
+
+def verify_rule(rule_id: str, model_path: str, property_path: str) -> dict:
+    """Verify a single rule and return structured result."""
+    output_dir = f"verification_output/{rule_id}"
+
+    result = run_rmc(
+        jar=".claude/rmc/rmc.jar",
+        model=model_path,
+        property_file=property_path,
+        output_dir=output_dir,
+        timeout_seconds=120
+    )
+
+    if result == 0:
+        return {"rule_id": rule_id, "status": "verified"}
+    elif result == 5:
+        return {"rule_id": rule_id, "status": "syntax_error", "error_type": "rebeca_parse"}
+    elif result == 4:
+        return {"rule_id": rule_id, "status": "syntax_error", "error_type": "cpp_compile"}
+    elif result == 3:
+        return {"rule_id": rule_id, "status": "timeout"}
+    else:
+        return {"rule_id": rule_id, "status": "error", "exit_code": result}
+```
+
+## Integration with Other Skills
+
+Other skills can reference this tooling skill:
+
+```python
+# In another skill or agent
+import sys
+from pathlib import Path
+
+# Reference rebeca-tooling skill
+tooling_skill = Path("~/.claude/skills/rebeca-tooling").expanduser()
+sys.path.insert(0, str(tooling_skill))
+
+from lib import run_rmc, RuleStatusClassifier
+
+# Use tooling functions
+classifier = RuleStatusClassifier()
+status = classifier.classify("rule.legata")
+
+if status["status"] == "formalized":
+    result = run_rmc(...)
+```
+
+## Module Reference
+
+| Module | Purpose | CLI | Library |
+|--------|---------|-----|---------|
+| `download_rmc.py` | Download RMC from GitHub | ✓ | ✓ |
+| `run_rmc.py` | Execute RMC model checker | ✓ | ✓ |
+| `pre_run_rmc_check.py` | Auto-provision RMC | ✓ | ✓ |
+| `setup_agent.py` | Complete setup workflow | ✓ | ✓ |
+| `install_artifacts.py` | Install agent/skills | ✓ | ✓ |
+| `verify_installation.py` | Verify installation | ✓ | ✓ |
+| `classify_rule_status.py` | Rule status classification | ✓ | ✓ |
+| `colreg_fallback_mapper.py` | COLREG fallback mapping | ✓ | ✓ |
+| `score_single_rule.py` | Single rule scoring | ✓ | ✓ |
+| `generate_report.py` | Aggregate reporting | ✓ | ✓ |
+
+## Best Practices
+
+1. **Always use pre_run_rmc_check()** before calling run_rmc() to ensure RMC is available
+2. **Check exit codes** - Don't assume success, handle all error cases
+3. **Use absolute paths** - Avoid relative paths for jar, model, and property files
+4. **Set appropriate timeouts** - Complex models may need >120s
+5. **Handle C++ compilation failures** - Exit code 4 means g++ failed, not RMC
+6. **Distinguish parse vs compile errors** - Exit code 5 (parse) vs 4 (compile)
+7. **Review fallback mappings** - COLREG fallback always requires manual review
+
+## Troubleshooting
+
+### Import Errors
+
+If you get `ModuleNotFoundError`:
+```python
+# Ensure skill path is correct
+skill_path = Path("~/.claude/skills/rebeca-tooling").expanduser()
+print(f"Skill path exists: {skill_path.exists()}")
+print(f"Lib path exists: {(skill_path / 'lib').exists()}")
+```
+
+### RMC Not Found
+
+```python
+from lib import pre_run_rmc_check
+
+# This will auto-download if missing
+result = pre_run_rmc_check()
+if result != 0:
+    print("Failed to provision RMC")
+```
+
+### C++ Compilation Failures
+
+Exit code 4 means g++ failed. Check:
+```bash
+g++ --version  # Ensure g++ is installed
+```
+
+Install if missing:
+- Ubuntu/Debian: `sudo apt install build-essential`
+- macOS: `xcode-select --install`
+- Windows: Install MinGW or use WSL2
+
+## See Also
+
+- **legata-formalization-workflow** skill - Workflow guidance
+- **rebeca-modeling-guidelines** skill - Modeling best practices
+- **legata-formalization** agent - Main orchestration agent
