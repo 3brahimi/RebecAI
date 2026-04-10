@@ -9,8 +9,11 @@ import sys
 import time
 from pathlib import Path
 from typing import Optional
-from urllib.request import urlopen, Request
 from urllib.error import URLError, HTTPError
+from urllib.parse import urlparse
+from urllib.request import urlopen, Request
+
+from utils import validate_https_url
 
 
 def is_valid_jar(jar_path: Path) -> bool:
@@ -27,11 +30,23 @@ def is_valid_jar(jar_path: Path) -> bool:
 
 def resolve_latest_release(base_url: str) -> Optional[str]:
     """Resolve latest release tag from GitHub."""
+    ALLOWED_HOST = "github.com"
+    ALLOWED_PATH_PREFIX = "/rebeca-lang/org.rebecalang.rmc/releases/tag/"
     try:
+        validate_https_url(base_url)
         req = Request(base_url, headers={'User-Agent': 'Mozilla/5.0'})
         with urlopen(req) as response:
             final_url = response.geturl()
-            match = re.search(r'/tag/([^/]+)$', final_url)
+            # Validate the redirected URL is the expected GitHub releases endpoint
+            # before extracting the tag, preventing open-redirect tag injection
+            if not isinstance(final_url, str):
+                print("Error: Unexpected URL type in response", file=sys.stderr)
+                return None
+            parsed = urlparse(final_url)
+            if parsed.netloc != ALLOWED_HOST or not parsed.path.startswith(ALLOWED_PATH_PREFIX):
+                print(f"Error: Redirected to unexpected URL: {final_url}", file=sys.stderr)
+                return None
+            match = re.search(r'/tag/([^/]+)$', parsed.path)
             return match.group(1) if match else None
     except Exception as e:
         print(f"Error resolving latest release: {e}", file=sys.stderr)
@@ -40,6 +55,11 @@ def resolve_latest_release(base_url: str) -> Optional[str]:
 
 def download_file(url: str, dest_path: Path, retry_count: int = 3, retry_delay: int = 2) -> bool:
     """Download file with retry logic."""
+    try:
+        validate_https_url(url)
+    except ValueError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return False
     for attempt in range(1, retry_count + 1):
         try:
             print(f"Downloading RMC (attempt {attempt}/{retry_count})...")

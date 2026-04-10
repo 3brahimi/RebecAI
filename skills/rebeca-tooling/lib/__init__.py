@@ -11,6 +11,7 @@ from .verify_installation import verify_installation
 from .pre_run_rmc_check import pre_run_rmc_check
 from .classify_rule_status import RuleStatusClassifier
 from .colreg_fallback_mapper import COLREGFallbackMapper
+from .utils import safe_path, validate_https_url
 
 __all__ = [
     "download_rmc",
@@ -21,4 +22,6 @@ __all__ = [
     "pre_run_rmc_check",
     "RuleStatusClassifier",
     "COLREGFallbackMapper",
+    "safe_path",
+    "validate_https_url",
 ]

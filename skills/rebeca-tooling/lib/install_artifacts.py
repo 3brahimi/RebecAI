@@ -7,6 +7,8 @@ import sys
 from pathlib import Path
 from typing import List, Tuple
 
+from utils import safe_path
+
 
 def install_artifacts(target_root: str, mode: str = "all") -> int:
     """
@@ -28,7 +30,7 @@ def install_artifacts(target_root: str, mode: str = "all") -> int:
     script_dir = Path(__file__).parent
     project_root = script_dir.parent.parent if script_dir.name == "lib" else script_dir.parent
     
-    target_path = Path(target_root)
+    target_path = safe_path(target_root)
     install_count = 0
     
     # Source paths

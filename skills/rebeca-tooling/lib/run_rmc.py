@@ -8,6 +8,8 @@ import sys
 from pathlib import Path
 from typing import List, Optional
 
+from utils import safe_path
+
 
 def run_rmc(
     jar: str,
@@ -27,10 +29,10 @@ def run_rmc(
         4: C++ compilation failed
         5: Rebeca parse failed
     """
-    jar_path = Path(jar)
-    model_path = Path(model)
-    property_path = Path(property_file)
-    output_path = Path(output_dir)
+    jar_path = safe_path(jar)
+    model_path = safe_path(model)
+    property_path = safe_path(property_file)
+    output_path = safe_path(output_dir)
     
     # Validate inputs
     if not jar_path.exists():
@@ -64,6 +66,14 @@ def run_rmc(
     # Execute with timeout
     stdout_log = output_path / "rmc_stdout.log"
     stderr_log = output_path / "rmc_stderr.log"
+    compile_stderr_log = output_path / "compile_stderr.log"
+    executable = output_path / "model.out"
+
+    # Assert all output files are confined within the validated output_path
+    for p in (stdout_log, stderr_log, compile_stderr_log, executable):
+        if not str(p.resolve()).startswith(str(output_path)):
+            print(f"Error: output file '{p}' escapes output directory", file=sys.stderr)
+            return 1
     
     try:
         with open(stdout_log, 'w') as stdout_f, open(stderr_log, 'w') as stderr_f:
@@ -85,7 +95,10 @@ def run_rmc(
         return 1
     
     # Phase 1: Check if RMC generated C++ files (parse succeeded)
-    cpp_files = list(output_path.glob("*.cpp"))
+    cpp_files = [
+        f for f in output_path.glob("*.cpp")
+        if str(f.resolve()).startswith(str(output_path))
+    ]
     if not cpp_files:
         print("Error: RMC failed to generate C++ files (parse error)", file=sys.stderr)
         print(f"Check {stderr_log} for Rebeca syntax errors", file=sys.stderr)
@@ -95,11 +108,9 @@ def run_rmc(
     
     # Phase 2: Compile the C++ files with g++
     print("Phase 2: Compiling C++ files with g++...")
-    compile_stderr = output_path / "compile_stderr.log"
-    executable = output_path / "model.out"
     
     try:
-        with open(compile_stderr, 'w') as stderr_f:
+        with open(compile_stderr_log, 'w') as stderr_f:
             result = subprocess.run(
                 ["g++"] + [str(f) for f in cpp_files] + ["-w", "-o", str(executable)],
                 stderr=stderr_f,
@@ -107,7 +118,7 @@ def run_rmc(
             )
             if result.returncode != 0:
                 print("Error: Phase 2 failed - C++ compilation error", file=sys.stderr)
-                print(f"Check {compile_stderr} for compiler errors", file=sys.stderr)
+                print(f"Check {compile_stderr_log} for compiler errors", file=sys.stderr)
                 print("Ensure g++ is installed: g++ --version", file=sys.stderr)
                 return 4
     except FileNotFoundError:

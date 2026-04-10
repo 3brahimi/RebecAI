@@ -5,6 +5,8 @@ import argparse
 import sys
 from pathlib import Path
 
+from utils import safe_path
+
 
 def verify_installation(target_root: str) -> int:
     """
@@ -14,7 +16,7 @@ def verify_installation(target_root: str) -> int:
         0: All artifacts present
         1: Missing artifacts
     """
-    target_path = Path(target_root)
+    target_path = safe_path(target_root)
     missing = 0
     
     # Check agent

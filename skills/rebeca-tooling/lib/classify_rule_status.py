@@ -9,6 +9,8 @@ import json
 from pathlib import Path
 from typing import Dict, Any
 
+from utils import safe_path
+
 class RuleStatusClassifier:
     """Classifies Legata rule formalization status."""
     
@@ -25,7 +27,7 @@ class RuleStatusClassifier:
         """
         
         result = {
-            "rule_id": Path(legata_path).stem,
+            "rule_id": safe_path(legata_path).stem,
             "status": "unknown",
             "clause_count": 0,
             "evidence": [],

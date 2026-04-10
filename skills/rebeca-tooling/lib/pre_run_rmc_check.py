@@ -8,6 +8,7 @@ from pathlib import Path
 # Import from lib directory
 sys.path.insert(0, str(Path(__file__).parent))
 from download_rmc import download_rmc, is_valid_jar
+from utils import safe_path
 
 
 def pre_run_rmc_check(rmc_destination: str = ".claude/rmc") -> int:
@@ -18,7 +19,7 @@ def pre_run_rmc_check(rmc_destination: str = ".claude/rmc") -> int:
         0: RMC available
         2: Download failed
     """
-    dest_path = Path(rmc_destination)
+    dest_path = safe_path(rmc_destination)
     dest_path.mkdir(parents=True, exist_ok=True)
     jar_path = dest_path / "rmc.jar"
     

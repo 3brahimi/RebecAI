@@ -9,6 +9,8 @@ import sys
 from typing import Dict, List, Any, Optional
 from pathlib import Path
 
+from utils import safe_path
+
 class ReportGenerator:
     """Generates compact and detailed scoring reports."""
     
@@ -120,7 +122,7 @@ class ReportGenerator:
         
         md.append("\n## Aggregate Metrics\n")
         md.append(f"- **Success Rate**: {self.report_data['success_rate']:.1f}%")
-        md.append(f"- **Average Score**: {self.report_data['score_mean']:.2f}/9")
+        md.append(f"- **Average Score**: {self.report_data['score_mean']:.2f}/100")
         md.append(f"- **Score Range**: {self.report_data['score_min']}-{self.report_data['score_max']}")
         md.append(f"- **COLREG Fallback Usage**: {self.report_data['fallback_usage_count']} rules")
         md.append(f"- **Blocked Rules**: {self.report_data['blocked_rules_count']} rules")
@@ -135,7 +137,7 @@ class ReportGenerator:
             status = sc.get("status", "Unknown")
             input_status = sc.get("input_status", "unknown")
             mapping = sc.get("mapping_path", "legata")
-            md.append(f"| {rule_id} | {score}/9 | {status} | {input_status} | {mapping} |")
+            md.append(f"| {rule_id} | {score}/100 | {status} | {input_status} | {mapping} |")
         
         # Top failure reasons
         if self.report_data["top_failure_reasons"]:
@@ -177,7 +179,7 @@ def main():
     generator.finalize()
     
     # Create output directory
-    Path(args.output_dir).mkdir(parents=True, exist_ok=True)
+    safe_path(args.output_dir).mkdir(parents=True, exist_ok=True)
     
     # Write outputs
     if args.format in ["json", "both"]:
