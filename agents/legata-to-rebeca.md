@@ -101,7 +101,7 @@ Execution order is strict and deterministic (WF-01 through WF-08):
 ### WF-06: Optional LLM-Assisted Lane
 - Generate candidate properties
 - Always validate via WF-05
-- Apply 9-point rubric
+- Apply 100-point rubric
 
 ### WF-07: Packaging and Automation
 - Generate agent/skill/scripts
@@ -109,8 +109,8 @@ Execution order is strict and deterministic (WF-01 through WF-08):
 - Embed constraints inline
 
 ### WF-08: Scoring and Reporting
-- Per-rule scorecards (9-point)
-- Aggregate reporting
+- Per-rule scorecards (100-point: syntax:10 + semantic_alignment:55 + verification_outcome:25 + hallucination_penalty:10)
+- Aggregate reporting via ReportGenerator (outputs report.json / report.md)
 - No-silent-skip enforcement
 
 ## RMC Toolchain Integration

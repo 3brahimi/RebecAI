@@ -176,37 +176,42 @@ result = mapper.map_rule(
 #### Score Single Rule
 
 ```python
-from lib.score_single_rule import score_rule
+from lib.score_single_rule import RubricScorer
 
-result = score_rule(
+scorer = RubricScorer()
+scorecard = scorer.score_rule(
     rule_id="Rule-22",
     verify_status="pass",  # pass|fail|timeout|blocked|unknown
-    model_path="model.rebeca",
-    property_path="property.property"
+    model_artifact="model.rebeca",
+    property_artifact="property.property"
 )
 
 # Returns dict with:
 # - score_total: 0-100
-# - score_breakdown: {syntax, semantic_alignment, verification_outcome, hallucination_penalty}
-# - status: formalized|incomplete|incorrect|not-formalized|todo-placeholder
+# - score_breakdown: {syntax:10, semantic_alignment:55, verification_outcome:25, hallucination_penalty:10}
+# - status: Pass|Fail|Conditional|Blocked|Unknown
 # - confidence: 0.0-1.0
+# - mapping_path: legata|colreg-fallback
+# - failure_reasons: list
+# - remediation_hints: list
 ```
 
 #### Generate Aggregate Report
 
 ```python
-from lib.generate_report import generate_report
+from lib.generate_report import ReportGenerator
 
-generate_report(
-    input_scores="results.json",
-    output_dir="reports/",
-    format="both"  # json|markdown|both
-)
+generator = ReportGenerator()
+generator.add_scorecard(scorecard)
+generator.finalize()
 
-# Generates:
-# - reports/aggregate_report.json
-# - reports/aggregate_report.md
-```
+Path("reports/").mkdir(parents=True, exist_ok=True)
+with open("reports/report.json", "w") as f:
+    f.write(generator.to_json())
+with open("reports/report.md", "w") as f:
+    f.write(generator.to_markdown())
+
+# Outputs: reports/report.json and reports/report.md
 
 ### Installation Utilities
 
@@ -396,18 +401,17 @@ if status["status"] == "formalized":
 
 ## Module Reference
 
-| Module | Purpose | CLI | Library |
-|--------|---------|-----|---------|
-| `download_rmc.py` | Download RMC from GitHub | ✓ | ✓ |
-| `run_rmc.py` | Execute RMC model checker | ✓ | ✓ |
-| `pre_run_rmc_check.py` | Auto-provision RMC | ✓ | ✓ |
-| `setup_agent.py` | Complete setup workflow | ✓ | ✓ |
-| `install_artifacts.py` | Install agent/skills | ✓ | ✓ |
-| `verify_installation.py` | Verify installation | ✓ | ✓ |
-| `classify_rule_status.py` | Rule status classification | ✓ | ✓ |
-| `colreg_fallback_mapper.py` | COLREG fallback mapping | ✓ | ✓ |
-| `score_single_rule.py` | Single rule scoring | ✓ | ✓ |
-| `generate_report.py` | Aggregate reporting | ✓ | ✓ |
+| Module | Purpose | CLI | Library | Exported |
+|--------|---------|-----|---------|----------|
+| `download_rmc.py` | Download RMC from GitHub | ✓ | ✓ | ✓ |
+| `run_rmc.py` | Execute RMC model checker | ✓ | ✓ | ✓ |
+| `pre_run_rmc_check.py` | Auto-provision RMC | ✓ | ✓ | ✓ |
+| `install_artifacts.py` | Install agent/skills | ✓ | ✓ | ✓ |
+| `verify_installation.py` | Verify installation | ✓ | ✓ | ✓ |
+| `classify_rule_status.py` | Rule status classification | ✓ | ✓ | ✓ |
+| `colreg_fallback_mapper.py` | COLREG fallback mapping | ✓ | ✓ | ✓ |
+| `score_single_rule.py` | 100-point scoring rubric | ✓ | ✓ | ✗ (use directly) |
+| `generate_report.py` | Aggregate reporting | ✓ | ✓ | ✗ (use directly) |
 
 ## Best Practices
 
@@ -456,6 +460,6 @@ Install if missing:
 
 ## See Also
 
-- **legata-formalization-workflow** skill - Workflow guidance
-- **rebeca-modeling-guidelines** skill - Modeling best practices
-- **legata-formalization** agent - Main orchestration agent
+- **legata-to-rebeca** skill - Workflow guidance
+- **rebeca-handbook** skill - Modeling best practices
+- **legata-to-rebeca** agent - Main orchestration agent

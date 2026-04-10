@@ -95,4 +95,4 @@ Assertion: Rule23: !isPowerDriven || isSmall || lightsOn;
 - Created `.rebeca` files with updated model
 - Created `.property` files with assertions
 - Verification logs showing RMC results
-- Per-rule scoring (9-point rubric)
+- Per-rule scoring (100-point rubric: syntax:10 + semantic_alignment:55 + verification_outcome:25 + hallucination_penalty:10)
