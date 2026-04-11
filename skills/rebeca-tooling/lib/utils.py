@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Shared utilities for the rebeca-tooling library."""
 
+import shutil
 import sys
 from pathlib import Path
+from typing import IO
 from urllib.parse import urlparse
 
 ALLOWED_BASE = Path.home()
@@ -22,6 +24,16 @@ def safe_path(p: str) -> Path:
     return resolved
 
 
+def safe_open(p: str, mode: str = 'r') -> IO:
+    """
+    Validate path with safe_path then open the file.
+
+    Prevents path traversal by resolving and bounding the path before open().
+    Returns the open file handle on success.
+    """
+    return open(safe_path(p), mode)
+
+
 def validate_https_url(url: str) -> None:
     """Raise ValueError if url is not a valid https URL."""
     parsed = urlparse(url)
@@ -29,3 +41,16 @@ def validate_https_url(url: str) -> None:
         raise ValueError(f"Unsafe URL scheme '{parsed.scheme}': only https is permitted")
     if not parsed.netloc:
         raise ValueError(f"Invalid URL (missing host): {url}")
+
+
+def resolve_executable(name: str) -> str:
+    """
+    Resolve a program name to its absolute path using shutil.which.
+
+    Prevents OS command injection via partial executable paths.
+    Raises FileNotFoundError if the executable is not found on PATH.
+    """
+    path = shutil.which(name)
+    if path is None:
+        raise FileNotFoundError(f"Executable '{name}' not found on PATH")
+    return path

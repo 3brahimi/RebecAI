@@ -20,6 +20,7 @@ REPO_ROOT = Path(__file__).parent
 sys.path.insert(0, str(REPO_ROOT / "skills" / "rebeca-tooling" / "lib"))
 
 from download_rmc import download_rmc, is_valid_jar
+from utils import safe_path, resolve_executable
 
 
 def check_prerequisites() -> Tuple[bool, List[str]]:
@@ -28,7 +29,7 @@ def check_prerequisites() -> Tuple[bool, List[str]]:
 
     # Check Java
     try:
-        subprocess.run(["java", "-version"], capture_output=True, check=True)
+        subprocess.run([resolve_executable("java"), "-version"], capture_output=True, check=True)
     except (subprocess.CalledProcessError, FileNotFoundError):
         missing.append("java")
 
@@ -40,7 +41,7 @@ def check_prerequisites() -> Tuple[bool, List[str]]:
     has_cpp = False
     for compiler in ["g++", "clang++"]:
         try:
-            subprocess.run([compiler, "--version"], capture_output=True, check=True)
+            subprocess.run([resolve_executable(compiler), "--version"], capture_output=True, check=True)
             has_cpp = True
             break
         except (subprocess.CalledProcessError, FileNotFoundError):
@@ -129,7 +130,7 @@ def verify_rmc_installation(rmc_dest: Path) -> bool:
     # Test RMC execution
     try:
         result = subprocess.run(
-            ["java", "-jar", str(jar_path), "-h"],
+            [resolve_executable("java"), "-jar", str(jar_path), "-h"],
             capture_output=True,
             timeout=5
         )
@@ -160,8 +161,8 @@ def setup(target_root: str = "~/.claude", rmc_tag: str | None = None) -> int:
     print("=" * 60)
     print()
 
-    # Expand target path
-    target_path = Path(target_root).expanduser().resolve()
+    # Expand and validate target path
+    target_path = safe_path(target_root)
 
     # Step 1: Check prerequisites
     print("[1/4] Checking prerequisites...")

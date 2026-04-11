@@ -403,7 +403,7 @@ if status["status"] == "formalized":
 
 | Module | Purpose | CLI | Library | Exported |
 |--------|---------|-----|---------|----------|
-| `utils.py` | `safe_path`, `validate_https_url` — shared path and URL guards | ✗ | ✓ | ✓ |
+| `utils.py` | `safe_path`, `safe_open`, `validate_https_url`, `resolve_executable` — shared security guards | ✗ | ✓ | ✓ |
 | `download_rmc.py` | Download RMC from GitHub | ✓ | ✓ | ✓ |
 | `run_rmc.py` | Execute RMC model checker | ✓ | ✓ | ✓ |
 | `pre_run_rmc_check.py` | Auto-provision RMC | ✓ | ✓ | ✓ |

@@ -13,7 +13,7 @@ from urllib.error import URLError, HTTPError
 from urllib.parse import urlparse
 from urllib.request import urlopen, Request
 
-from utils import validate_https_url
+from utils import validate_https_url, safe_path, safe_open
 
 
 def is_valid_jar(jar_path: Path) -> bool:
@@ -21,7 +21,7 @@ def is_valid_jar(jar_path: Path) -> bool:
     if not jar_path.exists():
         return False
     try:
-        with open(jar_path, 'rb') as f:
+        with safe_open(str(jar_path), 'rb') as f:
             magic = f.read(4)
             return magic == b'PK\x03\x04'  # ZIP/JAR magic number
     except Exception:
@@ -65,7 +65,7 @@ def download_file(url: str, dest_path: Path, retry_count: int = 3, retry_delay: 
             print(f"Downloading RMC (attempt {attempt}/{retry_count})...")
             req = Request(url, headers={'User-Agent': 'Mozilla/5.0'})
             with urlopen(req) as response:
-                with open(dest_path, 'wb') as f:
+                with safe_open(str(dest_path), 'wb') as f:
                     f.write(response.read())
             return True
         except (URLError, HTTPError) as e:
@@ -79,7 +79,7 @@ def download_file(url: str, dest_path: Path, retry_count: int = 3, retry_delay: 
 def verify_checksum(file_path: Path, expected_sha256: str) -> bool:
     """Verify SHA256 checksum of downloaded file."""
     sha256 = hashlib.sha256()
-    with open(file_path, 'rb') as f:
+    with safe_open(str(file_path), 'rb') as f:
         for chunk in iter(lambda: f.read(8192), b''):
             sha256.update(chunk)
     actual = sha256.hexdigest()
@@ -101,7 +101,7 @@ def download_rmc(url: str, dest_dir: str, sha256: Optional[str] = None, tag: Opt
         1: Checksum mismatch
         2: Download failed
     """
-    dest_path = Path(dest_dir)
+    dest_path = safe_path(dest_dir)
     dest_path.mkdir(parents=True, exist_ok=True)
     jar_path = dest_path / "rmc.jar"
     

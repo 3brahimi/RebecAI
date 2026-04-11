@@ -98,7 +98,7 @@ check_pair_with_rmc() {
 
   # Phase 2: Compile C++ with g++
   pushd "$tmpout" > /dev/null 2>&1
-  if g++ *.cpp -w -o model.out 2> compile_stderr.log; then
+  if g++ ./*.cpp -w -o model.out 2> compile_stderr.log; then
     # Compilation succeeded
     popd > /dev/null 2>&1
     rm -rf "$tmpout"
@@ -136,7 +136,8 @@ PAIR_COUNT=0
 PAIR_ERRORS=0
 SKIPPED=0
 
-for pf in $PROP_FILES; do
+while IFS= read -r pf; do
+  [[ -z "$pf" ]] && continue
   rule_name=$(extract_rule_name "$pf")
   rebeca_file=$(find_rebeca_for_rule "$rule_name")
 
@@ -148,22 +149,22 @@ for pf in $PROP_FILES; do
     elif [[ "$result" == "no_rmc" ]]; then
       SKIPPED=$((SKIPPED + 1))
     else
-      label="SYNTAX-RMC-$(basename $(dirname $pf))-$(basename $pf)"
+      label="SYNTAX-RMC-$(basename "$(dirname "$pf")")-$(basename "$pf")"
       fail "$label" "$result"
       PAIR_ERRORS=$((PAIR_ERRORS + 1))
     fi
   else
     # Fallback: regex pre-flight check
     PAIR_COUNT=$((PAIR_COUNT + 1))
-    if python3 "$SYNTAX_CHECKER" "$pf" > /dev/null 2>&1; then
+    if python3 "$SYNTAX_CHECKER" -- "$pf" > /dev/null 2>&1; then
       : # clean
     else
-      details=$(python3 "$SYNTAX_CHECKER" "$pf" 2>/dev/null | grep "Line " | head -3 | tr '\n' '; ')
-      fail "SYNTAX-REGEX-$(basename $(dirname $pf))-$(basename $pf)" "$details"
+      details=$(python3 "$SYNTAX_CHECKER" -- "$pf" 2>/dev/null | grep "Line " | head -3 | tr '\n' '; ')
+      fail "SYNTAX-REGEX-$(basename "$(dirname "$pf")")-$(basename "$pf")" "$details"
       PAIR_ERRORS=$((PAIR_ERRORS + 1))
     fi
   fi
-done
+done <<< "$PROP_FILES"
 
 if [[ $PAIR_COUNT -eq 0 ]]; then
   echo "  SKIP: No .property files found"
@@ -179,13 +180,14 @@ fi
 REBECA_FILES=$(find "$REPO_ROOT/src" -name "*.rebeca" 2>/dev/null)
 REBECA_COUNT=0
 REBECA_ERRORS=0
-for rf in $REBECA_FILES; do
+while IFS= read -r rf; do
+  [[ -z "$rf" ]] && continue
   REBECA_COUNT=$((REBECA_COUNT + 1))
   if grep -q "^property {" "$rf" 2>/dev/null; then
-    fail "SYNTAX-REBECA-$(basename $rf)" "property block inside .rebeca (must be in a separate .property file)"
+    fail "SYNTAX-REBECA-$(basename "$rf")" "property block inside .rebeca (must be in a separate .property file)"
     REBECA_ERRORS=$((REBECA_ERRORS + 1))
   fi
-done
+done <<< "$REBECA_FILES"
 if [[ $REBECA_COUNT -eq 0 ]]; then
   echo "  SKIP: No .rebeca files found in src/"
 elif [[ $REBECA_ERRORS -eq 0 ]]; then
@@ -247,10 +249,10 @@ PROP_EOF
   # Phase 1: RMC generates C++
   if timeout 30 java -Xmx512m -jar "$RMC_JAR" -s "$tmpdir/test.rebeca" -p "$tmpdir/test.property" -o "$tmpdir/out" -e TIMED_REBECA -x > /dev/null 2>&1; then
     # Check if .cpp files were generated
-    if ls "$tmpdir/out"/*.cpp 1>/dev/null 2>&1; then
+    if ls "$tmpdir/out/"*.cpp 1>/dev/null 2>&1; then
       # Phase 2: Compile C++ with g++
       pushd "$tmpdir/out" > /dev/null
-      if g++ *.cpp -w -o model.out 2> compile_err.log; then
+      if g++ ./*.cpp -w -o model.out 2> compile_err.log; then
         if [[ -f model.out ]]; then
           pass "SYNTAX-005: RMC C++ compilation works (known-good model: parse + compile succeeded)"
         else
@@ -348,8 +350,11 @@ echo "── TRIAGE LOGIC CHECKS ──"
 status=$(python3 "$PROJECT_ROOT/triage/classify_rule_status.py" \
   --legata-path /nonexistent_file_xyz.legata --output-json 2>/dev/null | \
   python3 -c "import sys,json; print(json.load(sys.stdin).get('status','ERROR'))" 2>/dev/null)
-[[ "$status" == "not-formalized" ]] && pass "TRIAGE-001: missing file → not-formalized" \
-  || fail "TRIAGE-001" "Expected not-formalized, got: $status"
+if [[ "$status" == "not-formalized" ]]; then
+  pass "TRIAGE-001: missing file → not-formalized"
+else
+  fail "TRIAGE-001" "Expected not-formalized, got: $status"
+fi
 
 # TRIAGE-002: TODO marker → todo-placeholder
 tmpfile=$(mktemp /tmp/test_rule_XXXX.legata)
@@ -358,8 +363,11 @@ status=$(python3 "$PROJECT_ROOT/triage/classify_rule_status.py" \
   --legata-path "$tmpfile" --output-json 2>/dev/null | \
   python3 -c "import sys,json; print(json.load(sys.stdin).get('status','ERROR'))" 2>/dev/null)
 rm -f "$tmpfile"
-[[ "$status" == "todo-placeholder" ]] && pass "TRIAGE-002: TODO content → todo-placeholder" \
-  || fail "TRIAGE-002" "Expected todo-placeholder, got: $status"
+if [[ "$status" == "todo-placeholder" ]]; then
+  pass "TRIAGE-002: TODO content → todo-placeholder"
+else
+  fail "TRIAGE-002" "Expected todo-placeholder, got: $status"
+fi
 
 # TRIAGE-003: all 3 sections, substantial content → formalized
 tmpfile=$(mktemp /tmp/test_rule_XXXX.legata)
@@ -375,8 +383,11 @@ status=$(python3 "$PROJECT_ROOT/triage/classify_rule_status.py" \
   --legata-path "$tmpfile" --output-json 2>/dev/null | \
   python3 -c "import sys,json; print(json.load(sys.stdin).get('status','ERROR'))" 2>/dev/null)
 rm -f "$tmpfile"
-[[ "$status" == "formalized" ]] && pass "TRIAGE-003: complete clause → formalized" \
-  || fail "TRIAGE-003" "Expected formalized, got: $status"
+if [[ "$status" == "formalized" ]]; then
+  pass "TRIAGE-003: complete clause → formalized"
+else
+  fail "TRIAGE-003" "Expected formalized, got: $status"
+fi
 
 # TRIAGE-004: 2 sections → incomplete
 tmpfile=$(mktemp /tmp/test_rule_XXXX.legata)
@@ -385,8 +396,11 @@ status=$(python3 "$PROJECT_ROOT/triage/classify_rule_status.py" \
   --legata-path "$tmpfile" --output-json 2>/dev/null | \
   python3 -c "import sys,json; print(json.load(sys.stdin).get('status','ERROR'))" 2>/dev/null)
 rm -f "$tmpfile"
-[[ "$status" == "incomplete" ]] && pass "TRIAGE-004: 2-section clause → incomplete" \
-  || fail "TRIAGE-004" "Expected incomplete, got: $status"
+if [[ "$status" == "incomplete" ]]; then
+  pass "TRIAGE-004: 2-section clause → incomplete"
+else
+  fail "TRIAGE-004" "Expected incomplete, got: $status"
+fi
 
 # TRIAGE-005: 1 section → incorrect
 tmpfile=$(mktemp /tmp/test_rule_XXXX.legata)
@@ -395,8 +409,11 @@ status=$(python3 "$PROJECT_ROOT/triage/classify_rule_status.py" \
   --legata-path "$tmpfile" --output-json 2>/dev/null | \
   python3 -c "import sys,json; print(json.load(sys.stdin).get('status','ERROR'))" 2>/dev/null)
 rm -f "$tmpfile"
-[[ "$status" == "incorrect" ]] && pass "TRIAGE-005: 1-section clause → incorrect" \
-  || fail "TRIAGE-005" "Expected incorrect, got: $status"
+if [[ "$status" == "incorrect" ]]; then
+  pass "TRIAGE-005: 1-section clause → incorrect"
+else
+  fail "TRIAGE-005" "Expected incorrect, got: $status"
+fi
 
 # ─────────────────────────────────────────────────────────
 # CATEGORY: FALLBACK — mapper output correctness
@@ -440,14 +457,19 @@ fi
 
 # FALLBACK-004: mapping_path is colreg-fallback
 mp=$(echo "$result" | python3 -c "import sys,json; print(json.load(sys.stdin).get('mapping_path','ERROR'))" 2>/dev/null)
-[[ "$mp" == "colreg-fallback" ]] && pass "FALLBACK-004: mapping_path=colreg-fallback" \
-  || fail "FALLBACK-004" "mapping_path='$mp' should be colreg-fallback"
+if [[ "$mp" == "colreg-fallback" ]]; then
+  pass "FALLBACK-004: mapping_path=colreg-fallback"
+else
+  fail "FALLBACK-004" "mapping_path='$mp' should be colreg-fallback"
+fi
 
 # FALLBACK-005: requires_manual_review is true for non-trivial text
 needs_review=$(echo "$result" | python3 -c "import sys,json; print(json.load(sys.stdin).get('requires_manual_review','ERROR'))" 2>/dev/null)
-[[ "$needs_review" == "True" || "$needs_review" == "true" ]] && \
-  pass "FALLBACK-005: requires_manual_review=true (non-trivial text)" \
-  || fail "FALLBACK-005" "requires_manual_review='$needs_review' should be true"
+if [[ "$needs_review" == "True" || "$needs_review" == "true" ]]; then
+  pass "FALLBACK-005: requires_manual_review=true (non-trivial text)"
+else
+  fail "FALLBACK-005" "requires_manual_review='$needs_review' should be true"
+fi
 
 # ─────────────────────────────────────────────────────────
 # CATEGORY: REPORT — aggregate contract fields

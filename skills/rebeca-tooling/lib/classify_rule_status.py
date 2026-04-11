@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 from typing import Dict, Any
 
-from utils import safe_path
+from utils import safe_path, safe_open
 
 class RuleStatusClassifier:
     """Classifies Legata rule formalization status."""
@@ -36,7 +36,7 @@ class RuleStatusClassifier:
         }
         
         try:
-            with open(legata_path, 'r') as f:
+            with safe_open(legata_path, 'r') as f:
                 content = f.read()
                 result["clause_count"] = content.count("clause")
         except FileNotFoundError:
