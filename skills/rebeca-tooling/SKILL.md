@@ -40,12 +40,12 @@ skills/rebeca-tooling/
 ├── SKILL.md (this file)
 └── lib/
     ├── __init__.py
+    ├── utils.py
     ├── download_rmc.py
     ├── run_rmc.py
+    ├── pre_run_rmc_check.py
     ├── install_artifacts.py
     ├── verify_installation.py
-    ├── pre_run_rmc_check.py
-    ├── setup_agent.py
     ├── classify_rule_status.py
     ├── colreg_fallback_mapper.py
     ├── score_single_rule.py
@@ -212,6 +212,7 @@ with open("reports/report.md", "w") as f:
     f.write(generator.to_markdown())
 
 # Outputs: reports/report.json and reports/report.md
+```
 
 ### Installation Utilities
 
@@ -244,21 +245,14 @@ result = verify_installation(target_root=".claude")
 
 #### Complete Setup
 
-```python
-from lib import setup_agent
+Use `setup.py` at the repo root instead — it handles prerequisites, RMC download, artifact installation, and path patching in one step:
 
-result = setup_agent(
-    target_root=".claude",
-    rmc_tag=None,  # Use latest, or specify "2.14"
-    skip_verify=False
-)
+```bash
+# Local install (.claude/ in CWD)
+python3 setup.py
 
-# Exit codes:
-# 0: Success
-# 1: Prerequisites missing
-# 2: RMC download failed
-# 3: RMC verification failed
-# 4: Artifact installation failed
+# Global install (~/.claude/)
+python3 setup.py --mode global
 ```
 
 ## CLI Usage
@@ -320,10 +314,7 @@ python3 ~/.claude/skills/rebeca-tooling/lib/generate_report.py \
 ### Installation
 
 ```bash
-# Complete setup
-python3 ~/.claude/skills/rebeca-tooling/lib/setup_agent.py \
-  --target-root .claude \
-  --rmc-tag 2.14
+# Complete setup (use setup.py instead — see above)
 
 # Install artifacts only
 python3 ~/.claude/skills/rebeca-tooling/lib/install_artifacts.py \
