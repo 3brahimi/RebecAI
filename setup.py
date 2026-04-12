@@ -4,6 +4,10 @@ Claude Rebeca Setup Script
 
 Automatically discovers and installs all agents and skills from the repository.
 Downloads RMC model checker and verifies installation.
+
+Modes:
+  local   Install to .claude/ relative to CWD (per-project use)
+  global  Install to ~/.claude/ (system-wide Claude Code use)
 """
 
 import argparse
@@ -21,6 +25,9 @@ sys.path.insert(0, str(REPO_ROOT / "skills" / "rebeca-tooling" / "lib"))
 
 from download_rmc import download_rmc, is_valid_jar
 from utils import safe_path, resolve_executable
+
+LOCAL_TARGET = Path.cwd() / ".claude"
+GLOBAL_TARGET = Path.home() / ".claude"
 
 
 def check_prerequisites() -> Tuple[bool, List[str]]:
@@ -119,6 +126,48 @@ def install_skills(skills: List[Path], target_root: Path) -> int:
     return installed
 
 
+def patch_installed_paths(target_path: Path, rmc_jar: Path) -> None:
+    """
+    Rewrite placeholder RMC paths in installed agent and skill files.
+
+    Source files use .claude/rmc/rmc.jar as a placeholder.
+    After install, replace with the actual absolute path so agents
+    and skills work regardless of local vs global install mode.
+    """
+    PLACEHOLDER = ".claude/rmc/rmc.jar"
+    PLACEHOLDER_DIR = ".claude/rmc"
+    actual_jar = str(rmc_jar)
+    actual_dir = str(rmc_jar.parent)
+
+    patched = 0
+    for pattern in ["**/*.md", "**/*.py", "**/*.json", "**/*.sh"]:
+        for f in target_path.glob(pattern):
+            if not f.is_file():
+                continue
+            try:
+                text = f.read_text()
+                if PLACEHOLDER in text or PLACEHOLDER_DIR in text:
+                    # Use a sentinel to avoid double-substitution:
+                    # replace the full jar path first, then the dir-only placeholder
+                    sentinel = "__RMC_JAR_SENTINEL__"
+                    text = text.replace(PLACEHOLDER, sentinel)
+                    text = text.replace(PLACEHOLDER_DIR, actual_dir)
+                    text = text.replace(sentinel, actual_jar)
+                    f.write_text(text)
+                    patched += 1
+            except Exception as e:
+                print(f"  ⚠ Could not patch {f}: {e}", file=sys.stderr)
+
+    print(f"  ✓ Patched RMC paths in {patched} installed file(s) → {actual_jar}")
+
+
+def write_rmc_path_marker(target_path: Path, rmc_jar: Path) -> None:
+    """Write absolute rmc.jar path to .claude/rmc_path for runtime consumers."""
+    marker = target_path / "rmc_path"
+    marker.write_text(str(rmc_jar))
+    print(f"  ✓ RMC path marker written to {marker}")
+
+
 def verify_rmc_installation(rmc_dest: Path) -> bool:
     """Verify RMC is installed and executable."""
     jar_path = rmc_dest / "rmc.jar"
@@ -145,7 +194,7 @@ def verify_rmc_installation(rmc_dest: Path) -> bool:
     return True
 
 
-def setup(target_root: str = "~/.claude", rmc_tag: str | None = None) -> int:
+def setup(target_root: str = ".claude", rmc_tag: str | None = None) -> int:
     """
     Main setup function: discover and install all agents/skills, download RMC.
 
@@ -199,6 +248,7 @@ def setup(target_root: str = "~/.claude", rmc_tag: str | None = None) -> int:
     print("[3/4] Verifying RMC installation...")
     if not verify_rmc_installation(rmc_dest):
         return 3
+    write_rmc_path_marker(target_path, rmc_dest / "rmc.jar")
     print()
 
     # Step 4: Discover and install agents/skills
@@ -232,6 +282,11 @@ def setup(target_root: str = "~/.claude", rmc_tag: str | None = None) -> int:
     if agents_installed == 0 and skills_installed == 0:
         print("  ✗ No artifacts were installed")
         return 4
+
+    # Patch placeholder RMC paths in all installed files
+    print("  Patching RMC paths in installed artifacts...")
+    patch_installed_paths(target_path, rmc_dest / "rmc.jar")
+    print()
 
     # Summary
     print("=" * 60)
@@ -272,20 +327,29 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Install to default location (~/.claude)
+  # Local install (default) — installs to .claude/ in CWD
   python3 setup.py
 
-  # Install to custom location
+  # Global install — installs to ~/.claude/ for system-wide Claude Code use
+  python3 setup.py --mode global
+
+  # Custom location
   python3 setup.py --target-root /path/to/install
 
-  # Install specific RMC version
+  # Pin specific RMC version
   python3 setup.py --rmc-tag v2.8.2
         """
     )
     parser.add_argument(
+        "--mode",
+        choices=["local", "global"],
+        default="local",
+        help="Install mode: local (.claude/ in CWD) or global (~/.claude/). Default: local"
+    )
+    parser.add_argument(
         "--target-root",
-        default="~/.claude",
-        help="Target installation directory (default: ~/.claude)"
+        default=None,
+        help="Override install directory (overrides --mode)"
     )
     parser.add_argument(
         "--rmc-tag",
@@ -294,9 +358,21 @@ Examples:
 
     args = parser.parse_args()
 
-    # Support environment variables with proper defaults
-    target_root = os.environ.get("CLAUDE_INSTALL_DIR") or args.target_root or "~/.claude"
+    # Resolve target root: explicit flag > env var > mode default
+    if args.target_root:
+        target_root = args.target_root
+    elif os.environ.get("CLAUDE_INSTALL_DIR"):
+        target_root = os.environ["CLAUDE_INSTALL_DIR"]
+    elif args.mode == "global":
+        target_root = str(GLOBAL_TARGET)
+    else:
+        target_root = str(LOCAL_TARGET)
+
     rmc_tag = os.environ.get("RMC_VERSION") or args.rmc_tag
+
+    print(f"Install mode : {args.mode}")
+    print(f"Install target: {target_root}")
+    print()
 
     sys.exit(setup(target_root, rmc_tag))
 
