@@ -1,5 +1,9 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
+*.pyc
+
+# Ignore specific compiled artifact accidentally committed
+skills/rebeca-tooling/lib/__pycache__/download_rmc.cpython-311.pyc
 *.py[codz]
 *$py.class
 
@@ -207,3 +211,5 @@ __marimo__/
 .claude/
 .amazonq/
 .gemini/
+statespace.xml
+*.pyc
