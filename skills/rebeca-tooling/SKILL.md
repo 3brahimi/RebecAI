@@ -126,8 +126,9 @@ result = run_rmc(
 ```python
 from lib import pre_run_rmc_check
 
-# Ensures RMC is available, downloads if needed
-result = pre_run_rmc_check(rmc_destination=".claude/rmc")
+# Ensures RMC is available, downloads if needed.
+# Resolves jar path from: RMC_DESTINATION env var → .claude/rmc_path marker → ~/.claude/rmc
+result = pre_run_rmc_check()
 
 # Exit codes:
 # 0: RMC available
