@@ -128,7 +128,8 @@ sys.path.insert(0, str(tooling_skill))
 from lib import download_rmc, run_rmc, pre_run_rmc_check
 
 # Ensure RMC is available (auto-download if needed)
-pre_run_rmc_check(rmc_destination=".claude/rmc")
+# Resolves jar path from: RMC_DESTINATION env var → .claude/rmc_path marker → ~/.claude/rmc
+pre_run_rmc_check()
 
 # Execute model checking
 result = run_rmc(
