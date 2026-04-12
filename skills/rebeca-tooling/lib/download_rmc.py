@@ -54,7 +54,7 @@ def resolve_latest_release(base_url: str) -> Optional[str]:
 
 
 def download_file(url: str, dest_path: Path, retry_count: int = 3, retry_delay: int = 2) -> bool:
-    """Download file with retry logic."""
+    """Download file with retry logic and progress reporting."""
     try:
         validate_https_url(url)
     except ValueError as e:
@@ -65,8 +65,27 @@ def download_file(url: str, dest_path: Path, retry_count: int = 3, retry_delay: 
             print(f"Downloading RMC (attempt {attempt}/{retry_count})...")
             req = Request(url, headers={'User-Agent': 'Mozilla/5.0'})
             with urlopen(req) as response:
+                total = response.headers.get("Content-Length")
+                total_mb = int(total) / (1024 * 1024) if total else None
+                downloaded = 0
+                last_pct = -1
+                chunk_size = 65536  # 64KB
                 with safe_open(str(dest_path), 'wb') as f:
-                    f.write(response.read())
+                    while True:
+                        chunk = response.read(chunk_size)
+                        if not chunk:
+                            break
+                        f.write(chunk)
+                        downloaded += len(chunk)
+                        downloaded_mb = downloaded / (1024 * 1024)
+                        if total_mb:
+                            pct = int(downloaded / int(total) * 100)
+                            if pct != last_pct:
+                                print(f"  {downloaded_mb:.1f} / {total_mb:.1f} MB ({pct}%)", end="\r", flush=True)
+                                last_pct = pct
+                        else:
+                            print(f"  {downloaded_mb:.1f} MB downloaded", end="\r", flush=True)
+                print(f"  {downloaded / (1024 * 1024):.1f} MB — done")  # final newline
             return True
         except (URLError, HTTPError) as e:
             print(f"Download failed: {e}", file=sys.stderr)
