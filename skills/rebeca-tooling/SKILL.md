@@ -34,11 +34,11 @@ Use this skill when you need to:
 
 ## Library Location
 
-All Python modules are in `lib/` subdirectory of this skill:
+All Python modules are in `scripts/` subdirectory of this skill:
 ```
 skills/rebeca-tooling/
 ├── SKILL.md (this file)
-└── lib/
+└── scripts/
     ├── __init__.py
     ├── utils.py
     ├── download_rmc.py
@@ -61,10 +61,10 @@ import sys
 from pathlib import Path
 
 # Add skill's lib to path
-skill_path = Path("~/.claude/skills/rebeca-tooling").expanduser()
+skill_path = Path("~/.agents/skills/rebeca-tooling").expanduser()
 sys.path.insert(0, str(skill_path))
 
-from lib import (
+from scripts import (
     download_rmc,
     run_rmc,
     pre_run_rmc_check,
@@ -78,18 +78,18 @@ from lib import (
 #### Download RMC
 
 ```python
-from lib import download_rmc
+from scripts import download_rmc
 
 # Download latest release
 result = download_rmc(
     url="https://github.com/rebeca-lang/org.rebecalang.rmc/releases/latest",
-    dest_dir=".claude/rmc"
+    dest_dir=".agents/rmc"
 )
 
 # Download specific version
 result = download_rmc(
     url="https://github.com/rebeca-lang/org.rebecalang.rmc/releases",
-    dest_dir=".claude/rmc",
+    dest_dir=".agents/rmc",
     tag="2.14"
 )
 
@@ -102,10 +102,10 @@ result = download_rmc(
 #### Run RMC Verification
 
 ```python
-from lib import run_rmc
+from scripts import run_rmc
 
 result = run_rmc(
-    jar=".claude/rmc/rmc.jar",
+    jar=".agents/rmc/rmc.jar",
     model="path/to/model.rebeca",
     property_file="path/to/property.property",
     output_dir="verification_output",
@@ -124,10 +124,10 @@ result = run_rmc(
 #### Auto-Provision RMC
 
 ```python
-from lib import pre_run_rmc_check
+from scripts import pre_run_rmc_check
 
 # Ensures RMC is available, downloads if needed.
-# Resolves jar path from: RMC_DESTINATION env var → .claude/rmc_path marker → ~/.claude/rmc
+# Resolves jar path from: RMC_DESTINATION env var → .agents/rmc_path marker → ~/.agents/rmc
 result = pre_run_rmc_check()
 
 # Exit codes:
@@ -140,7 +140,7 @@ result = pre_run_rmc_check()
 #### Classify Rule Status
 
 ```python
-from lib import RuleStatusClassifier
+from scripts import RuleStatusClassifier
 
 classifier = RuleStatusClassifier()
 result = classifier.classify("path/to/rule.legata")
@@ -156,7 +156,7 @@ result = classifier.classify("path/to/rule.legata")
 #### COLREG Fallback Mapping
 
 ```python
-from lib import COLREGFallbackMapper
+from scripts import COLREGFallbackMapper
 
 mapper = COLREGFallbackMapper()
 result = mapper.map_rule(
@@ -177,7 +177,7 @@ result = mapper.map_rule(
 #### Score Single Rule
 
 ```python
-from lib.score_single_rule import RubricScorer
+from scripts.score_single_rule import RubricScorer
 
 scorer = RubricScorer()
 scorecard = scorer.score_rule(
@@ -200,7 +200,7 @@ scorecard = scorer.score_rule(
 #### Generate Aggregate Report
 
 ```python
-from lib.generate_report import ReportGenerator
+from scripts.generate_report import ReportGenerator
 
 generator = ReportGenerator()
 generator.add_scorecard(scorecard)
@@ -220,7 +220,7 @@ with open("reports/report.md", "w") as f:
 #### Install Artifacts
 
 ```python
-from lib import install_artifacts
+from scripts import install_artifacts
 
 result = install_artifacts(
     target_root=".claude",
@@ -235,7 +235,7 @@ result = install_artifacts(
 #### Verify Installation
 
 ```python
-from lib import verify_installation
+from scripts import verify_installation
 
 result = verify_installation(target_root=".claude")
 
@@ -249,10 +249,10 @@ result = verify_installation(target_root=".claude")
 Use `setup.py` at the repo root instead — it handles prerequisites, RMC download, artifact installation, and path patching in one step:
 
 ```bash
-# Local install (.claude/ in CWD)
+# Local install (.agents/ in CWD)
 python3 setup.py
 
-# Global install (~/.claude/)
+# Global install (~/.agents/)
 python3 setup.py --mode global
 ```
 
@@ -264,13 +264,13 @@ All modules have command-line interfaces:
 
 ```bash
 # Download RMC
-python3 ~/.claude/skills/rebeca-tooling/lib/download_rmc.py \
+python3 ~/.agents/skills/rebeca-tooling/scripts/download_rmc.py \
   --url https://github.com/rebeca-lang/org.rebecalang.rmc/releases/latest \
-  --dest-dir .claude/rmc
+  --dest-dir .agents/rmc
 
 # Run verification
-python3 ~/.claude/skills/rebeca-tooling/lib/run_rmc.py \
-  --jar .claude/rmc/rmc.jar \
+python3 ~/.agents/skills/rebeca-tooling/scripts/run_rmc.py \
+  --jar .agents/rmc/rmc.jar \
   --model model.rebeca \
   --property property.property \
   --output-dir output \
@@ -278,19 +278,19 @@ python3 ~/.claude/skills/rebeca-tooling/lib/run_rmc.py \
   --jvm-opt "-Xmx2g"
 
 # Pre-run check
-python3 ~/.claude/skills/rebeca-tooling/lib/pre_run_rmc_check.py
+python3 ~/.agents/skills/rebeca-tooling/scripts/pre_run_rmc_check.py
 ```
 
 ### Rule Triage
 
 ```bash
 # Classify rule status
-python3 ~/.claude/skills/rebeca-tooling/lib/classify_rule_status.py \
+python3 ~/.agents/skills/rebeca-tooling/scripts/classify_rule_status.py \
   --legata-path legata/Rule-22.legata \
   --output-json
 
 # COLREG fallback mapping
-python3 ~/.claude/skills/rebeca-tooling/lib/colreg_fallback_mapper.py \
+python3 ~/.agents/skills/rebeca-tooling/scripts/colreg_fallback_mapper.py \
   --rule-id Rule-99 \
   --colreg-text "Every vessel shall maintain a proper lookout" \
   --output-json
@@ -300,13 +300,13 @@ python3 ~/.claude/skills/rebeca-tooling/lib/colreg_fallback_mapper.py \
 
 ```bash
 # Score single rule
-python3 ~/.claude/skills/rebeca-tooling/lib/score_single_rule.py \
+python3 ~/.agents/skills/rebeca-tooling/scripts/score_single_rule.py \
   --rule-id Rule-22 \
   --verify-status pass \
   --output-json
 
 # Generate report
-python3 ~/.claude/skills/rebeca-tooling/lib/generate_report.py \
+python3 ~/.agents/skills/rebeca-tooling/scripts/generate_report.py \
   --input-scores results.json \
   --output-dir reports/ \
   --format both
@@ -318,12 +318,12 @@ python3 ~/.claude/skills/rebeca-tooling/lib/generate_report.py \
 # Complete setup (use setup.py instead — see above)
 
 # Install artifacts only
-python3 ~/.claude/skills/rebeca-tooling/lib/install_artifacts.py \
+python3 ~/.agents/skills/rebeca-tooling/scripts/install_artifacts.py \
   --target-root .claude \
   --mode all
 
 # Verify installation
-python3 ~/.claude/skills/rebeca-tooling/lib/verify_installation.py .claude
+python3 ~/.agents/skills/rebeca-tooling/scripts/verify_installation.py .claude
 ```
 
 ## Platform Support
@@ -342,14 +342,14 @@ All modules work identically on:
 ## Error Handling Pattern
 
 ```python
-from lib import run_rmc
+from scripts import run_rmc
 
 def verify_rule(rule_id: str, model_path: str, property_path: str) -> dict:
     """Verify a single rule and return structured result."""
     output_dir = f"verification_output/{rule_id}"
 
     result = run_rmc(
-        jar=".claude/rmc/rmc.jar",
+        jar=".agents/rmc/rmc.jar",
         model=model_path,
         property_file=property_path,
         output_dir=output_dir,
@@ -378,10 +378,10 @@ import sys
 from pathlib import Path
 
 # Reference rebeca-tooling skill
-tooling_skill = Path("~/.claude/skills/rebeca-tooling").expanduser()
+tooling_skill = Path("~/.agents/skills/rebeca-tooling").expanduser()
 sys.path.insert(0, str(tooling_skill))
 
-from lib import run_rmc, RuleStatusClassifier
+from scripts import run_rmc, RuleStatusClassifier
 
 # Use tooling functions
 classifier = RuleStatusClassifier()
@@ -423,7 +423,7 @@ if status["status"] == "formalized":
 If you get `ModuleNotFoundError`:
 ```python
 # Ensure skill path is correct
-skill_path = Path("~/.claude/skills/rebeca-tooling").expanduser()
+skill_path = Path("~/.agents/skills/rebeca-tooling").expanduser()
 print(f"Skill path exists: {skill_path.exists()}")
 print(f"Lib path exists: {(skill_path / 'lib').exists()}")
 ```
@@ -431,7 +431,7 @@ print(f"Lib path exists: {(skill_path / 'lib').exists()}")
 ### RMC Not Found
 
 ```python
-from lib import pre_run_rmc_check
+from scripts import pre_run_rmc_check
 
 # This will auto-download if missing
 result = pre_run_rmc_check()

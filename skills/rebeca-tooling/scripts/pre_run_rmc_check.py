@@ -5,7 +5,7 @@ import os
 import sys
 from pathlib import Path
 
-# Import from lib directory
+# Import from scripts directory
 sys.path.insert(0, str(Path(__file__).parent))
 from download_rmc import download_rmc, is_valid_jar
 from utils import safe_path
@@ -15,9 +15,9 @@ def resolve_rmc_destination() -> str:
     """
     Resolve rmc destination in priority order:
       1. RMC_DESTINATION env var (explicit override)
-      2. .claude/rmc_path marker in CWD (written by setup.py --mode local)
-      3. ~/.claude/rmc_path marker (written by setup.py --mode global)
-      4. ~/.claude/rmc (fallback default)
+      2. .agents/rmc_path marker in CWD (written by setup.py --mode local)
+      3. ~/.agents/rmc_path marker (written by setup.py --mode global)
+      4. ~/.agents/rmc (fallback default)
     """
     if os.environ.get("RMC_DESTINATION"):
         return os.environ["RMC_DESTINATION"]
