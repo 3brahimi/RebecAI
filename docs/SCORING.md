@@ -80,6 +80,11 @@ These mutations target both the `define` block and the `Assertion` block to ensu
     // Original: Assertion: A;
     // Mutation: Assertion: !A;
     ```
+*   **Assertion-Level Predicate Inversion**: Negate specific predicate instances within an assertion while keeping the definition as-is.
+    ```rebeca
+    // Original: Assertion: A && B;
+    // Mutation: Assertion: !A && B; // (or A && !B)
+    ```
 *   **Logical Conjunction/Disjunction Swap**: Exchange `&&` with `||`.
     ```rebeca
     // Original: A && B
