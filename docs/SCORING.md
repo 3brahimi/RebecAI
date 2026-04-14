@@ -59,16 +59,36 @@ We will validate semantic strength by applying controlled mutations and verifyin
     // Mutation: v = v + 2;
     ```
 
-#### Specification Mutations (`.property` - Define Block)
-*   **Comparison Value Mutation**: Increment or decrement a numeric literal in a comparison predicate to test boundary conditions.
+#### Specification Mutations (`.property`)
+These mutations target both the `define` block and the `Assertion` block to ensure robust verification.
+
+**Define Block Mutations:**
+*   **Comparison Value Mutation**: Increment or decrement a numeric literal.
     ```rebeca
     // Original: define { isOverLimit = (s1.length > 50); }
     // Mutation: define { isOverLimit = (s1.length > 51); }
     ```
-*   **Boolean Predicate Negation**: Negate a predicate definition to test the inverse condition.
+*   **Boolean Predicate Negation**: Negate a definition to test the inverse.
     ```rebeca
     // Original: define { isSafe = (s1.speed < 10); }
     // Mutation: define { isSafe = !(s1.speed < 10); }
+    ```
+
+**Assertion Block Mutations:**
+*   **Negation**: Negate an entire assertion.
+    ```rebeca
+    // Original: Assertion: A;
+    // Mutation: Assertion: !A;
+    ```
+*   **Logical Conjunction/Disjunction Swap**: Exchange `&&` with `||`.
+    ```rebeca
+    // Original: A && B
+    // Mutation: A || B
+    ```
+*   **Variable Swap**: Replace a state variable with another from the same actor.
+    ```rebeca
+    // Original: s1.length > 50
+    // Mutation: s1.speed > 50
     ```
 
 ### 3. Vacuity Checks
