@@ -14,6 +14,8 @@ from .colreg_fallback_mapper import COLREGFallbackMapper
 from .utils import safe_path, safe_open, validate_https_url, resolve_executable
 from .mutation_engine import MutationEngine, Mutation
 from .vacuity_checker import check_vacuity, extract_precondition, build_negated_property
+from .snapshotter import capture_snapshot
+from .symbol_differ import detect_hallucinations, HallucinationResult
 
 __all__ = [
     "download_rmc",
@@ -33,4 +35,7 @@ __all__ = [
     "check_vacuity",
     "extract_precondition",
     "build_negated_property",
+    "capture_snapshot",
+    "detect_hallucinations",
+    "HallucinationResult",
 ]
