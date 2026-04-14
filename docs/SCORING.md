@@ -29,12 +29,16 @@ The `RubricScorer` now performs a weighted calculation for **Semantic Alignment*
 ## Future Directions: Semantic Validation & Mutation
 
 ### 1. Hallucination Detection (Identifier-Diffing)
-To move away from binary scoring, we implement a **Symbol-Diffing** approach:
-- **Extraction**: Parse the source Legata rule to define a "Golden Symbol Set".
-- **Verification**: Extract identifiers (state variables/actors) from the generated `.rebeca`.
-- **Classification**: 
-    - **Syntax Error**: Caught by RMC compiler (exit code 5).
-    - **Hallucination**: Identifiers found in the Rebeca model that are absent from the Golden Symbol Set (and not part of the Rebeca system library).
+To move away from binary scoring, we implement a two-tier **Symbol-Diffing** approach:
+
+- **Tier 1: Unused State Hallucination**:
+  - **Detection**: Extract the set of state variables defined in the `.rebeca` file *before* and *after* the agent change.
+  - **Logic**: Any variable added in the `.rebeca` file that is not referenced in any `msgsrv` logic or `Assertion` block is flagged as a "Dead-Code Hallucination."
+
+- **Tier 2: Property-Reference Hallucination**:
+  - **Detection**: Identify predicates in the `.property` file that refer to state variables.
+  - **Logic**: If an added predicate references a variable that does not exist in the model, RMC will throw a syntax/reference error (Exit Code 5). We distinguish this from "rudimentary" syntax errors by cross-referencing the variable set: if the variable is missing from the *model's* definition but present in the *property's* reference, it is classified as a "Reference Hallucination" rather than a syntax typo.
+
 
 ### 2. Mutation Strategies (Semantic Testing)
 We will validate semantic strength by applying controlled mutations and verifying if the verification results change (Mutation Score).
