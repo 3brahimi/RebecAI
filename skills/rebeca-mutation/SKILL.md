@@ -8,7 +8,17 @@ description: |
 trigger_phrases:
   - "mutation testing"
   - "run mutation suite"
+  - "run mutation testing"
+  - "mutate rebeca model"
+  - "generate mutations"
+  - "mutate property"
   - "check vacuity"
+  - "mutation score"
+capabilities:
+  - mutation_suite_execution
+  - vacuity_checking
+  - mutation_score_computation
+  - mutation_report_generation
 ---
 
 # rebeca-mutation
