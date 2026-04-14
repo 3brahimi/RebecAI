@@ -3,7 +3,7 @@ __pycache__/
 *.pyc
 
 # Ignore specific compiled artifact accidentally committed
-skills/rebeca-tooling/lib/__pycache__/download_rmc.cpython-311.pyc
+skills/rebeca-tooling/scripts/__pycache__/download_rmc.cpython-311.pyc
 *.py[codz]
 *$py.class
 

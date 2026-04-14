@@ -22,6 +22,8 @@ OWNED_ITEMS = [
     "skills/legata-to-rebeca",
     "skills/rebeca-handbook",
     "skills/rebeca-tooling",
+    "skills/rebeca-mutation",
+    "skills/rebeca-hallucination",
     "rmc",
     "rmc_path",
     "instructions", # .github/instructions link
