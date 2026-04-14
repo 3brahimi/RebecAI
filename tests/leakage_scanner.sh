@@ -8,7 +8,7 @@ echo "Scanning for requirement leakage..."
 VIOLATIONS=0
 
 # Scan agent files
-for file in .claude/agents/*.agent.md; do
+for file in .agents/agents/*.agent.md; do
   if [[ -f "$file" ]]; then
     if grep -E "(FR-|AT-|requirements/)" "$file" > /dev/null 2>&1; then
       echo "✗ Leakage found in $file"
@@ -18,7 +18,7 @@ for file in .claude/agents/*.agent.md; do
 done
 
 # Scan skill files
-for file in .claude/skills/*/SKILL.md; do
+for file in .agents/skills/*/SKILL.md; do
   if [[ -f "$file" ]]; then
     if grep -E "(FR-|AT-|requirements/)" "$file" > /dev/null 2>&1; then
       echo "✗ Leakage found in $file"

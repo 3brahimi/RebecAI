@@ -15,10 +15,11 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-REPO_ROOT="$(cd "$PROJECT_ROOT/.." && pwd)"
+REPO_ROOT="$PROJECT_ROOT"
 SYNTAX_CHECKER="$SCRIPT_DIR/check_rebeca_syntax.py"
 SCENARIOS_DIR="$REPO_ROOT/src/PromptingExperimentDoc/RebecaCodeScenarios"
-RMC_JAR="${RMC_JAR:-.claude/rmc/rmc.jar}"
+RMC_JAR="${RMC_JAR:-.agents/rmc/rmc.jar}"
+TOOLING_SCRIPTS="$PROJECT_ROOT/skills/rebeca-tooling/scripts"
 
 PASSED=0
 FAILED=0
@@ -278,7 +279,7 @@ echo ""
 
 # SCORING-001: score_total in [0, 100] for each verify status
 for status in pass fail timeout blocked unknown; do
-  result=$(python3 "$PROJECT_ROOT/scoring/score_single_rule.py" \
+  result=$(PYTHONPATH="$TOOLING_SCRIPTS" python3 "$TOOLING_SCRIPTS/score_single_rule.py" \
     --rule-id "Test-Rule" --verify-status "$status" --output-json 2>/dev/null)
   if [[ -z "$result" ]]; then
     fail "SCORING-001-$status" "Script produced no output"
@@ -295,7 +296,7 @@ for status in pass fail timeout blocked unknown; do
 done
 
 # SCORING-002: score_breakdown has exactly the 4 contract-required fields
-result=$(python3 "$PROJECT_ROOT/scoring/score_single_rule.py" \
+result=$(PYTHONPATH="$TOOLING_SCRIPTS" python3 "$TOOLING_SCRIPTS/score_single_rule.py" \
   --rule-id "Test-Rule" --verify-status pass --output-json 2>/dev/null)
 missing_fields=""
 for field in syntax semantic_alignment verification_outcome hallucination_penalty; do
@@ -347,8 +348,8 @@ echo ""
 echo "── TRIAGE LOGIC CHECKS ──"
 
 # TRIAGE-001: missing file → not-formalized
-status=$(python3 "$PROJECT_ROOT/triage/classify_rule_status.py" \
-  --legata-path /nonexistent_file_xyz.legata --output-json 2>/dev/null | \
+status=$(PYTHONPATH="$TOOLING_SCRIPTS" python3 "$TOOLING_SCRIPTS/classify_rule_status.py" \
+  --legata-path nonexistent_file_xyz.legata --output-json 2>/dev/null | \
   python3 -c "import sys,json; print(json.load(sys.stdin).get('status','ERROR'))" 2>/dev/null)
 if [[ "$status" == "not-formalized" ]]; then
   pass "TRIAGE-001: missing file → not-formalized"
@@ -357,9 +358,9 @@ else
 fi
 
 # TRIAGE-002: TODO marker → todo-placeholder
-tmpfile=$(mktemp /tmp/test_rule_XXXX.legata)
+tmpfile=$(mktemp ./test_rule_XXXX.legata)
 printf "TODO: formalize this rule\n" > "$tmpfile"
-status=$(python3 "$PROJECT_ROOT/triage/classify_rule_status.py" \
+status=$(PYTHONPATH="$TOOLING_SCRIPTS" python3 "$TOOLING_SCRIPTS/classify_rule_status.py" \
   --legata-path "$tmpfile" --output-json 2>/dev/null | \
   python3 -c "import sys,json; print(json.load(sys.stdin).get('status','ERROR'))" 2>/dev/null)
 rm -f "$tmpfile"
@@ -370,7 +371,7 @@ else
 fi
 
 # TRIAGE-003: all 3 sections, substantial content → formalized
-tmpfile=$(mktemp /tmp/test_rule_XXXX.legata)
+tmpfile=$(mktemp ./test_rule_XXXX.legata)
 cat > "$tmpfile" << 'LEGATA'
 clause Rule-Test {
   condition: OS.Length > meters(50) and OS.Type is PowerDriven
@@ -379,7 +380,7 @@ clause Rule-Test {
   This rule applies to all power-driven vessels longer than 50 meters navigating in any visibility condition.
 }
 LEGATA
-status=$(python3 "$PROJECT_ROOT/triage/classify_rule_status.py" \
+status=$(PYTHONPATH="$TOOLING_SCRIPTS" python3 "$TOOLING_SCRIPTS/classify_rule_status.py" \
   --legata-path "$tmpfile" --output-json 2>/dev/null | \
   python3 -c "import sys,json; print(json.load(sys.stdin).get('status','ERROR'))" 2>/dev/null)
 rm -f "$tmpfile"
@@ -390,9 +391,9 @@ else
 fi
 
 # TRIAGE-004: 2 sections → incomplete
-tmpfile=$(mktemp /tmp/test_rule_XXXX.legata)
+tmpfile=$(mktemp ./test_rule_XXXX.legata)
 printf "condition: vessel is moving\nassure: light is on\n" > "$tmpfile"
-status=$(python3 "$PROJECT_ROOT/triage/classify_rule_status.py" \
+status=$(PYTHONPATH="$TOOLING_SCRIPTS" python3 "$TOOLING_SCRIPTS/classify_rule_status.py" \
   --legata-path "$tmpfile" --output-json 2>/dev/null | \
   python3 -c "import sys,json; print(json.load(sys.stdin).get('status','ERROR'))" 2>/dev/null)
 rm -f "$tmpfile"
@@ -403,9 +404,9 @@ else
 fi
 
 # TRIAGE-005: 1 section → incorrect
-tmpfile=$(mktemp /tmp/test_rule_XXXX.legata)
+tmpfile=$(mktemp ./test_rule_XXXX.legata)
 printf "condition: vessel is large\n" > "$tmpfile"
-status=$(python3 "$PROJECT_ROOT/triage/classify_rule_status.py" \
+status=$(PYTHONPATH="$TOOLING_SCRIPTS" python3 "$TOOLING_SCRIPTS/classify_rule_status.py" \
   --legata-path "$tmpfile" --output-json 2>/dev/null | \
   python3 -c "import sys,json; print(json.load(sys.stdin).get('status','ERROR'))" 2>/dev/null)
 rm -f "$tmpfile"
@@ -421,7 +422,7 @@ fi
 echo ""
 echo "── FALLBACK MAPPER CHECKS ──"
 
-result=$(python3 "$PROJECT_ROOT/triage/colreg_fallback_mapper.py" \
+result=$(PYTHONPATH="$TOOLING_SCRIPTS" python3 "$TOOLING_SCRIPTS/colreg_fallback_mapper.py" \
   --rule-id "Test-99" \
   --colreg-text "Every vessel shall maintain a proper lookout and shall not impede safe passage of another vessel" \
   --output-json 2>/dev/null)
@@ -477,9 +478,16 @@ fi
 echo ""
 echo "── REPORT CONTRACT CHECKS ──"
 
-report=$(python3 - << 'PYEOF'
+report=$(PYTHONPATH="$TOOLING_SCRIPTS" python3 - << 'PYEOF'
 import sys
-sys.path.insert(0, 'claude-rebeca/scoring')
+import os
+from pathlib import Path
+
+# Add tooling scripts to path
+scripts_path = os.environ.get('PYTHONPATH')
+if scripts_path:
+    sys.path.insert(0, scripts_path)
+
 from generate_report import ReportGenerator
 from score_single_rule import RubricScorer
 r = ReportGenerator()

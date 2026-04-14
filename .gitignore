@@ -213,3 +213,14 @@ __marimo__/
 .gemini/
 statespace.xml
 *.pyc
+
+.grepai/
+.gemini/
+.claude/
+.github/
+.agents/
+setup_ai_search/
+graphify-out/
+.graphifyignore
+CLAUDE.md
+GEMINI.md

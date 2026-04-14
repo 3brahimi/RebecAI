@@ -28,12 +28,12 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-LIB_DIR="$PROJECT_ROOT/skills/rebeca-tooling/lib"
+LIB_DIR="$PROJECT_ROOT/skills/rebeca-tooling/scripts"
 
 RMC_TAG="${RMC_TAG:-}"
 KEEP_ARTIFACTS="${KEEP_ARTIFACTS:-0}"
 
-# Use a temp dir as install target so we never pollute ~/.claude
+# Use a temp dir as install target so we never pollute ~/.agents
 INSTALL_DIR="${INSTALL_DIR:-$(mktemp -d "$HOME/tmp_claude_integration_XXXX")}"
 SECONDARY_DIR="$(mktemp -d "$HOME/tmp_claude_secondary_XXXX")"
 
@@ -526,7 +526,7 @@ fi
 echo ""
 
 # ──────────────────────────────────────────────────────────
-# IT-015: Path patching — .claude/rmc placeholder replaced in installed files
+# IT-015: Path patching — .agents/rmc placeholder replaced in installed files
 # ──────────────────────────────────────────────────────────
 echo "── IT-015: RMC path patching in installed artifacts ──"
 
@@ -536,8 +536,8 @@ patched_found=0
 
 while IFS= read -r -d '' f; do
   if file "$f" 2>/dev/null | grep -q "text"; then
-    if grep -q '\.claude/rmc/rmc\.jar\|\.claude/rmc"' "$f" 2>/dev/null; then
-      fail "IT-015-$(basename "$f")" "Placeholder .claude/rmc path not replaced in installed file"
+    if grep -q '\.agents/rmc/rmc\.jar\|\.agents/rmc"' "$f" 2>/dev/null; then
+      fail "IT-015-$(basename "$f")" "Placeholder .agents/rmc path not replaced in installed file"
       placeholder_found=$((placeholder_found + 1))
     fi
     if grep -qF "$expected_jar" "$f" 2>/dev/null; then

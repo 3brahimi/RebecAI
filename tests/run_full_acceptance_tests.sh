@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # Comprehensive acceptance test runner for all 22 acceptance tests
-PROJ_ROOT="/Users/mei02/Desktop/Workspace/FM/papers/maritime"
-ARTIFACT_ROOT="$PROJ_ROOT/claude-rebeca"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ARTIFACT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 echo "======================================================"
 echo "FULL ACCEPTANCE TEST SUITE (AT-001 through AT-022)"
@@ -61,9 +61,9 @@ check_grep_not() {
 
 # AT-001: Prescribed workflow artifact exists with WF-01..WF-08
 echo -n "AT-001 (Prescribed Workflow Artifact): "
-if check_file "$ARTIFACT_ROOT/agents/legata-formalization.agent.md" && \
-   check_grep "WF-01" "$ARTIFACT_ROOT/agents/legata-formalization.agent.md" && \
-   check_grep "WF-08" "$ARTIFACT_ROOT/agents/legata-formalization.agent.md"; then
+if check_file "$ARTIFACT_ROOT/agents/legata-to-rebeca.md" && \
+   check_grep "WF-01" "$ARTIFACT_ROOT/agents/legata-to-rebeca.md" && \
+   check_grep "WF-08" "$ARTIFACT_ROOT/agents/legata-to-rebeca.md"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -74,9 +74,9 @@ fi
 
 # AT-002: Agent file exists with handbook-derived Rebeca constraints
 echo -n "AT-002 (Agent Structure & Handbook): "
-if check_file "$ARTIFACT_ROOT/agents/legata-formalization.agent.md" && \
-   check_grep "Rebeca" "$ARTIFACT_ROOT/agents/legata-formalization.agent.md" && \
-   check_grep "condition" "$ARTIFACT_ROOT/agents/legata-formalization.agent.md"; then
+if check_file "$ARTIFACT_ROOT/agents/legata-to-rebeca.md" && \
+   check_grep "Rebeca" "$ARTIFACT_ROOT/agents/legata-to-rebeca.md" && \
+   check_grep "condition" "$ARTIFACT_ROOT/agents/legata-to-rebeca.md"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -87,9 +87,9 @@ fi
 
 # AT-003: Agent workflow explicitly covers WF-01..WF-08 with status
 echo -n "AT-003 (Agent Workflow Phases): "
-if check_grep "WF-01" "$ARTIFACT_ROOT/agents/legata-formalization.agent.md" && \
-   check_grep "WF-02" "$ARTIFACT_ROOT/agents/legata-formalization.agent.md" && \
-   check_grep "WF-07" "$ARTIFACT_ROOT/agents/legata-formalization.agent.md"; then
+if check_grep "WF-01" "$ARTIFACT_ROOT/agents/legata-to-rebeca.md" && \
+   check_grep "WF-02" "$ARTIFACT_ROOT/agents/legata-to-rebeca.md" && \
+   check_grep "WF-07" "$ARTIFACT_ROOT/agents/legata-to-rebeca.md"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -100,8 +100,8 @@ fi
 
 # AT-003a: For formalized rules, output includes model_artifact and property_artifact
 echo -n "AT-003a (Dual Artifact Output): "
-if check_grep "model_artifact" "$ARTIFACT_ROOT/agents/legata-formalization.agent.md" && \
-   check_grep "property_artifact" "$ARTIFACT_ROOT/agents/legata-formalization.agent.md"; then
+if check_grep "model_artifact" "$ARTIFACT_ROOT/agents/legata-to-rebeca.md" && \
+   check_grep "property_artifact" "$ARTIFACT_ROOT/agents/legata-to-rebeca.md"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -112,8 +112,8 @@ fi
 
 # AT-004: Skill directory exists with SKILL.md and trigger description
 echo -n "AT-004 (Workflow Skill Structure): "
-if check_file "$ARTIFACT_ROOT/skills/legata-formalization-workflow/SKILL.md" && \
-   check_grep_ci "when to use" "$ARTIFACT_ROOT/skills/legata-formalization-workflow/SKILL.md"; then
+if check_file "$ARTIFACT_ROOT/skills/legata-to-rebeca/SKILL.md" && \
+   check_grep_ci "when to use" "$ARTIFACT_ROOT/skills/legata-to-rebeca/SKILL.md"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -124,8 +124,8 @@ fi
 
 # AT-005: Workflow skill includes WF-01..WF-08 with embedded Rebeca constraints
 echo -n "AT-005 (Workflow Skill Content): "
-if check_grep "Legata" "$ARTIFACT_ROOT/skills/legata-formalization-workflow/SKILL.md" && \
-   check_grep "Rebeca" "$ARTIFACT_ROOT/skills/legata-formalization-workflow/SKILL.md"; then
+if check_grep "Legata" "$ARTIFACT_ROOT/skills/legata-to-rebeca/SKILL.md" && \
+   check_grep "Rebeca" "$ARTIFACT_ROOT/skills/legata-to-rebeca/SKILL.md"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -136,8 +136,8 @@ fi
 
 # AT-006: download_rmc script exists and handles URL/destination/checksum parameters
 echo -n "AT-006 (RMC Download Script): "
-if check_file "$ARTIFACT_ROOT/scripts/rmc/download_rmc.sh" && \
-   check_grep "url\|destination" "$ARTIFACT_ROOT/scripts/rmc/download_rmc.sh"; then
+if check_file "$ARTIFACT_ROOT/skills/rebeca-tooling/scripts/download_rmc.py" && \
+   check_grep "url\|dest_dir" "$ARTIFACT_ROOT/skills/rebeca-tooling/scripts/download_rmc.py"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -148,7 +148,7 @@ fi
 
 # AT-007: download_rmc script handles error cases
 echo -n "AT-007 (RMC Download Error Handling): "
-if check_grep "exit\|error\|Error" "$ARTIFACT_ROOT/scripts/rmc/download_rmc.sh"; then
+if check_grep "exit\|error\|Error" "$ARTIFACT_ROOT/skills/rebeca-tooling/scripts/download_rmc.py"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -159,8 +159,8 @@ fi
 
 # AT-008: run_rmc script exists and validates model/property paths
 echo -n "AT-008 (RMC Run Script): "
-if check_file "$ARTIFACT_ROOT/scripts/rmc/run_rmc.sh" && \
-   check_grep "jar\|model" "$ARTIFACT_ROOT/scripts/rmc/run_rmc.sh"; then
+if check_file "$ARTIFACT_ROOT/skills/rebeca-tooling/scripts/run_rmc.py" && \
+   check_grep "jar\|model" "$ARTIFACT_ROOT/skills/rebeca-tooling/scripts/run_rmc.py"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -171,7 +171,7 @@ fi
 
 # AT-009: run_rmc script supports timeout and output configuration
 echo -n "AT-009 (RMC Run Configuration): "
-if check_grep "timeout" "$ARTIFACT_ROOT/scripts/rmc/run_rmc.sh"; then
+if check_grep "timeout" "$ARTIFACT_ROOT/skills/rebeca-tooling/scripts/run_rmc.py"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -182,8 +182,8 @@ fi
 
 # AT-010: Agent and skill reference script interfaces
 echo -n "AT-010 (Script Interfaces): "
-if check_grep "download_rmc\|run_rmc" "$ARTIFACT_ROOT/agents/legata-formalization.agent.md" || \
-   check_grep "download_rmc\|run_rmc" "$ARTIFACT_ROOT/skills/legata-formalization-workflow/SKILL.md"; then
+if check_grep "download_rmc\|run_rmc" "$ARTIFACT_ROOT/agents/legata-to-rebeca.md" || \
+   check_grep "download_rmc\|run_rmc" "$ARTIFACT_ROOT/skills/legata-to-rebeca/SKILL.md"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -195,7 +195,7 @@ fi
 # AT-011: Prompts for implementation and review exist
 echo -n "AT-011 (Implementation Prompts): "
 if check_dir "$ARTIFACT_ROOT" && \
-   check_file "$ARTIFACT_ROOT/agents/legata-formalization.agent.md"; then
+   check_file "$ARTIFACT_ROOT/agents/legata-to-rebeca.md"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -218,8 +218,8 @@ fi
 
 # AT-013: Install scripts exist and verify installation success
 echo -n "AT-013 (Install Scripts): "
-if check_file "$ARTIFACT_ROOT/scripts/install/install_artifacts.sh" && \
-   check_file "$ARTIFACT_ROOT/scripts/install/verify_installation.sh"; then
+if check_file "$ARTIFACT_ROOT/setup.py" && \
+   check_grep "discover_agents" "$ARTIFACT_ROOT/setup.py"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -230,7 +230,7 @@ fi
 
 # AT-014: Hooks automation exists
 echo -n "AT-014 (Hooks Automation): "
-if check_file "$ARTIFACT_ROOT/scripts/rmc/download_rmc.sh"; then
+if check_file "$ARTIFACT_ROOT/skills/rebeca-tooling/scripts/pre_run_rmc_check.py"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -241,7 +241,7 @@ fi
 
 # AT-015: Single-rule scoring exists
 echo -n "AT-015 (Single-Rule Scoring): "
-if check_file "$ARTIFACT_ROOT/scoring/score_single_rule.py"; then
+if check_file "$ARTIFACT_ROOT/skills/rebeca-tooling/scripts/score_single_rule.py"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -252,7 +252,7 @@ fi
 
 # AT-016: Reporting mechanism exists
 echo -n "AT-016 (Reporting Mechanism): "
-if check_file "$ARTIFACT_ROOT/scoring/generate_report.py"; then
+if check_file "$ARTIFACT_ROOT/skills/rebeca-tooling/scripts/generate_report.py"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -263,7 +263,7 @@ fi
 
 # AT-017: Rule-status triage exists
 echo -n "AT-017 (Rule Status Triage): "
-if check_file "$ARTIFACT_ROOT/triage/classify_rule_status.py"; then
+if check_file "$ARTIFACT_ROOT/skills/rebeca-tooling/scripts/classify_rule_status.py"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -274,7 +274,7 @@ fi
 
 # AT-018: COLREG fallback mapping exists
 echo -n "AT-018 (COLREG Fallback): "
-if check_file "$ARTIFACT_ROOT/triage/colreg_fallback_mapper.py"; then
+if check_file "$ARTIFACT_ROOT/skills/rebeca-tooling/scripts/colreg_fallback_mapper.py"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -285,8 +285,8 @@ fi
 
 # AT-019: Incorrect/incomplete handling documented
 echo -n "AT-019 (Degraded Input Handling): "
-if check_grep_ci "incomplete\|incorrect" "$ARTIFACT_ROOT/skills/legata-formalization-workflow/SKILL.md" || \
-   check_grep_ci "defect\|repair" "$ARTIFACT_ROOT/agents/legata-formalization.agent.md"; then
+if check_grep_ci "incomplete\|incorrect" "$ARTIFACT_ROOT/skills/legata-to-rebeca/SKILL.md" || \
+   check_grep_ci "defect\|repair" "$ARTIFACT_ROOT/agents/legata-to-rebeca.md"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -297,7 +297,7 @@ fi
 
 # AT-020: No silent skips - all outcomes reported
 echo -n "AT-020 (No Silent Skips): "
-if check_grep_ci "report\|output" "$ARTIFACT_ROOT/agents/legata-formalization.agent.md"; then
+if check_grep_ci "report\|output" "$ARTIFACT_ROOT/agents/legata-to-rebeca.md"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -309,13 +309,13 @@ fi
 # AT-021: No requirement leakage (FR-*, AT-*, requirements/**)
 echo -n "AT-021 (No Requirement Leakage): "
 LEAKAGE_CLEAN=true
-if grep -r "FR-" "$ARTIFACT_ROOT/agents/" "$ARTIFACT_ROOT/skills/" "$ARTIFACT_ROOT/scripts/" 2>/dev/null | grep -v "Binary"; then
+if grep -r "FR-" "$ARTIFACT_ROOT/agents/" "$ARTIFACT_ROOT/skills/" "$ARTIFACT_ROOT/skills/rebeca-tooling/scripts/" 2>/dev/null | grep -v "Binary"; then
   LEAKAGE_CLEAN=false
 fi
-if grep -r "AT-[0-9]" "$ARTIFACT_ROOT/agents/" "$ARTIFACT_ROOT/skills/" "$ARTIFACT_ROOT/scripts/" 2>/dev/null | grep -v "Binary"; then
+if grep -r "AT-[0-9]" "$ARTIFACT_ROOT/agents/" "$ARTIFACT_ROOT/skills/" "$ARTIFACT_ROOT/skills/rebeca-tooling/scripts/" 2>/dev/null | grep -v "Binary"; then
   LEAKAGE_CLEAN=false
 fi
-if grep -r "requirements/" "$ARTIFACT_ROOT/agents/" "$ARTIFACT_ROOT/skills/" "$ARTIFACT_ROOT/scripts/" 2>/dev/null | grep -v "Binary"; then
+if grep -r "requirements/" "$ARTIFACT_ROOT/agents/" "$ARTIFACT_ROOT/skills/" "$ARTIFACT_ROOT/skills/rebeca-tooling/scripts/" 2>/dev/null | grep -v "Binary"; then
   LEAKAGE_CLEAN=false
 fi
 if [[ "$LEAKAGE_CLEAN" == true ]]; then
@@ -329,9 +329,9 @@ fi
 
 # AT-022: Dedicated Rebeca modeling skill with Do/Don'ts and examples
 echo -n "AT-022 (Rebeca Modeling Skill): "
-if check_file "$ARTIFACT_ROOT/skills/rebeca-modeling-guidelines/SKILL.md" && \
-   check_grep_ci "do\|don't" "$ARTIFACT_ROOT/skills/rebeca-modeling-guidelines/SKILL.md" && \
-   check_grep_ci "example" "$ARTIFACT_ROOT/skills/rebeca-modeling-guidelines/SKILL.md"; then
+if check_file "$ARTIFACT_ROOT/skills/rebeca-handbook/SKILL.md" && \
+   check_grep_ci "do\|don't" "$ARTIFACT_ROOT/skills/rebeca-handbook/SKILL.md" && \
+   check_grep_ci "example" "$ARTIFACT_ROOT/skills/rebeca-handbook/SKILL.md"; then
   echo "PASS"
   ((PASSED++))
 else

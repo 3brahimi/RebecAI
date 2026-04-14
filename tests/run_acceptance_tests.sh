@@ -11,8 +11,8 @@ FAILED=0
 
 # AT-001: Prescribed Workflow
 echo -n "AT-001 (Prescribed Workflow): "
-if [[ -f ".claude/agents/legata-formalization.agent.md" ]]; then
-  if grep -q "WF-01" ".claude/agents/legata-formalization.agent.md"; then
+if [[ -f ".agents/agents/legata-formalization.agent.md" ]]; then
+  if grep -q "WF-01" ".agents/agents/legata-formalization.agent.md"; then
     echo "PASS"
     ((PASSED++))
   else
@@ -26,7 +26,7 @@ fi
 
 # AT-002: Agent Structure
 echo -n "AT-002 (Agent Structure): "
-if grep -q "Rebeca" ".claude/agents/legata-formalization.agent.md"; then
+if grep -q "Rebeca" ".agents/agents/legata-formalization.agent.md"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -36,7 +36,7 @@ fi
 
 # AT-021: No Requirements Leakage
 echo -n "AT-021 (No Leakage): "
-if ! grep -q "FR-" ".claude/agents/legata-formalization.agent.md" 2>/dev/null; then
+if ! grep -q "FR-" ".agents/agents/legata-formalization.agent.md" 2>/dev/null; then
   echo "PASS"
   ((PASSED++))
 else
@@ -46,7 +46,7 @@ fi
 
 # AT-022: Rebeca Guidance Skill
 echo -n "AT-022 (Rebeca Skill): "
-if [[ -f ".claude/skills/rebeca-modeling-guidelines/SKILL.md" ]]; then
+if [[ -f ".agents/skills/rebeca-modeling-guidelines/SKILL.md" ]]; then
   echo "PASS"
   ((PASSED++))
 else
