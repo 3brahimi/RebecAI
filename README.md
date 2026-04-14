@@ -1,6 +1,6 @@
-# Claude Rebeca
+# RebecaAI
 
-A collection of Claude Code agents and skills for actor-based formal verification and model checking workflows, with a focus on transforming formal specifications into verifiable models.
+A collection of AI agents and skills for actor-based formal verification and model checking workflows, with a focus on transforming formal specifications into verifiable models.
 
 ## Overview
 
@@ -72,8 +72,8 @@ See [Installation Guide](docs/guides/installation.md) for platform-specific inst
 ## Directory Structure
 
 ```
-claude-rebeca/
-├── agents/                      # Claude Code agents
+rebecai/
+├── agents/                      # AI agents
 ├── skills/                      # Reusable skills
 │   └── rebeca-tooling/lib/     # Python library (10 modules)
 ├── configs/                     # Experiment configurations

@@ -219,6 +219,7 @@ statespace.xml
 .claude/
 .github/
 .agents/
+skills-lock.json
 setup_ai_search/
 graphify-out/
 .graphifyignore
