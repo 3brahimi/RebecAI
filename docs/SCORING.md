@@ -33,15 +33,48 @@ To move away from binary scoring, we implement a **Symbol-Diffing** approach:
 ### 2. Mutation Strategies (Semantic Testing)
 We will validate semantic strength by applying controlled mutations and verifying if the verification results change (Mutation Score).
 
+| Artifact | Mutation Strategy | Impact |
+| :--- | :--- | :--- |
+| **.rebeca** | Transition Bypass | Ensure property fails if logic is skipped. |
+| **.rebeca** | Predicate Flip | Ensure logic sensitivity (e.g., `>` → `<=`). |
+| **.property**| Negation | Ensure `!A` fails if `A` passed. |
+| **.property**| Logical Swap | Ensure logical operators (`&&`/`||`) are necessary. |
+
 #### Model Mutations (`.rebeca`)
-*   **Transition Bypass**: Forcibly comment out or bypass a `msgsrv` logic block to ensure the property fails if critical logic is skipped.
-*   **Predicate Flip**: In a `reactiveclass`, flip a condition in an `if` statement (e.g., `if (x > 0)` → `if (x <= 0)`) to check boundary sensitivity.
-*   **Assignment Mutation**: Increment or decrement a counter variable (e.g., `v = v + 1` → `v = v + 2`) to test model state stability.
+*   **Transition Bypass**: Forcibly bypass a `msgsrv` logic block.
+    ```rebeca
+    // Original:
+    msgsrv updateLight(boolean on) { masthead_light_on = on; }
+    // Mutation:
+    msgsrv updateLight(boolean on) { /* masthead_light_on = on; */ }
+    ```
+*   **Predicate Flip**: Flip condition in `if` statement.
+    ```rebeca
+    // Original: if (x > 0) { ... }
+    // Mutation: if (x <= 0) { ... }
+    ```
+*   **Assignment Mutation**: Increment a counter variable.
+    ```rebeca
+    // Original: v = v + 1;
+    // Mutation: v = v + 2;
+    ```
 
 #### Specification Mutations (`.property`)
-*   **Negation**: Negate an entire assertion (e.g., `Assertion: A` → `Assertion: !A`). If the property still passes, the original assertion is likely too weak.
-*   **Logical Conjunction/Disjunction Swap**: Exchange `&&` with `||` to ensure that both clauses are strictly necessary for the specification to hold.
-*   **Variable Swap**: Replace a state variable in a predicate with another identifier from the same actor to ensure specific state variables are required for property correctness.
+*   **Negation**: Negate an entire assertion.
+    ```rebeca
+    // Original: Assertion: A;
+    // Mutation: Assertion: !A;
+    ```
+*   **Logical Conjunction/Disjunction Swap**: Exchange `&&` with `||`.
+    ```rebeca
+    // Original: A && B
+    // Mutation: A || B
+    ```
+*   **Variable Swap**: Replace a state variable with another from the same actor.
+    ```rebeca
+    // Original: s1.length > 50
+    // Mutation: s1.speed > 50
+    ```
 
 ### 3. Vacuity Checks
 To ensure properties aren't passing vacuously (e.g., due to an impossible precondition), we will perform a secondary check:
