@@ -48,10 +48,10 @@ We will validate semantic strength by applying controlled mutations and verifyin
     // Mutation:
     msgsrv updateLight(boolean on) { /* masthead_light_on = on; */ }
     ```
-*   **Predicate Flip**: Flip condition in `if` statement.
+*   **Predicate Flip**: Negate an `if` condition using the `!` operator.
     ```rebeca
     // Original: if (x > 0) { ... }
-    // Mutation: if (x <= 0) { ... }
+    // Mutation: if (!(x > 0)) { ... }
     ```
 *   **Assignment Mutation**: Increment a counter variable.
     ```rebeca
