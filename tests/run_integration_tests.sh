@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Integration test suite for claude-rebeca.
+# Integration test suite for RebecAI.
 # Validates the full operational chain:
 #   IT-001  Prerequisites (java, g++, python3)
 #   IT-002  setup.py runs end-to-end and exits 0

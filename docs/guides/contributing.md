@@ -1,6 +1,6 @@
 # Contributing Guide
 
-How to extend claude-rebeca with new agents, skills, and tooling.
+How to extend RebecAI with new agents, skills, and tooling.
 
 ## Overview
 
@@ -131,11 +131,11 @@ from pathlib import Path
 def your_function(param1: str, param2: int) -> dict:
     """
     Function description.
-    
+
     Args:
         param1: Description
         param2: Description
-        
+
     Returns:
         Dictionary with results
     """
@@ -147,10 +147,10 @@ def main():
     parser = argparse.ArgumentParser(description="Module description")
     parser.add_argument("--param1", required=True, help="Param1 description")
     parser.add_argument("--param2", type=int, default=10, help="Param2 description")
-    
+
     args = parser.parse_args()
     result = your_function(args.param1, args.param2)
-    
+
     print(result)
     return 0 if result["success"] else 1
 
@@ -230,23 +230,23 @@ from pathlib import Path
 def process_file(file_path: str, timeout: int = 120) -> dict:
     """
     Process a file with timeout.
-    
+
     Args:
         file_path: Path to file
         timeout: Timeout in seconds
-        
+
     Returns:
         Dictionary with processing results
-        
+
     Raises:
         FileNotFoundError: If file doesn't exist
         TimeoutError: If processing exceeds timeout
     """
     path = Path(file_path).expanduser().resolve()
-    
+
     if not path.exists():
         raise FileNotFoundError(f"File not found: {path}")
-    
+
     # Implementation
     return {"success": True, "path": str(path)}
 ```

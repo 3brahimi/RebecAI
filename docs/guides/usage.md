@@ -2,9 +2,18 @@
 
 Complete workflow execution examples for the legata-to-rebeca agent.
 
+## Environment Maintenance
+
+Before starting a new session or after updating the repository, it is recommended to clean up previous installations to avoid conflicts:
+
+```bash
+python3 purge.py
+```
+
 ## Basic Usage
 
 ### Transform a Single Rule
+...existing code...
 
 ```
 @legata-to-rebeca Transform legata/Rule-22-Equipment-Range.legata to Rebeca.
@@ -110,19 +119,20 @@ from pathlib import Path
 tooling_skill = Path("~/.agents/skills/rebeca-tooling").expanduser()
 sys.path.insert(0, str(tooling_skill))
 
-from lib import (
+from scripts import (
     run_rmc,
     RuleStatusClassifier,
     COLREGFallbackMapper,
-    score_single_rule,
-    generate_report
+    pre_run_rmc_check
 )
+from scripts.score_single_rule import RubricScorer
+from scripts.generate_report import ReportGenerator
 ```
 
 ### Run Verification
 
 ```python
-from lib import pre_run_rmc_check, run_rmc
+from scripts import pre_run_rmc_check, run_rmc
 
 # Ensure RMC available
 pre_run_rmc_check()
@@ -144,41 +154,45 @@ print(f"Stderr: {result['stderr']}")
 ### Classify Rule Status
 
 ```python
-from lib import RuleStatusClassifier
+from scripts import RuleStatusClassifier
 
 classifier = RuleStatusClassifier()
 status = classifier.classify("legata/Rule-22-Equipment-Range.legata")
 
 print(f"Status: {status['status']}")
-print(f"Reason: {status['reason']}")
+print(f"Evidence: {status['evidence']}")
 ```
 
 ### Score Transformation
 
 ```python
-from lib import score_single_rule
+from scripts.score_single_rule import RubricScorer
 
-score = score_single_rule(
+scorer = RubricScorer()
+score = scorer.score_rule(
     rule_id="Rule-22",
     verify_status="pass",
-    syntax_correct=True,
-    semantic_aligned=True
+    model_artifact="output/Rule-22.rebeca",
+    property_artifact="output/Rule-22.property"
 )
 
-print(f"Total score: {score['total_score']}/100")
-print(f"Breakdown: {score['breakdown']}")
+print(f"Total score: {score['score_total']}/100")
+print(f"Breakdown: {score['score_breakdown']}")
 ```
 
 ### Generate Report
 
 ```python
-from lib import generate_report
+from scripts.generate_report import ReportGenerator
 
-generate_report(
-    input_scores="output/scorecards.json",
-    output_dir="output/reports",
-    format="both"  # json and markdown
-)
+generator = ReportGenerator()
+generator.add_scorecard(score)
+generator.finalize()
+
+with open("output/reports/report.json", "w") as f:
+    f.write(generator.to_json())
+with open("output/reports/report.md", "w") as f:
+    f.write(generator.to_markdown())
 ```
 
 ## CLI Usage
@@ -192,7 +206,7 @@ python3 setup.py
 ### Run Verification
 
 ```bash
-python3 ~/.agents/skills/rebeca-tooling/lib/run_rmc.py \
+python3 ~/.agents/skills/rebeca-tooling/scripts/run_rmc.py \
   --jar ~/.agents/rmc/rmc.jar \
   --model output/Rule-22.rebeca \
   --property output/Rule-22.property \
@@ -203,7 +217,7 @@ python3 ~/.agents/skills/rebeca-tooling/lib/run_rmc.py \
 ### Classify Rule
 
 ```bash
-python3 ~/.agents/skills/rebeca-tooling/lib/classify_rule_status.py \
+python3 ~/.agents/skills/rebeca-tooling/scripts/classify_rule_status.py \
   --legata-path legata/Rule-22-Equipment-Range.legata \
   --output-json
 ```
@@ -211,7 +225,7 @@ python3 ~/.agents/skills/rebeca-tooling/lib/classify_rule_status.py \
 ### Score Rule
 
 ```bash
-python3 ~/.agents/skills/rebeca-tooling/lib/score_single_rule.py \
+python3 ~/.agents/skills/rebeca-tooling/scripts/score_single_rule.py \
   --rule-id Rule-22 \
   --verify-status pass \
   --output-json
@@ -220,7 +234,7 @@ python3 ~/.agents/skills/rebeca-tooling/lib/score_single_rule.py \
 ### Generate Report
 
 ```bash
-python3 ~/.agents/skills/rebeca-tooling/lib/generate_report.py \
+python3 ~/.agents/skills/rebeca-tooling/scripts/generate_report.py \
   --input-scores output/scorecards.json \
   --output-dir output/reports \
   --format both

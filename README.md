@@ -1,14 +1,27 @@
 # RebecaAI
 
-A collection of AI agents and skills for actor-based formal verification and model checking workflows, with a focus on transforming formal specifications into verifiable models.
+A centralized ecosystem for AI-agents and skills designed for actor-based formal verification using the Rebeca Model Checker (RMC).
 
 ## Overview
 
-This repository provides reusable agents and skills for:
-- **Formal specification transformation** - Convert Legata/COLREG rules to Rebeca actor models
-- **Model checking automation** - Execute RMC (Rebeca Model Checker) with verification workflows
-- **Rule triage and classification** - Assess formalization quality and suggest repairs
-- **Scoring and reporting** - Generate comprehensive verification reports
+RebecaAI provides a unified framework to:
+- **Transform** formal specifications (Legata/COLREG) into verifiable Rebeca actor models.
+- **Automate** model checking workflows using RMC.
+- **Triage** rules for formalization quality.
+- **Report** verification outcomes through automated tooling.
+
+## Repository Structure
+
+Understanding the organization is key to extending the framework. We maintain a strict separation between implementation code and supporting documentation.
+
+| Category | Implementation Path | Documentation Path | Purpose |
+| :--- | :--- | :--- | :--- |
+| **Agents** | `agents/` | `docs/agents/` | Autonomous agents for specific workflows. |
+| **Skills** | `skills/` | `docs/skills/` | Reusable skills for model checking and analysis. |
+| **Guides** | N/A | `docs/guides/` | Procedural workflows, setup, and architecture. |
+
+*   **Implementation (`/agents`, `/skills`)**: Contains the executable code, scripts, and configuration that define agent behaviors and tool capabilities.
+*   **Documentation (`/docs`)**: Contains the developer-facing technical manuals, usage guides, and skill specifications.
 
 ## Quick Links
 
@@ -16,75 +29,42 @@ This repository provides reusable agents and skills for:
 - **[Usage Guide](docs/guides/usage.md)** - Workflow execution examples
 - **[Architecture](docs/guides/architecture.md)** - System design and components
 
-### Agents
-- **[legata-to-rebeca](docs/agents/legata-to-rebeca.md)** - Transform Legata/COLREG rules to Rebeca models
+## Agents & Skills Overview
 
-### Skills
-- **[legata-to-rebeca](docs/skills/legata-to-rebeca.md)** - Workflow guidance
-- **[rebeca-handbook](docs/skills/rebeca-handbook.md)** - Modeling best practices
-- **[rebeca-tooling](docs/skills/rebeca-tooling.md)** - Python library and CLI tools
+Currently, the following components are implemented and available for use:
 
-## Quick Start
+### Active Agents
+| Agent | Description | Implementation Path |
+| :--- | :--- | :--- |
+| `legata-to-rebeca` | Transforms Legata/COLREG specifications into Rebeca models. | `agents/legata-to-rebeca.md` |
+
+### Active Skills
+| Skill | Description | Implementation Path |
+| :--- | :--- | :--- |
+| `legata-to-rebeca` | Workflow guidance and pattern application. | `skills/legata-to-rebeca/` |
+| `rebeca-handbook` | Best practices for actor-based modeling. | `skills/rebeca-handbook/` |
+| `rebeca-tooling` | Python library/CLI for RMC execution and reporting. | `skills/rebeca-tooling/` |
+
+# Quick Start
 
 ```bash
 # One-command setup
 python3 setup.py
 
-# Transform a rule
+# Clean up installed artifacts
+python3 purge.py
+
+# Example: Transform a rule using an agent
 @legata-to-rebeca Transform legata/Rule-22-Equipment-Range.legata to Rebeca.
-Reference model: src/PromptingExperimentDoc/SimulationModelCode.rebeca
-Reference property: src/PromptingExperimentDoc/SimulationModelCode.property
 ```
 
-The `setup.py` script automatically:
-- Discovers all agents in `agents/` directory
-- Discovers all skills in `skills/` directory
-- Downloads and verifies RMC model checker
-- Installs everything to `~/.agents/`
+The `setup.py` script automatically discovers components in `agents/` and `skills/`, downloads RMC, and installs them to `~/.agents/`.
 
 ## Requirements
 
-- **Python 3.8+** (cross-platform)
-- **Java 11+** (for RMC model checker)
-- **C++ compiler** (g++/clang for RMC compilation)
-
-**Platform Support:** ✅ Windows | ✅ macOS | ✅ Linux
-
-See [Installation Guide](docs/guides/installation.md) for platform-specific instructions.
-
-## Documentation
-
-### Guides
-- [Installation](docs/guides/installation.md) - Setup and prerequisites
-- [Usage](docs/guides/usage.md) - Workflow execution
-- [Architecture](docs/guides/architecture.md) - System design
-- [API Reference](docs/guides/api-reference.md) - Python library reference
-- [Troubleshooting](docs/guides/troubleshooting.md) - Common issues
-
-### Agents
-- [legata-to-rebeca](docs/agents/legata-to-rebeca.md) - Legata→Rebeca transformation agent
-
-### Skills
-- [legata-to-rebeca](docs/skills/legata-to-rebeca.md) - Workflow guidance skill
-- [rebeca-handbook](docs/skills/rebeca-handbook.md) - Modeling best practices skill
-- [rebeca-tooling](docs/skills/rebeca-tooling.md) - Python tooling skill
-
-## Directory Structure
-
-```
-rebecai/
-├── agents/                      # AI agents
-├── skills/                      # Reusable skills
-│   └── rebeca-tooling/lib/     # Python library (10 modules)
-├── configs/                     # Experiment configurations
-├── tests/                       # Acceptance and functional tests
-├── docs/                        # Documentation
-│   ├── agents/                 # Per-agent documentation
-│   ├── skills/                 # Per-skill documentation
-│   └── guides/                 # Installation, usage, architecture
-└── examples/                    # Example transformations
-```
+- **Python 3.8+** | **Java 11+** (for RMC) | **C++ compiler** (g++/clang)
+- **Platforms:** ✅ macOS, ✅ Linux, ✅ Windows
 
 ## Contributing
 
-See [Contributing Guide](docs/guides/contributing.md) for details on adding agents, skills, or tooling.
+See [Contributing Guide](docs/guides/contributing.md) to learn how to add new agents or improve existing skills.

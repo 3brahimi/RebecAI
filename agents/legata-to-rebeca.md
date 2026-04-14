@@ -1,11 +1,11 @@
 ---
 name: legata-to-rebeca
-version: 1.0.0
+version: 1.1.0
 description: |
   Orchestrates the 8-phase Legata→Rebeca transformation workflow with verification and reporting.
   Executes prescribed workflow (WF-01 through WF-08) to transform maritime safety rules from
   Legata formal language into verifiable Rebeca models with model checking.
-  
+
   Required inputs:
   1. Legata or COLREG rule file
   2. Reference Rebeca model (system.rebeca) - subject to refinement/append
@@ -20,7 +20,65 @@ capabilities:
 
 # Legata to Rebeca Agent
 
+## System Architecture
+
+This agent operates within a three-layer system:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Agent Layer                          │
+│  ┌───────────────────────────────────────────────────┐  │
+│  │         legata-to-rebeca Agent                    │  │
+│  │  - Orchestrates 8-phase workflow                  │  │
+│  │  - Invokes skills for guidance                    │  │
+│  │  - Calls tooling for automation                   │  │
+│  └───────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────┐
+│                    Skills Layer                         │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐   │
+│  │ legata-to-   │  │   rebeca-    │  │   rebeca-    │   │
+│  │   rebeca     │  │  handbook    │  │   tooling    │   │
+│  │              │  │              │  │              │   │
+│  │ Workflow     │  │ Modeling     │  │ Python       │   │
+│  │ guidance     │  │ best         │  │ library      │   │
+│  │              │  │ practices    │  │              │   │
+│  └──────────────┘  └──────────────┘  └──────────────┘   │
+└─────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────┐
+│                   Tooling Layer                         │
+│  ┌───────────────────────────────────────────────────┐  │
+│  │       ~/.agents/skills/rebeca-tooling/scripts/    │  │
+│  │  - utils.py              (security guards)        │  │
+│  │  - download_rmc.py                                │  │
+│  │  - run_rmc.py                                     │  │
+│  │  - pre_run_rmc_check.py                           │  │
+│  │  - classify_rule_status.py                        │  │
+│  │  - colreg_fallback_mapper.py                      │  │
+│  │  - score_single_rule.py                           │  │
+│  │  - generate_report.py                             │  │
+│  │  - install_artifacts.py                           │  │
+│  │  - verify_installation.py                         │  │
+│  └───────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Installed paths** (after `python3 setup.py` from the project root):
+- Agents:   `~/.agents/agents/legata-to-rebeca.md`
+- Skills:   `~/.agents/skills/{legata-to-rebeca,rebeca-handbook,rebeca-tooling}/`
+- Tooling:  `~/.agents/skills/rebeca-tooling/scripts/`
+- RMC:      `~/.agents/rmc/rmc.jar`
+
+**Session maintenance**: Run `python3 purge.py` (project root) before `python3 setup.py` when re-installing after a repository update. `purge.py` surgically removes only the registered installed artifacts.
+
+**This agent definition is self-contained and is the source of truth.** Modeling syntax rules are embedded below. For the full tooling Python API and CLI reference, consult the `rebeca-tooling` skill at `~/.agents/skills/rebeca-tooling/SKILL.md`.
+
 ## Required Inputs
+...existing code...
 
 This agent requires **three inputs** for each transformation:
 
@@ -125,7 +183,7 @@ from pathlib import Path
 tooling_skill = Path("~/.agents/skills/rebeca-tooling").expanduser()
 sys.path.insert(0, str(tooling_skill))
 
-from lib import download_rmc, run_rmc, pre_run_rmc_check
+from scripts import download_rmc, run_rmc, pre_run_rmc_check
 
 # Ensure RMC is available (auto-download if needed)
 # Resolves jar path from: RMC_DESTINATION env var → .agents/rmc_path marker → ~/.agents/rmc

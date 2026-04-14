@@ -1,10 +1,10 @@
 # Architecture Guide
 
-System design and component overview for claude-rebeca.
+System design and component overview for RebecAI.
 
 ## Overview
 
-Claude-rebeca follows a modular architecture with three main layers:
+RebecAI follows a modular architecture with three main layers:
 
 1. **Agent Layer** - Claude Code agents orchestrating workflows
 2. **Skills Layer** - Reusable knowledge and tooling
@@ -17,42 +17,46 @@ Claude-rebeca follows a modular architecture with three main layers:
 │                    Agent Layer                          │
 │  ┌───────────────────────────────────────────────────┐  │
 │  │         legata-to-rebeca Agent                    │  │
-│  │  - Orchestrates 8-phase workflow                 │  │
-│  │  - Invokes skills for guidance                   │  │
-│  │  - Calls tooling for automation                  │  │
+│  │  - Orchestrates 8-phase workflow                  │  │
+│  │  - Invokes skills for guidance                    │  │
+│  │  - Calls tooling for automation                   │  │
 │  └───────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────┘
                           │
                           ▼
 ┌─────────────────────────────────────────────────────────┐
 │                    Skills Layer                         │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
-│  │ legata-to-   │  │   rebeca-    │  │   rebeca-    │  │
-│  │   rebeca     │  │  handbook    │  │   tooling    │  │
-│  │              │  │              │  │              │  │
-│  │ Workflow     │  │ Modeling     │  │ Python       │  │
-│  │ guidance     │  │ best         │  │ library      │  │
-│  │              │  │ practices    │  │              │  │
-│  └──────────────┘  └──────────────┘  └──────────────┘  │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐   │
+│  │ legata-to-   │  │   rebeca-    │  │   rebeca-    │   │
+│  │   rebeca     │  │  handbook    │  │   tooling    │   │
+│  │              │  │              │  │              │   │
+│  │ Workflow     │  │ Modeling     │  │ Python       │   │
+│  │ guidance     │  │ best         │  │ library      │   │
+│  │              │  │ practices    │  │              │   │
+│  └──────────────┘  └──────────────┘  └──────────────┘   │
 └─────────────────────────────────────────────────────────┘
                           │
                           ▼
 ┌─────────────────────────────────────────────────────────┐
 │                   Tooling Layer                         │
 │  ┌───────────────────────────────────────────────────┐  │
-│  │         skills/rebeca-tooling/lib/                │  │
+│  │       skills/rebeca-tooling/scripts/              │  │
+│  │  - utils.py              (security guards)        │  │
 │  │  - download_rmc.py                                │  │
 │  │  - run_rmc.py                                     │  │
+│  │  - pre_run_rmc_check.py                           │  │
 │  │  - classify_rule_status.py                        │  │
 │  │  - colreg_fallback_mapper.py                      │  │
 │  │  - score_single_rule.py                           │  │
 │  │  - generate_report.py                             │  │
-│  │  - setup_agent.py                                 │  │
 │  │  - install_artifacts.py                           │  │
 │  │  - verify_installation.py                         │  │
-│  │  - pre_run_rmc_check.py                           │  │
 │  │  - __init__.py                                    │  │
 │  └───────────────────────────────────────────────────┘  │
+│                                                         │
+│  Root Utilities (project root, not installed):          │
+│  - setup.py     (one-command install)                   │
+│  - purge.py     (surgical cleanup of installed files)   │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -75,8 +79,8 @@ Claude-rebeca follows a modular architecture with three main layers:
 
 ### 4. Claude Code Compliance
 - Follows `~/.agents/agents/` and `~/.agents/skills/` conventions
-- Tooling embedded in `skills/rebeca-tooling/lib/`
-- No standalone `lib/` at project root
+- Tooling embedded in `skills/rebeca-tooling/scripts/`
+- Root `setup.py` and `purge.py` are project-level utilities, not installed artifacts
 
 ## Workflow Execution
 
@@ -129,13 +133,13 @@ Agent → User → Results and recommendations
 
 1. **Parse** - RMC parses `.rebeca` and `.property`
    - Exit code 5 if syntax error
-   
+
 2. **Generate** - RMC generates C++ source files
    - Uses `-x` flag for C++ generation
-   
+
 3. **Compile** - g++ compiles C++ to executable
    - Exit code 4 if compilation fails
-   
+
 4. **Execute** - Run executable for verification
    - Counterexample if property violated
 
@@ -151,7 +155,8 @@ Agent → User → Results and recommendations
 ## Directory Structure
 
 ```
-~/.agents/
+# Repository (source of truth)
+rebecai/
 ├── agents/
 │   └── legata-to-rebeca.md          # Agent definition
 ├── skills/
@@ -161,10 +166,37 @@ Agent → User → Results and recommendations
 │   │   └── SKILL.md                 # Modeling best practices
 │   └── rebeca-tooling/
 │       ├── SKILL.md                 # Tooling documentation
-│       └── lib/                     # Python library (11 modules)
+│       └── scripts/                 # Python library (10 modules)
+├── docs/                            # Developer documentation
+├── setup.py                         # One-command installer
+└── purge.py                         # Surgical cleanup utility
+
+# Installed (after running setup.py)
+~/.agents/
+├── agents/
+│   └── legata-to-rebeca.md
+├── skills/
+│   ├── legata-to-rebeca/
+│   ├── rebeca-handbook/
+│   └── rebeca-tooling/
+│       └── scripts/                 # Python library (10 modules)
 └── rmc/
     └── rmc.jar                      # RMC model checker
 ```
+
+## Installed Paths
+
+After running `python3 setup.py` from the project root, artifacts are placed at:
+
+| Artifact | Installed Path |
+|----------|---------------|
+| Agent definition | `~/.agents/agents/legata-to-rebeca.md` |
+| Workflow guidance skill | `~/.agents/skills/legata-to-rebeca/SKILL.md` |
+| Modeling handbook skill | `~/.agents/skills/rebeca-handbook/SKILL.md` |
+| Tooling skill + scripts | `~/.agents/skills/rebeca-tooling/scripts/` |
+| RMC model checker | `~/.agents/rmc/rmc.jar` |
+
+To clean up all installed artifacts before a re-install: `python3 purge.py && python3 setup.py`
 
 ## Extension Points
 

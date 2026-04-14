@@ -425,7 +425,7 @@ If you get `ModuleNotFoundError`:
 # Ensure skill path is correct
 skill_path = Path("~/.agents/skills/rebeca-tooling").expanduser()
 print(f"Skill path exists: {skill_path.exists()}")
-print(f"Lib path exists: {(skill_path / 'lib').exists()}")
+print(f"Scripts path exists: {(skill_path / 'scripts').exists()}")
 ```
 
 ### RMC Not Found

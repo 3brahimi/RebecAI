@@ -80,18 +80,30 @@ g++ --version
 
 ## One-Command Setup
 
-After prerequisites are installed:
+After prerequisites are installed, you can set up the environment using one of the following methods:
+
+### Option 1: Local Repository Installation (Recommended for Contributors)
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/claude-rebeca.git
-cd claude-rebeca
+git clone https://github.com/3brahimi/RebecAI.git
+cd RebecAI
 
 # Run setup script
 python3 setup.py
 ```
 
-This will:
+### Option 2: Remote Standalone Installation (Fastest for Users)
+
+If you only want to install the agents and skills without cloning the full repository, you can run the installer directly from GitHub:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/3brahimi/RebecAI/main/setup.py | python3 -
+```
+
+*Note: This method downloads the project as a ZIP, extracts the necessary artifacts, and links them to your AI agent configuration folders (`~/.agents/`, etc.).*
+
+Both methods will:
 1. Check prerequisites (Java, Python, C++ compiler)
 2. Download RMC from official GitHub releases
 3. Verify RMC installation
@@ -104,7 +116,7 @@ If you prefer manual setup:
 ### Step 1: Download RMC
 
 ```bash
-python3 skills/rebeca-tooling/lib/download_rmc.py \
+python3 skills/rebeca-tooling/scripts/download_rmc.py \
   --url https://github.com/rebeca-lang/org.rebecalang.rmc/releases/latest \
   --dest-dir ~/.agents/rmc
 ```
@@ -112,14 +124,14 @@ python3 skills/rebeca-tooling/lib/download_rmc.py \
 ### Step 2: Verify RMC
 
 ```bash
-python3 skills/rebeca-tooling/lib/verify_installation.py \
+python3 skills/rebeca-tooling/scripts/verify_installation.py \
   --rmc-jar ~/.agents/rmc/rmc.jar
 ```
 
 ### Step 3: Install Agents and Skills
 
 ```bash
-python3 skills/rebeca-tooling/lib/install_artifacts.py \
+python3 skills/rebeca-tooling/scripts/install_artifacts.py \
   --target-root ~/.agents \
   --mode all
 ```
@@ -136,6 +148,17 @@ ls ~/.agents/agents/
 # Check skills
 ls ~/.agents/skills/
 ```
+
+## Clean Re-Installation
+
+To remove all previously installed artifacts before a fresh install (e.g., after updating the repository):
+
+```bash
+python3 purge.py
+python3 setup.py
+```
+
+`purge.py` surgically removes only the artifacts registered by the installer, leaving unrelated files untouched.
 
 ## Troubleshooting
 

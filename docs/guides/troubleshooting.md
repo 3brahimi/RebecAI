@@ -130,7 +130,7 @@ ls -la /path/to/rmc/output/
 ### Running functional tests
 
 ```bash
-bash claude-rebeca/tests/run_functional_tests.sh
+bash rebecai/tests/run_functional_tests.sh
 ```
 
 ### Test categories
@@ -284,16 +284,16 @@ Provide more specific text, e.g., include terms like `vessel`, `light`, `visibil
 ### install_artifacts reports missing source
 
 ```
-⚠ Agent source not found: /path/to/claude-rebeca/agents/legata-to-rebeca.md
+⚠ Agent source not found: /path/to/rebecai/agents/legata-to-rebeca.md
 ```
 
-**Fix:** Ensure the script is being run from the project root directory, not from inside `claude-rebeca/`.
+**Fix:** Ensure the script is being run from the project root directory, not from inside `rebecai/`.
 
 ```bash
 # Correct:
-cd /path/to/claude-rebeca
+cd /path/to/RebecAI
 python3 skills/rebeca-tooling/lib/install_artifacts.py --target-root ~/.agents --mode all
 
 # Wrong:
-cd claude-rebeca/skills && python3 rebeca-tooling/lib/install_artifacts.py ...
+cd rebecai/skills && python3 rebeca-tooling/lib/install_artifacts.py ...
 ```

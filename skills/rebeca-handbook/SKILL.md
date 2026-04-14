@@ -1,7 +1,7 @@
 ---
 name: rebeca-handbook
-version: 1.0.0
-description: Practical guidance for writing correct Rebeca models and properties
+version: 1.1.0
+description: Canonical self-contained reference for writing correct Rebeca models and properties. Covers actor model patterns, forbidden operators, Do's/Don'ts, property examples, Legata-to-assertion mapping, and RMC pitfall table.
 trigger_phrases:
   - "rebeca syntax"
   - "property writing"
@@ -11,25 +11,60 @@ trigger_phrases:
 
 # Rebeca Modeling Guidelines Skill
 
+## Actor Model Basics
+
+Rebeca uses the actor model — actors communicate only via asynchronous messages:
+
+```rebeca
+reactiveclass Ship(int id) {
+    statevars {
+        int ship_length;
+        boolean masthead_light_on;
+        int masthead_light_range;
+    }
+
+    Ship() {
+        ship_length = 0;
+        masthead_light_on = false;
+        masthead_light_range = 0;
+    }
+
+    msgsrv updateLight(boolean on, int range) {
+        masthead_light_on = on;
+        masthead_light_range = range;
+    }
+}
+
+main {
+    Ship s1(1):();
+    Ship s2(2):();
+}
+```
+
+Key rules:
+- State is **local** to each actor — no shared memory
+- Actors communicate only via `msgsrv` message handlers
+- Property access uses `actorName.stateVariable` syntax
+
 ## Rebeca Do's
 
-✓ DO define all variables before using them
-✓ DO use parentheses for clarity in complex expressions
-✓ DO keep assertion logic simple and verifiable
-✓ DO test with concrete actor instances first
-✓ DO use meaningful variable names matching domain (vessel_type, light_on)
-✓ DO validate property files syntax independently
-✓ DO archive counterexamples for regression testing
+- ✓ DO define all variables before using them
+- ✓ DO use parentheses for clarity in complex expressions
+- ✓ DO keep assertion logic simple and verifiable
+- ✓ DO test with concrete actor instances first
+- ✓ DO use meaningful variable names matching domain (vessel_type, light_on)
+- ✓ DO validate property files syntax independently
+- ✓ DO archive counterexamples for regression testing
 
 ## Rebeca Don'ts
 
-✗ DON'T use implication operators (→, =>)
-✗ DON'T chain variable assignments
-✗ DON'T reference undefined variables
-✗ DON'T mix temporal operators in assertion section
-✗ DON'T assume operator precedence - use explicit parentheses
-✗ DON'T create properties without testing model first
-✗ DON'T ignore RMC error messages - they indicate real issues
+- ✗ DON'T use implication operators (→, =>)
+- ✗ DON'T chain variable assignments
+- ✗ DON'T reference undefined variables
+- ✗ DON'T mix temporal operators in assertion section
+- ✗ DON'T assume operator precedence - use explicit parentheses
+- ✗ DON'T create properties without testing model first
+- ✗ DON'T ignore RMC error messages - they indicate real issues
 
 ## Syntax Examples
 
@@ -116,7 +151,7 @@ from pathlib import Path
 tooling_skill = Path("~/.agents/skills/rebeca-tooling").expanduser()
 sys.path.insert(0, str(tooling_skill))
 
-from lib import download_rmc, run_rmc
+from scripts import download_rmc, run_rmc
 
 # Download RMC latest release
 download_rmc(
@@ -158,12 +193,12 @@ For manual usage, CLI wrappers are available:
 
 ```bash
 # Download RMC
-python3 ~/.agents/skills/rebeca-tooling/lib/download_rmc.py \
+python3 ~/.agents/skills/rebeca-tooling/scripts/download_rmc.py \
   --url https://github.com/rebeca-lang/org.rebecalang.rmc/releases/latest \
   --dest-dir .agents/rmc
 
 # Run verification
-python3 ~/.agents/skills/rebeca-tooling/lib/run_rmc.py \
+python3 ~/.agents/skills/rebeca-tooling/scripts/run_rmc.py \
   --jar .agents/rmc/rmc.jar \
   --model ./models/SimulationModelCode.rebeca \
   --property ./properties/rule_22.property \
@@ -173,7 +208,7 @@ python3 ~/.agents/skills/rebeca-tooling/lib/run_rmc.py \
   --jvm-opt "-Xmx2g"
 ```
 
-See the **rebeca-tooling** skill documentation for complete API reference.
+For the full tooling API and additional CLI commands, consult the `rebeca-tooling` skill at `~/.agents/skills/rebeca-tooling/SKILL.md`.
 
 ## Common Pitfalls and Recovery
 
