@@ -1,6 +1,6 @@
 # Documentation Index
 
-Complete documentation for claude-rebeca agents and skills.
+Complete documentation for RebecAI agents and skills.
 
 ## Quick Start
 

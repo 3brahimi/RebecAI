@@ -74,16 +74,16 @@ For not-formalized rules, attempt COLREG fallback mapping.
 
 ## Workflow Phases
 
-| Phase | Description | Output |
-|-------|-------------|--------|
-| WF-01 | Triage rule status | Classification (formalized/incomplete/incorrect/not-formalized/todo) |
-| WF-02 | Transform Legata → Rebeca | `.rebeca` model file |
-| WF-03 | Generate property | `.property` file |
-| WF-04 | COLREG fallback (if needed) | Provisional property from COLREG text |
-| WF-05 | Run RMC verification | Verification result (pass/fail/timeout/error) |
-| WF-06 | Score transformation | 100-point scorecard |
-| WF-07 | Generate per-rule report | JSON scorecard |
-| WF-08 | Generate aggregate report | JSON and Markdown summary |
+| Phase | Name | Description | Output |
+|-------|------|-------------|--------|
+| WF-01 | Toolchain and Inputs Initialization | Validate required sources, pin RMC version, fail fast on missing inputs | Validated inputs + RMC version |
+| WF-02 | Clause Eligibility and Triage | Classify rules: formalized/incomplete/incorrect/not-formalized/todo-placeholder | Classification + defect list |
+| WF-03 | Abstraction and Discretization Setup | Define bounded representations, map COLREG units to discrete variables | Naming conventions + variable map |
+| WF-04 | Manual Mapping Core | Extract Legata clause context, align state variables, encode assertions `(!condition \|\| exclude \|\| assure)` | `.rebeca` model + `.property` file |
+| WF-05 | Verification and Counterexample Iteration | Run RMC model checking, classify failure root cause, iterate until success or explicit block | Verification result (pass/fail/timeout/error) |
+| WF-06 | Optional LLM-Assisted Lane | Generate candidate properties, always validate via WF-05, apply 100-point rubric | Candidate property (requires WF-05 validation) |
+| WF-07 | Packaging and Automation | Generate agent/skill/scripts, ensure runtime isolation, embed constraints inline | Packaged artifacts |
+| WF-08 | Scoring and Reporting | Per-rule scorecards (100-point rubric), aggregate reporting, no-silent-skip enforcement | `scorecard.json` + `report.json` / `report.md` |
 
 ## Expected Output
 
@@ -107,9 +107,14 @@ output/
 
 The agent applies a 100-point scoring rubric:
 
-- **Syntax correctness** (40 points) - Model and property parse without errors
-- **Semantic alignment** (30 points) - Transformation preserves rule intent
-- **Verification outcome** (30 points) - RMC verification passes
+| Dimension | Points | Criterion |
+|-----------|--------|-----------|
+| **Syntax correctness** | 10 | Model and property parse without RMC errors |
+| **Semantic alignment** | 55 | Transformation faithfully preserves Legata/COLREG rule intent |
+| **Verification outcome** | 25 | RMC verification passes (no counterexample) |
+| **Hallucination penalty** | −10 | Deducted for fabricated actors, variables, or rule references |
+
+Total maximum: **100 points**. Scores are computed by `RubricScorer` in `scripts/score_single_rule.py`.
 
 ## Skills Used
 
