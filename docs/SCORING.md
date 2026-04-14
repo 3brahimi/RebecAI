@@ -9,39 +9,39 @@ This document defines the 100-point rubric used by `score_single_rule.py` to eva
 | **Syntax** | 10 | Model and property parse without RMC errors | `rmc.jar` exit code |
 | **Semantic Alignment**| 55 | Fidelity of mapping from Legata/COLREG to Rebeca | Currently placeholder; assumes validity on RMC pass |
 | **Verification** | 25 | Successful property check by RMC | `rmc.jar` execution |
-| **Integrity (Non-Hallucination)** | 10 | Absence of fabricated actors/variables | Currently placeholder; awarded on RMC pass |
+| **Integrity (Non-Hallucination)** | 10 | Absence of fabricated actors/variables | Symbol-diffing against source Legata rules |
 
 **Total Maximum:** 100 points.
 
 ## Implementation Details
 
-The `RubricScorer` class operates as a state-based evaluator rather than an analytical one:
+The `RubricScorer` operates as a state-based evaluator:
 
-- **Verification Logic**: The script accepts a `verify_status` (pass/fail/timeout/blocked) passed from the RMC execution pipeline.
-- **Score Calculation**: Scores are assigned in buckets:
-    - **Pass**: 100 points (All criteria met).
-    - **Fail/Timeout**: 40 points (Syntax is assumed correct, but model/property mapping failed).
-- **Placeholder Warnings**:
-    - *Semantic Alignment* and *Integrity* are currently **not** autonomously verified. The agent assumes that if RMC verification passes, the semantics are sufficiently aligned and no hallucination occurred.
+- **Pass**: 100 points (All criteria met).
+- **Fail/Timeout**: 40 points (Syntax assumed correct, but model/property mapping failed).
 
-## Future Directions: Testing Semantic Alignment
+## Future Directions: Semantic Validation & Mutation
 
-To evolve the rubric from a status-based assignment to true semantic validation, we propose the following testing strategies:
+### 1. Hallucination Detection (Identifier-Diffing)
+To move away from binary scoring, we implement a **Symbol-Diffing** approach:
+- **Extraction**: Parse the source Legata rule to define a "Golden Symbol Set".
+- **Verification**: Extract identifiers (state variables/actors) from the generated `.rebeca`.
+- **Classification**: 
+    - **Syntax Error**: Caught by RMC compiler (exit code 5).
+    - **Hallucination**: Identifiers found in the Rebeca model that are absent from the Golden Symbol Set (and not part of the Rebeca system library).
 
-1. **Assertion-Mapping Unit Tests**: 
-   - Extract conditions from Legata source files using a parser.
-   - Compare extracted conditions against generated Rebeca assertions using AST (Abstract Syntax Tree) comparison.
-   - Detect if the mapping pattern `(!condition || !exclude || assure)` has been structurally respected.
+### 2. Mutation Strategies (Semantic Testing)
+We will validate semantic strength by applying controlled mutations and verifying if the verification results change (Mutation Score).
 
-2. **Semantic Property Mutation**:
-   - Introduce "mutants" into the generated Rebeca properties (e.g., negate a clause).
-   - Re-run RMC verification. 
-   - If the property still passes (or fails in an unexpected way), the original mapping likely had insufficient semantic strength.
+| Artifact | Mutation Strategy | Impact |
+| :--- | :--- | :--- |
+| **.rebeca** | Transition Bypass | Ensure property fails if logic is skipped. |
+| **.rebeca** | Predicate Flip | Ensure logic sensitivity (e.g., `>` → `<=`). |
+| **.property**| Negation | Ensure `!A` fails if `A` passed. |
+| **.property**| Conjunction/Disjunction | Ensure logical operators are strictly necessary. |
 
-3. **Symbolic Trace Analysis**:
-   - Compare counterexample traces from RMC against Legata safety requirements.
-   - Ensure the variables mentioned in Legata requirements are explicitly present and used in the corresponding Rebeca model transitions.
-
-4. **Hallucination Detection**:
-   - Implement a cross-reference check: parse all identifiers (actors/variables) in the generated `.rebeca` file and verify them against the set of entities defined in the source Legata file.
-   - Flag any entities in the Rebeca model not derived from the Legata rule or standard system library.
+### 3. Vacuity Checks
+To ensure properties aren't passing vacuously (e.g., due to an impossible precondition), we will perform a secondary check:
+- Verify `Assertion` passes for the model.
+- Verify that `Assertion` fails if we assert `!Precondition`.
+- **Cost**: Low; adds a single secondary RMC pass.
