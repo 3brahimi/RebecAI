@@ -48,7 +48,7 @@ We will validate semantic strength by applying controlled mutations and verifyin
 | **.rebeca** | Transition Bypass | Ensure property fails if logic is skipped. |
 | **.rebeca** | Predicate Flip | Ensure logic sensitivity (e.g., `>` → `<=`). |
 | **.property**| Negation | Ensure `!A` fails if `A` passed. |
-| **.property**| Logical Swap | Ensure logical operators (`&&`/`||`) are necessary. |
+| **.property**| Logical Swap | Ensure logical operators (`&&`/`\|\|`) are necessary. |
 
 #### Model Mutations (`.rebeca`)
 *   **Transition Bypass**: Forcibly bypass a `msgsrv` logic block.
