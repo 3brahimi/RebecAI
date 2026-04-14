@@ -38,7 +38,7 @@ import sys
 from pathlib import Path
 
 # Add rebeca-tooling skill to path
-tooling_skill = Path("~/.claude/skills/rebeca-tooling").expanduser()
+tooling_skill = Path("~/.agents/skills/rebeca-tooling").expanduser()
 sys.path.insert(0, str(tooling_skill))
 
 from lib import (
@@ -54,7 +54,7 @@ pre_run_rmc_check()
 
 # Run verification
 result = run_rmc(
-    jar="~/.claude/rmc/rmc.jar",
+    jar="~/.agents/rmc/rmc.jar",
     model="model.rebeca",
     property_file="property.property",
     output_dir="output",
@@ -69,31 +69,31 @@ result = run_rmc(
 python3 setup.py
 
 # Download RMC
-python3 ~/.claude/skills/rebeca-tooling/lib/download_rmc.py \
+python3 ~/.agents/skills/rebeca-tooling/lib/download_rmc.py \
   --url https://github.com/rebeca-lang/org.rebecalang.rmc/releases/latest \
-  --dest-dir ~/.claude/rmc
+  --dest-dir ~/.agents/rmc
 
 # Run verification
-python3 ~/.claude/skills/rebeca-tooling/lib/run_rmc.py \
-  --jar ~/.claude/rmc/rmc.jar \
+python3 ~/.agents/skills/rebeca-tooling/lib/run_rmc.py \
+  --jar ~/.agents/rmc/rmc.jar \
   --model model.rebeca \
   --property property.property \
   --output-dir output \
   --timeout-seconds 120
 
 # Classify rule
-python3 ~/.claude/skills/rebeca-tooling/lib/classify_rule_status.py \
+python3 ~/.agents/skills/rebeca-tooling/lib/classify_rule_status.py \
   --legata-path legata/Rule-22.legata \
   --output-json
 
 # Score rule
-python3 ~/.claude/skills/rebeca-tooling/lib/score_single_rule.py \
+python3 ~/.agents/skills/rebeca-tooling/lib/score_single_rule.py \
   --rule-id Rule-22 \
   --verify-status pass \
   --output-json
 
 # Generate report
-python3 ~/.claude/skills/rebeca-tooling/lib/generate_report.py \
+python3 ~/.agents/skills/rebeca-tooling/lib/generate_report.py \
   --input-scores results.json \
   --output-dir reports/ \
   --format both

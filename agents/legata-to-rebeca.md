@@ -122,18 +122,18 @@ import sys
 from pathlib import Path
 
 # Reference rebeca-tooling skill
-tooling_skill = Path("~/.claude/skills/rebeca-tooling").expanduser()
+tooling_skill = Path("~/.agents/skills/rebeca-tooling").expanduser()
 sys.path.insert(0, str(tooling_skill))
 
 from lib import download_rmc, run_rmc, pre_run_rmc_check
 
 # Ensure RMC is available (auto-download if needed)
-# Resolves jar path from: RMC_DESTINATION env var → .claude/rmc_path marker → ~/.claude/rmc
+# Resolves jar path from: RMC_DESTINATION env var → .agents/rmc_path marker → ~/.agents/rmc
 pre_run_rmc_check()
 
 # Execute model checking
 result = run_rmc(
-    jar=".claude/rmc/rmc.jar",
+    jar=".agents/rmc/rmc.jar",
     model="path/to/model.rebeca",
     property_file="path/to/property.property",
     output_dir="verification_output",
@@ -148,7 +148,7 @@ result = run_rmc(
 # 5: Rebeca parse failed
 ```
 
-All tooling functions are provided by the **rebeca-tooling** skill located at `~/.claude/skills/rebeca-tooling/`.
+All tooling functions are provided by the **rebeca-tooling** skill located at `~/.agents/skills/rebeca-tooling/`.
 
 ## Output Specification
 

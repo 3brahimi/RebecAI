@@ -40,7 +40,7 @@ The `setup.py` script automatically:
 - Discovers all agents in `agents/` directory
 - Discovers all skills in `skills/` directory
 - Downloads and verifies RMC model checker
-- Installs everything to `~/.claude/`
+- Installs everything to `~/.agents/`
 
 ## Requirements
 

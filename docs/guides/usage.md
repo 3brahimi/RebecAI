@@ -107,7 +107,7 @@ import sys
 from pathlib import Path
 
 # Add rebeca-tooling skill to path
-tooling_skill = Path("~/.claude/skills/rebeca-tooling").expanduser()
+tooling_skill = Path("~/.agents/skills/rebeca-tooling").expanduser()
 sys.path.insert(0, str(tooling_skill))
 
 from lib import (
@@ -129,7 +129,7 @@ pre_run_rmc_check()
 
 # Run verification
 result = run_rmc(
-    jar="~/.claude/rmc/rmc.jar",
+    jar="~/.agents/rmc/rmc.jar",
     model="output/Rule-22.rebeca",
     property_file="output/Rule-22.property",
     output_dir="output/verification",
@@ -192,8 +192,8 @@ python3 setup.py
 ### Run Verification
 
 ```bash
-python3 ~/.claude/skills/rebeca-tooling/lib/run_rmc.py \
-  --jar ~/.claude/rmc/rmc.jar \
+python3 ~/.agents/skills/rebeca-tooling/lib/run_rmc.py \
+  --jar ~/.agents/rmc/rmc.jar \
   --model output/Rule-22.rebeca \
   --property output/Rule-22.property \
   --output-dir output/verification \
@@ -203,7 +203,7 @@ python3 ~/.claude/skills/rebeca-tooling/lib/run_rmc.py \
 ### Classify Rule
 
 ```bash
-python3 ~/.claude/skills/rebeca-tooling/lib/classify_rule_status.py \
+python3 ~/.agents/skills/rebeca-tooling/lib/classify_rule_status.py \
   --legata-path legata/Rule-22-Equipment-Range.legata \
   --output-json
 ```
@@ -211,7 +211,7 @@ python3 ~/.claude/skills/rebeca-tooling/lib/classify_rule_status.py \
 ### Score Rule
 
 ```bash
-python3 ~/.claude/skills/rebeca-tooling/lib/score_single_rule.py \
+python3 ~/.agents/skills/rebeca-tooling/lib/score_single_rule.py \
   --rule-id Rule-22 \
   --verify-status pass \
   --output-json
@@ -220,7 +220,7 @@ python3 ~/.claude/skills/rebeca-tooling/lib/score_single_rule.py \
 ### Generate Report
 
 ```bash
-python3 ~/.claude/skills/rebeca-tooling/lib/generate_report.py \
+python3 ~/.agents/skills/rebeca-tooling/lib/generate_report.py \
   --input-scores output/scorecards.json \
   --output-dir output/reports \
   --format both

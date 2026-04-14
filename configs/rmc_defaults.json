@@ -22,7 +22,7 @@
     ]
   },
   "paths": {
-    "rmc_jar": ".claude/rmc/rmc.jar",
+    "rmc_jar": ".agents/rmc/rmc.jar",
     "model_dir": "src/models",
     "property_dir": "src/properties",
     "output_dir": "verification_output"

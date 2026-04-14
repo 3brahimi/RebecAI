@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 # Add rebeca-tooling skill to path
-tooling_skill = Path("~/.claude/skills/rebeca-tooling").expanduser()
+tooling_skill = Path("~/.agents/skills/rebeca-tooling").expanduser()
 sys.path.insert(0, str(tooling_skill))
 
 from lib import *
@@ -53,7 +53,7 @@ download_rmc(
 ```python
 result = download_rmc(
     url="https://github.com/rebeca-lang/org.rebecalang.rmc/releases/latest",
-    dest_dir="~/.claude/rmc"
+    dest_dir="~/.agents/rmc"
 )
 ```
 
@@ -93,7 +93,7 @@ run_rmc(
 **Example:**
 ```python
 result = run_rmc(
-    jar="~/.claude/rmc/rmc.jar",
+    jar="~/.agents/rmc/rmc.jar",
     model="output/Rule-22.rebeca",
     property_file="output/Rule-22.property",
     output_dir="output/verification",
@@ -120,7 +120,7 @@ pre_run_rmc_check(
 ```
 
 **Parameters:**
-- `rmc_dir` - RMC directory (default: `~/.claude/rmc`)
+- `rmc_dir` - RMC directory (default: `~/.agents/rmc`)
 - `download_if_missing` - Auto-download if not found
 
 **Returns:**
@@ -149,8 +149,8 @@ setup_agent(
 
 **Parameters:**
 - `rmc_url` - RMC download URL (default: latest release)
-- `rmc_dir` - RMC installation directory (default: `~/.claude/rmc`)
-- `target_root` - Installation target (default: `~/.claude`)
+- `rmc_dir` - RMC installation directory (default: `~/.agents/rmc`)
+- `target_root` - Installation target (default: `~/.agents`)
 - `skip_prereq_check` - Skip prerequisite checks
 
 **Returns:**
@@ -162,7 +162,7 @@ setup_agent(
 
 **Example:**
 ```bash
-python3 ~/.claude/skills/rebeca-tooling/lib/setup_agent.py
+python3 ~/.agents/skills/rebeca-tooling/lib/setup_agent.py
 ```
 
 ## Classification Functions
@@ -340,7 +340,7 @@ install_artifacts(
 ```
 
 **Parameters:**
-- `target_root` - Installation target (e.g., `~/.claude`)
+- `target_root` - Installation target (e.g., `~/.agents`)
 - `mode` - What to install (all/agents/skills)
 
 **Returns:**
@@ -349,7 +349,7 @@ install_artifacts(
 **Example:**
 ```python
 success = install_artifacts(
-    target_root="~/.claude",
+    target_root="~/.agents",
     mode="all"
 )
 ```
@@ -368,7 +368,7 @@ verify_installation(
 ```
 
 **Parameters:**
-- `target_root` - Installation root (e.g., `~/.claude`)
+- `target_root` - Installation root (e.g., `~/.agents`)
 - `rmc_jar` - Path to RMC JAR (optional)
 
 **Returns:**
@@ -384,8 +384,8 @@ verify_installation(
 **Example:**
 ```python
 result = verify_installation(
-    target_root="~/.claude",
-    rmc_jar="~/.claude/rmc/rmc.jar"
+    target_root="~/.agents",
+    rmc_jar="~/.agents/rmc/rmc.jar"
 )
 
 if all([result["agents_ok"], result["skills_ok"], result["rmc_ok"]]):
@@ -445,7 +445,7 @@ This script:
 - Discovers all agents in `agents/` directory
 - Discovers all skills in `skills/` directory (directories with SKILL.md)
 - Downloads and verifies RMC
-- Installs everything to `~/.claude/`
+- Installs everything to `~/.agents/`
 
 Exit codes:
 - `0` - Success

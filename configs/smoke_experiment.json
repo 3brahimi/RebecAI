@@ -20,7 +20,7 @@
   },
   "rmc_config": {
     "jar_url": "https://github.com/rebeca-lang/org.rebecalang.rmc/releases/latest",
-    "destination_dir": ".claude/rmc",
+    "destination_dir": ".agents/rmc",
     "default_timeout_seconds": 120,
     "jvm_opts": ["-Xmx2g", "-Xms512m"]
   },

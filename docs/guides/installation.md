@@ -95,7 +95,7 @@ This will:
 1. Check prerequisites (Java, Python, C++ compiler)
 2. Download RMC from official GitHub releases
 3. Verify RMC installation
-4. Auto-discover and install all agents and skills to `~/.claude/`
+4. Auto-discover and install all agents and skills to `~/.agents/`
 
 ## Manual Installation
 
@@ -106,21 +106,21 @@ If you prefer manual setup:
 ```bash
 python3 skills/rebeca-tooling/lib/download_rmc.py \
   --url https://github.com/rebeca-lang/org.rebecalang.rmc/releases/latest \
-  --dest-dir ~/.claude/rmc
+  --dest-dir ~/.agents/rmc
 ```
 
 ### Step 2: Verify RMC
 
 ```bash
 python3 skills/rebeca-tooling/lib/verify_installation.py \
-  --rmc-jar ~/.claude/rmc/rmc.jar
+  --rmc-jar ~/.agents/rmc/rmc.jar
 ```
 
 ### Step 3: Install Agents and Skills
 
 ```bash
 python3 skills/rebeca-tooling/lib/install_artifacts.py \
-  --target-root ~/.claude \
+  --target-root ~/.agents \
   --mode all
 ```
 
@@ -128,13 +128,13 @@ python3 skills/rebeca-tooling/lib/install_artifacts.py \
 
 ```bash
 # Check RMC
-java -jar ~/.claude/rmc/rmc.jar --version
+java -jar ~/.agents/rmc/rmc.jar --version
 
 # Check agents
-ls ~/.claude/agents/
+ls ~/.agents/agents/
 
 # Check skills
-ls ~/.claude/skills/
+ls ~/.agents/skills/
 ```
 
 ## Troubleshooting
@@ -174,12 +174,12 @@ sudo apt install build-essential
 
 ```bash
 # Manual download
-wget https://github.com/rebeca-lang/org.rebecalang.rmc/releases/download/v2.8.2/rmc.jar -O ~/.claude/rmc/rmc.jar
+wget https://github.com/rebeca-lang/org.rebecalang.rmc/releases/download/v2.8.2/rmc.jar -O ~/.agents/rmc/rmc.jar
 
 # Or specify version explicitly
 python3 skills/rebeca-tooling/lib/download_rmc.py \
   --url https://github.com/rebeca-lang/org.rebecalang.rmc/releases/download/v2.8.2/rmc.jar \
-  --dest-dir ~/.claude/rmc
+  --dest-dir ~/.agents/rmc
 ```
 
 ## Next Steps

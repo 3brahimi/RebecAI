@@ -74,7 +74,7 @@ Claude-rebeca follows a modular architecture with three main layers:
 - Supports Windows, macOS, Linux
 
 ### 4. Claude Code Compliance
-- Follows `~/.claude/agents/` and `~/.claude/skills/` conventions
+- Follows `~/.agents/agents/` and `~/.agents/skills/` conventions
 - Tooling embedded in `skills/rebeca-tooling/lib/`
 - No standalone `lib/` at project root
 
@@ -151,7 +151,7 @@ Agent → User → Results and recommendations
 ## Directory Structure
 
 ```
-~/.claude/
+~/.agents/
 ├── agents/
 │   └── legata-to-rebeca.md          # Agent definition
 ├── skills/

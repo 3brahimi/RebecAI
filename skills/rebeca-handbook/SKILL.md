@@ -113,7 +113,7 @@ import sys
 from pathlib import Path
 
 # Reference rebeca-tooling skill
-tooling_skill = Path("~/.claude/skills/rebeca-tooling").expanduser()
+tooling_skill = Path("~/.agents/skills/rebeca-tooling").expanduser()
 sys.path.insert(0, str(tooling_skill))
 
 from lib import download_rmc, run_rmc
@@ -121,19 +121,19 @@ from lib import download_rmc, run_rmc
 # Download RMC latest release
 download_rmc(
     url="https://github.com/rebeca-lang/org.rebecalang.rmc/releases/latest",
-    dest_dir=".claude/rmc"
+    dest_dir=".agents/rmc"
 )
 
 # Download specific version
 download_rmc(
     url="https://github.com/rebeca-lang/org.rebecalang.rmc/releases",
-    dest_dir=".claude/rmc",
+    dest_dir=".agents/rmc",
     tag="2.14"
 )
 
 # Run verification
 result = run_rmc(
-    jar=".claude/rmc/rmc.jar",
+    jar=".agents/rmc/rmc.jar",
     model="./models/SimulationModelCode.rebeca",
     property_file="./properties/rule_22.property",
     output_dir="./verification_output",
@@ -158,13 +158,13 @@ For manual usage, CLI wrappers are available:
 
 ```bash
 # Download RMC
-python3 ~/.claude/skills/rebeca-tooling/lib/download_rmc.py \
+python3 ~/.agents/skills/rebeca-tooling/lib/download_rmc.py \
   --url https://github.com/rebeca-lang/org.rebecalang.rmc/releases/latest \
-  --dest-dir .claude/rmc
+  --dest-dir .agents/rmc
 
 # Run verification
-python3 ~/.claude/skills/rebeca-tooling/lib/run_rmc.py \
-  --jar .claude/rmc/rmc.jar \
+python3 ~/.agents/skills/rebeca-tooling/lib/run_rmc.py \
+  --jar .agents/rmc/rmc.jar \
   --model ./models/SimulationModelCode.rebeca \
   --property ./properties/rule_22.property \
   --output-dir ./verification_output \

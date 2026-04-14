@@ -147,7 +147,7 @@ bash claude-rebeca/tests/run_functional_tests.sh
 
 **SYNTAX-001 fails:** Sample `.rebeca` file has invalid syntax.
 - Open the file, look for `->`, `=>`, or chained assignments.
-- Run: `java -jar .claude/rmc/rmc.jar --check-syntax model.rebeca`
+- Run: `java -jar .agents/rmc/rmc.jar --check-syntax model.rebeca`
 
 **SCORING-001 fails:** score_total out of [0, 100] range.
 - The scoring script returned a value outside the contract range.
@@ -227,9 +227,9 @@ Detail: model.cpp:42: error: 'undeclaredVar' was not declared
 
 **Fix:**
 ```bash
-python3 ~/.claude/skills/rebeca-tooling/lib/download_rmc.py \
+python3 ~/.agents/skills/rebeca-tooling/lib/download_rmc.py \
   --url https://github.com/rebeca-lang/org.rebecalang.rmc/releases/latest \
-  --dest-dir .claude/rmc
+  --dest-dir .agents/rmc
 ```
 
 If the download fails (network issue), try manual download or check network connectivity.
@@ -242,8 +242,8 @@ If the download fails (network issue), try manual download or check network conn
 
 **Fix:** Increase timeout when running RMC:
 ```bash
-python3 ~/.claude/skills/rebeca-tooling/lib/run_rmc.py \
-  --jar ~/.claude/rmc/rmc.jar \
+python3 ~/.agents/skills/rebeca-tooling/lib/run_rmc.py \
+  --jar ~/.agents/rmc/rmc.jar \
   --model model.rebeca \
   --property property.property \
   --output-dir output \
@@ -257,7 +257,7 @@ Or simplify the actor model to reduce state space.
 **Fix:** Increase Java heap size when running RMC:
 ```bash
 export JAVA_OPTS="-Xmx4g"
-python3 ~/.claude/skills/rebeca-tooling/lib/run_rmc.py ...
+python3 ~/.agents/skills/rebeca-tooling/lib/run_rmc.py ...
 ```
 
 ---
@@ -292,7 +292,7 @@ Provide more specific text, e.g., include terms like `vessel`, `light`, `visibil
 ```bash
 # Correct:
 cd /path/to/claude-rebeca
-python3 skills/rebeca-tooling/lib/install_artifacts.py --target-root ~/.claude --mode all
+python3 skills/rebeca-tooling/lib/install_artifacts.py --target-root ~/.agents --mode all
 
 # Wrong:
 cd claude-rebeca/skills && python3 rebeca-tooling/lib/install_artifacts.py ...
