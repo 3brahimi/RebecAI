@@ -33,7 +33,7 @@ To move away from binary scoring, we implement a two-tier **Symbol-Diffing** app
 
 - **Tier 1: Unused State Hallucination**:
   - **Detection**: Extract the set of state variables defined in the `.rebeca` file *before* and *after* the agent change.
-  - **Logic**: Any variable added in the `.rebeca` file that is not referenced in any `msgsrv` logic or `Assertion` block is flagged as a "Dead-Code Hallucination."
+  - **Logic**: Any variable added in the `.rebeca` file that is not referenced in any `msgsrv` logic or `define` or `Assertion` blocks is flagged as a "Dead-Code Hallucination."
 
 - **Tier 2: Property-Reference Hallucination**:
   - **Detection**: Identify predicates in the `.property` file that refer to state variables.
