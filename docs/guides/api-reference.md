@@ -1,6 +1,6 @@
 # API Reference
 
-Complete Python library reference for `skills/rebeca-tooling/lib/`.
+Complete Python library reference for `skills/rebeca-tooling/scripts/`.
 
 ## Installation
 
@@ -12,7 +12,7 @@ from pathlib import Path
 tooling_skill = Path("~/.agents/skills/rebeca-tooling").expanduser()
 sys.path.insert(0, str(tooling_skill))
 
-from lib import *
+from scripts import *
 ```
 
 ## Core Functions
@@ -22,7 +22,7 @@ from lib import *
 Download RMC from GitHub releases.
 
 ```python
-from lib import download_rmc
+from scripts import download_rmc
 
 download_rmc(
     url: str,
@@ -62,7 +62,7 @@ result = download_rmc(
 Execute RMC model checker with C++ compilation.
 
 ```python
-from lib import run_rmc
+from scripts import run_rmc
 
 run_rmc(
     jar: str,
@@ -111,7 +111,7 @@ elif result["exit_code"] == 5:
 Auto-provision RMC before execution.
 
 ```python
-from lib import pre_run_rmc_check
+from scripts import pre_run_rmc_check
 
 pre_run_rmc_check(
     rmc_dir: str | None = None,
@@ -132,26 +132,9 @@ if pre_run_rmc_check():
     result = run_rmc(...)
 ```
 
-### setup_agent
+### setup.py (repository root)
 
-Unified setup script for prerequisites, RMC, and installation.
-
-```python
-from lib import setup_agent
-
-setup_agent(
-    rmc_url: str | None = None,
-    rmc_dir: str | None = None,
-    target_root: str | None = None,
-    skip_prereq_check: bool = False
-) -> int
-```
-
-**Parameters:**
-- `rmc_url` - RMC download URL (default: latest release)
-- `rmc_dir` - RMC installation directory (default: `~/.agents/rmc`)
-- `target_root` - Installation target (default: `~/.agents`)
-- `skip_prereq_check` - Skip prerequisite checks
+Use repository-level `setup.py` for prerequisites, RMC provisioning, and artifact installation.
 
 **Returns:**
 - `0` - Success
@@ -162,7 +145,7 @@ setup_agent(
 
 **Example:**
 ```bash
-python3 ~/.agents/skills/rebeca-tooling/lib/setup_agent.py
+python3 setup.py
 ```
 
 ## Classification Functions
@@ -172,7 +155,7 @@ python3 ~/.agents/skills/rebeca-tooling/lib/setup_agent.py
 Classify Legata rule formalization status.
 
 ```python
-from lib import RuleStatusClassifier
+from scripts import RuleStatusClassifier
 
 classifier = RuleStatusClassifier()
 status = classifier.classify(legata_path: str) -> dict
@@ -203,7 +186,7 @@ elif status["status"] == "incomplete":
 Map incomplete rules to COLREG text.
 
 ```python
-from lib import COLREGFallbackMapper
+from scripts import COLREGFallbackMapper
 
 mapper = COLREGFallbackMapper()
 mapping = mapper.map(rule_id: str) -> dict
@@ -235,46 +218,55 @@ print("Provisional property:", mapping["provisional_property"])
 Apply 100-point scoring rubric to a single rule.
 
 ```python
-from lib import score_single_rule
+from scripts.score_single_rule import RubricScorer
 
-score_single_rule(
+scorer = RubricScorer()
+scorecard = scorer.score_rule(
     rule_id: str,
     verify_status: str,
-    syntax_correct: bool = True,
-    semantic_aligned: bool = True
+    mutation_score: float = 0.0,
+    vacuity_pass: bool = False,
+    is_hallucination: bool = False
 ) -> dict
 ```
 
 **Parameters:**
 - `rule_id` - Rule identifier
-- `verify_status` - Verification status (pass/fail/timeout/error)
-- `syntax_correct` - Whether syntax is correct
-- `semantic_aligned` - Whether semantics are aligned
+- `verify_status` - Verification status (pass/fail/timeout/blocked/unknown)
+- `mutation_score` - Mutation score in [0.0, 1.0]
+- `vacuity_pass` - Whether vacuity check passed
+- `is_hallucination` - Hallucination integrity signal
 
 **Returns:**
 ```python
 {
     "rule_id": str,
-    "total_score": int,  # 0-100
-    "breakdown": {
-        "syntax": int,      # 0-40
-        "semantics": int,   # 0-30
-        "verification": int # 0-30
+    "score_total": int,  # 0-100
+    "score_breakdown": {
+        "syntax": int,              # 0-10
+        "semantic_alignment": int,  # 0-55
+        "verification_outcome": int,# 0-25
+        "integrity": int            # 0-10
     },
+    "mutation_score": float,
+    "vacuity": {"passed": bool},
+    "is_hallucination": bool,
     "status": str
 }
 ```
 
 **Example:**
 ```python
-score = score_single_rule(
+scorer = RubricScorer()
+score = scorer.score_rule(
     rule_id="Rule-22",
     verify_status="pass",
-    syntax_correct=True,
-    semantic_aligned=True
+    mutation_score=0.90,
+    vacuity_pass=True,
+    is_hallucination=False
 )
 
-print(f"Score: {score['total_score']}/100")
+print(f"Score: {score['score_total']}/100")
 ```
 
 ## Reporting Functions
@@ -284,7 +276,7 @@ print(f"Score: {score['total_score']}/100")
 Generate aggregate reports from scorecards.
 
 ```python
-from lib import generate_report
+from scripts import generate_report
 
 generate_report(
     input_scores: str,
@@ -331,7 +323,7 @@ print(f"Average score: {report['summary']['average_score']}")
 Install agents and skills to target directory.
 
 ```python
-from lib import install_artifacts
+from scripts import install_artifacts
 
 install_artifacts(
     target_root: str,
@@ -359,7 +351,7 @@ success = install_artifacts(
 Verify installed artifacts.
 
 ```python
-from lib import verify_installation
+from scripts import verify_installation
 
 verify_installation(
     target_root: str,
@@ -398,22 +390,22 @@ All modules provide CLI interfaces:
 
 ```bash
 # Download RMC
-python3 -m lib.download_rmc --url <url> --dest-dir <dir>
+python3 -m scripts.download_rmc --url <url> --dest-dir <dir>
 
 # Run verification
-python3 -m lib.run_rmc --jar <jar> --model <model> --property <property> --output-dir <dir>
+python3 -m scripts.run_rmc --jar <jar> --model <model> --property <property> --output-dir <dir>
 
 # Classify rule
-python3 -m lib.classify_rule_status --legata-path <path> --output-json
+python3 -m scripts.classify_rule_status --legata-path <path> --output-json
 
 # Score rule
-python3 -m lib.score_single_rule --rule-id <id> --verify-status <status> --output-json
+python3 -m scripts.score_single_rule --rule-id <id> --verify-status <status> --output-json
 
 # Generate report
-python3 -m lib.generate_report --input-scores <json> --output-dir <dir> --format both
+python3 -m scripts.generate_report --input-scores <json> --output-dir <dir> --format both
 
 # Setup
-python3 -m lib.setup_agent
+python3 setup.py
 ```
 
 ## Exit Codes
@@ -424,7 +416,7 @@ python3 -m lib.setup_agent
 - `4` - C++ compilation failed
 - `5` - Rebeca parse failed
 
-### setup_agent
+### setup.py
 - `0` - Success
 - `1` - Prerequisites missing
 - `2` - RMC download failed

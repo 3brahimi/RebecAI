@@ -299,7 +299,7 @@ done
 result=$(PYTHONPATH="$TOOLING_SCRIPTS" python3 "$TOOLING_SCRIPTS/score_single_rule.py" \
   --rule-id "Test-Rule" --verify-status pass --output-json 2>/dev/null)
 missing_fields=""
-for field in syntax semantic_alignment verification_outcome hallucination_penalty; do
+for field in syntax semantic_alignment verification_outcome integrity; do
   if ! echo "$result" | python3 -c "import sys,json; d=json.load(sys.stdin); assert '$field' in d.get('score_breakdown',{})" 2>/dev/null; then
     missing_fields="$missing_fields $field"
   fi
@@ -308,6 +308,19 @@ if [[ -n "$missing_fields" ]]; then
   fail "SCORING-002" "score_breakdown missing required fields:$missing_fields"
 else
   pass "SCORING-002: score_breakdown has all 4 contract fields"
+fi
+
+# SCORING-002B: top-level dynamic scoring evidence fields are present
+missing_meta=""
+for field in mutation_score vacuity is_hallucination; do
+  if ! echo "$result" | python3 -c "import sys,json; d=json.load(sys.stdin); assert '$field' in d" 2>/dev/null; then
+    missing_meta="$missing_meta $field"
+  fi
+done
+if [[ -n "$missing_meta" ]]; then
+  fail "SCORING-002B" "scorecard missing dynamic scoring fields:$missing_meta"
+else
+  pass "SCORING-002B: dynamic scoring evidence fields are present"
 fi
 
 # SCORING-003: breakdown values sum to score_total

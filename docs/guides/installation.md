@@ -200,7 +200,7 @@ sudo apt install build-essential
 wget https://github.com/rebeca-lang/org.rebecalang.rmc/releases/download/v2.8.2/rmc.jar -O ~/.agents/rmc/rmc.jar
 
 # Or specify version explicitly
-python3 skills/rebeca-tooling/lib/download_rmc.py \
+python3 skills/rebeca-tooling/scripts/download_rmc.py \
   --url https://github.com/rebeca-lang/org.rebecalang.rmc/releases/download/v2.8.2/rmc.jar \
   --dest-dir ~/.agents/rmc
 ```

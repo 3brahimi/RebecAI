@@ -118,7 +118,7 @@ Include:
 
 ### 1. Create Module
 
-Create `skills/rebeca-tooling/lib/your_module.py`:
+Create `skills/rebeca-tooling/scripts/your_module.py`:
 
 ```python
 """
@@ -160,7 +160,7 @@ if __name__ == "__main__":
 
 ### 2. Export from Package
 
-Update `skills/rebeca-tooling/lib/__init__.py`:
+Update `skills/rebeca-tooling/scripts/__init__.py`:
 
 ```python
 from .your_module import your_function
@@ -177,7 +177,7 @@ Create unit tests in `tests/test_your_module.py`:
 
 ```python
 import unittest
-from skills.rebeca_tooling.lib.your_module import your_function
+from skills.rebeca_tooling.scripts.your_module import your_function
 
 class TestYourModule(unittest.TestCase):
     def test_your_function(self):
@@ -195,7 +195,7 @@ Add function to `docs/guides/api-reference.md`:
 Description...
 
 \`\`\`python
-from lib import your_function
+from scripts import your_function
 
 result = your_function(param1="value", param2=42)
 \`\`\`

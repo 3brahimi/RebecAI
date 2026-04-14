@@ -216,7 +216,7 @@ To clean up all installed artifacts before a re-install: `python3 purge.py && py
 
 ### Adding New Tooling
 
-1. Create module in `skills/rebeca-tooling/lib/`
+1. Create module in `skills/rebeca-tooling/scripts/`
 2. Add CLI interface with argparse
 3. Export from `__init__.py`
 4. Update skill documentation

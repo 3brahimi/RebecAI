@@ -14,7 +14,7 @@ This skill provides:
 
 ## Python Modules
 
-The skill contains 10 Python modules in `skills/rebeca-tooling/lib/`:
+The skill contains Python modules in `skills/rebeca-tooling/scripts/`:
 
 | Module | Purpose | CLI | Library |
 |--------|---------|-----|---------|
@@ -27,6 +27,11 @@ The skill contains 10 Python modules in `skills/rebeca-tooling/lib/`:
 | `colreg_fallback_mapper.py` | COLREG fallback mapping | ✅ | ✅ |
 | `score_single_rule.py` | Single rule scoring | ✅ | ✅ |
 | `generate_report.py` | Aggregate reporting | ✅ | ✅ |
+| `mutation_engine.py` | Mutation testing engine | ✅ | ✅ |
+| `vacuity_checker.py` | Vacuity checking | ✅ | ✅ |
+| `snapshotter.py` | Golden snapshot capture | ✅ | ✅ |
+| `symbol_differ.py` | Hallucination integrity audit | ✅ | ✅ |
+| `utils.py` | Shared safety/path helpers | - | ✅ |
 | `__init__.py` | Package exports | - | ✅ |
 
 ## Usage
@@ -41,7 +46,7 @@ from pathlib import Path
 tooling_skill = Path("~/.agents/skills/rebeca-tooling").expanduser()
 sys.path.insert(0, str(tooling_skill))
 
-from lib import (
+from scripts import (
     download_rmc,
     run_rmc,
     RuleStatusClassifier,
@@ -49,7 +54,7 @@ from lib import (
 )
 
 # Ensure RMC available
-from lib import pre_run_rmc_check
+from scripts import pre_run_rmc_check
 pre_run_rmc_check()
 
 # Run verification
@@ -69,12 +74,12 @@ result = run_rmc(
 python3 setup.py
 
 # Download RMC
-python3 ~/.agents/skills/rebeca-tooling/lib/download_rmc.py \
+python3 ~/.agents/skills/rebeca-tooling/scripts/download_rmc.py \
   --url https://github.com/rebeca-lang/org.rebecalang.rmc/releases/latest \
   --dest-dir ~/.agents/rmc
 
 # Run verification
-python3 ~/.agents/skills/rebeca-tooling/lib/run_rmc.py \
+python3 ~/.agents/skills/rebeca-tooling/scripts/run_rmc.py \
   --jar ~/.agents/rmc/rmc.jar \
   --model model.rebeca \
   --property property.property \
@@ -82,18 +87,18 @@ python3 ~/.agents/skills/rebeca-tooling/lib/run_rmc.py \
   --timeout-seconds 120
 
 # Classify rule
-python3 ~/.agents/skills/rebeca-tooling/lib/classify_rule_status.py \
+python3 ~/.agents/skills/rebeca-tooling/scripts/classify_rule_status.py \
   --legata-path legata/Rule-22.legata \
   --output-json
 
 # Score rule
-python3 ~/.agents/skills/rebeca-tooling/lib/score_single_rule.py \
+python3 ~/.agents/skills/rebeca-tooling/scripts/score_single_rule.py \
   --rule-id Rule-22 \
   --verify-status pass \
   --output-json
 
 # Generate report
-python3 ~/.agents/skills/rebeca-tooling/lib/generate_report.py \
+python3 ~/.agents/skills/rebeca-tooling/scripts/generate_report.py \
   --input-scores results.json \
   --output-dir reports/ \
   --format both
@@ -107,7 +112,7 @@ python3 ~/.agents/skills/rebeca-tooling/lib/generate_report.py \
 - `4`: C++ compilation failed
 - `5`: Rebeca parse failed
 
-### setup_agent
+### setup.py
 - `0`: Success
 - `1`: Prerequisites missing
 - `2`: RMC download failed
