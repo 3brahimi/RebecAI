@@ -225,3 +225,4 @@ graphify-out/
 .graphifyignore
 CLAUDE.md
 GEMINI.md
+*.pyc
