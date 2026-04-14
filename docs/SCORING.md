@@ -33,12 +33,15 @@ To move away from binary scoring, we implement a **Symbol-Diffing** approach:
 ### 2. Mutation Strategies (Semantic Testing)
 We will validate semantic strength by applying controlled mutations and verifying if the verification results change (Mutation Score).
 
-| Artifact | Mutation Strategy | Impact |
-| :--- | :--- | :--- |
-| **.rebeca** | Transition Bypass | Ensure property fails if logic is skipped. |
-| **.rebeca** | Predicate Flip | Ensure logic sensitivity (e.g., `>` → `<=`). |
-| **.property**| Negation | Ensure `!A` fails if `A` passed. |
-| **.property**| Conjunction/Disjunction | Ensure logical operators are strictly necessary. |
+#### Model Mutations (`.rebeca`)
+*   **Transition Bypass**: Forcibly comment out or bypass a `msgsrv` logic block to ensure the property fails if critical logic is skipped.
+*   **Predicate Flip**: In a `reactiveclass`, flip a condition in an `if` statement (e.g., `if (x > 0)` → `if (x <= 0)`) to check boundary sensitivity.
+*   **Assignment Mutation**: Increment or decrement a counter variable (e.g., `v = v + 1` → `v = v + 2`) to test model state stability.
+
+#### Specification Mutations (`.property`)
+*   **Negation**: Negate an entire assertion (e.g., `Assertion: A` → `Assertion: !A`). If the property still passes, the original assertion is likely too weak.
+*   **Logical Conjunction/Disjunction Swap**: Exchange `&&` with `||` to ensure that both clauses are strictly necessary for the specification to hold.
+*   **Variable Swap**: Replace a state variable in a predicate with another identifier from the same actor to ensure specific state variables are required for property correctness.
 
 ### 3. Vacuity Checks
 To ensure properties aren't passing vacuously (e.g., due to an impossible precondition), we will perform a secondary check:
