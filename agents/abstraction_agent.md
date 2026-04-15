@@ -7,6 +7,7 @@ description: |
   naming conventions, discretizes to Rebeca-compatible types, and emits a
   JSON contract into coordinator shared_state.step03.
 user-invocable: false
+schema: skills/rebeca_tooling/schemas/abstraction-agent.schema.json
 skills:
   - rebeca_tooling
   - rebeca_handbook

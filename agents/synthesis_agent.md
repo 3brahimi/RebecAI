@@ -7,6 +7,7 @@ description: |
   ALL outputs are tagged is_candidate=true, mapping_path=synthesis-agent, and
   MUST be routed to Step06 (verification_agent) before any downstream use.
 user-invocable: false
+schema: skills/rebeca_tooling/schemas/synthesis-agent.schema.json
 skills:
   - rebeca_tooling
   - rebeca_handbook

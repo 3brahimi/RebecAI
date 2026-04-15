@@ -6,6 +6,7 @@ description: |
   Wraps ReportGenerator (generate_report.py) to produce report.json
   and report.md from coordinator-supplied per-rule scorecards.
 user-invocable: false
+schema: skills/rebeca_tooling/schemas/reporting-agent.schema.json
 skills:
   - rebeca_tooling
   - rebeca_handbook
