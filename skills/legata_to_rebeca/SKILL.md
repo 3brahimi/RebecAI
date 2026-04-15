@@ -1,5 +1,5 @@
 ---
-name: legata-to-rebeca
+name: legata_to_rebeca
 version: 1.0.0
 description: Step-by-step guidance for transforming Legata clauses into verified Rebeca models
 trigger_phrases:

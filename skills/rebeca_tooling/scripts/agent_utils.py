@@ -5,7 +5,7 @@ import sys
 def call_tool(tool_name: str, input_data: dict) -> dict:
     cmd = [
         sys.executable, 
-        "skills/rebeca-tooling/scripts/cli_runner.py", 
+        "skills/rebeca_tooling/scripts/cli_runner.py", 
         "--tool", tool_name, 
         "--input", json.dumps(input_data)
     ]

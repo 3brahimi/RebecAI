@@ -141,14 +141,14 @@ property {
 
 ### Python Library (Cross-Platform)
 
-The **rebeca-tooling** skill provides all RMC operations:
+The **rebeca_tooling** skill provides all RMC operations:
 
 ```python
 import sys
 from pathlib import Path
 
-# Reference rebeca-tooling skill
-tooling_skill = Path("~/.agents/skills/rebeca-tooling").expanduser()
+# Reference rebeca_tooling skill
+tooling_skill = Path("~/.agents/skills/rebeca_tooling").expanduser()
 sys.path.insert(0, str(tooling_skill))
 
 from scripts import download_rmc, run_rmc
@@ -193,12 +193,12 @@ For manual usage, CLI wrappers are available:
 
 ```bash
 # Download RMC
-python3 ~/.agents/skills/rebeca-tooling/scripts/download_rmc.py \
+python3 ~/.agents/skills/rebeca_tooling/scripts/download_rmc.py \
   --url https://github.com/rebeca-lang/org.rebecalang.rmc/releases/latest \
   --dest-dir .agents/rmc
 
 # Run verification
-python3 ~/.agents/skills/rebeca-tooling/scripts/run_rmc.py \
+python3 ~/.agents/skills/rebeca_tooling/scripts/run_rmc.py \
   --jar .agents/rmc/rmc.jar \
   --model ./models/SimulationModelCode.rebeca \
   --property ./properties/rule_22.property \
@@ -208,7 +208,7 @@ python3 ~/.agents/skills/rebeca-tooling/scripts/run_rmc.py \
   --jvm-opt "-Xmx2g"
 ```
 
-For the full tooling API and additional CLI commands, consult the `rebeca-tooling` skill at `~/.agents/skills/rebeca-tooling/SKILL.md`.
+For the full tooling API and additional CLI commands, consult the `rebeca_tooling` skill at `~/.agents/skills/rebeca_tooling/SKILL.md`.
 
 ## Common Pitfalls and Recovery
 

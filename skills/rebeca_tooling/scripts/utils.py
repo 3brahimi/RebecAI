@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Shared utilities for the rebeca-tooling library."""
+"""Shared utilities for the rebeca_tooling library."""
 
 import shutil
 import sys

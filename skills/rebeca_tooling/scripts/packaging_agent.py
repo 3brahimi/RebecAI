@@ -1,5 +1,6 @@
 import json
 import shutil
+import argparse
 from typing import Any, Dict, List, Optional, Tuple
 from pathlib import Path
 #!/usr/bin/env python3
@@ -21,7 +22,6 @@ Exit codes:
 
 import sys
 from .utils import safe_path  # noqa: E402
-
 
 
 # ---------------------------------------------------------------------------
@@ -159,6 +159,10 @@ def run_packaging(
     dd, err = _checked_safe_path(dest_dir, "dest_dir")
     if err:
         return _error(f"Invalid path: {err}"), 1
+
+    # Explicit Optional narrowing for static type checkers.
+    if mp is None or pp is None or rod is None or dd is None:
+        return _error("Invalid path: safe_path returned None"), 1
 
     # Validate optional snapshot path only if provided
     sp: Optional[Path] = None

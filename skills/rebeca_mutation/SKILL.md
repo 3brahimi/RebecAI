@@ -37,7 +37,7 @@ capabilities:
 ## Mutation Strategies
 
 Eight strategies are implemented in
-`~/.agents/skills/rebeca-tooling/scripts/mutation_engine.py`:
+`~/.agents/skills/rebeca_tooling/scripts/mutation_engine.py`:
 
 | ID | Target | What changes | Expected outcome |
 |----|--------|-------------|-----------------|
@@ -117,7 +117,7 @@ from scripts import MutationEngine, Mutation, check_vacuity, run_rmc
 from pathlib import Path
 import json, os, tempfile
 
-JAR    = "~/.agents/skills/rebeca-tooling/bin/rmc.jar"
+JAR    = "~/.agents/skills/rebeca_tooling/bin/rmc.jar"
 MODEL  = "models/rule22.rebeca"
 PROP   = "models/rule22.property"
 OUTDIR = "output/rule22"
@@ -192,8 +192,8 @@ print(json.dumps(report, indent=2))
 Run the vacuity checker standalone:
 
 ```bash
-python3 ~/.agents/skills/rebeca-tooling/scripts/vacuity_checker.py \
-  --jar      ~/.agents/skills/rebeca-tooling/bin/rmc.jar \
+python3 ~/.agents/skills/rebeca_tooling/scripts/vacuity_checker.py \
+  --jar      ~/.agents/skills/rebeca_tooling/bin/rmc.jar \
   --model    models/rule22.rebeca \
   --property models/rule22.property \
   --output-dir output/rule22 \
@@ -203,7 +203,7 @@ python3 ~/.agents/skills/rebeca-tooling/scripts/vacuity_checker.py \
 Generate mutations and print JSON (no RMC run — dry-run):
 
 ```bash
-python3 ~/.agents/skills/rebeca-tooling/scripts/mutation_engine.py \
+python3 ~/.agents/skills/rebeca_tooling/scripts/mutation_engine.py \
   --rule-id   Rule22 \
   --model     models/rule22.rebeca \
   --property  models/rule22.property \
@@ -214,7 +214,7 @@ python3 ~/.agents/skills/rebeca-tooling/scripts/mutation_engine.py \
 Run single strategy only:
 
 ```bash
-python3 ~/.agents/skills/rebeca-tooling/scripts/mutation_engine.py \
+python3 ~/.agents/skills/rebeca_tooling/scripts/mutation_engine.py \
   --rule-id   Rule22 \
   --model     models/rule22.rebeca \
   --property  models/rule22.property \

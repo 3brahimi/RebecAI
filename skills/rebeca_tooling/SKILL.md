@@ -1,5 +1,5 @@
 ---
-name: rebeca-tooling
+name: rebeca_tooling
 version: 1.0.0
 description: Cross-platform Python library for RMC operations, rule triage, scoring, and reporting
 trigger_phrases:
@@ -36,7 +36,7 @@ Use this skill when you need to:
 
 All Python modules are in `scripts/` subdirectory of this skill:
 ```
-skills/rebeca-tooling/
+skills/rebeca_tooling/
 ├── SKILL.md (this file)
 └── scripts/
     ├── __init__.py
@@ -61,7 +61,7 @@ import sys
 from pathlib import Path
 
 # Add skill's lib to path
-skill_path = Path("~/.agents/skills/rebeca-tooling").expanduser()
+skill_path = Path("~/.agents/skills/rebeca_tooling").expanduser()
 sys.path.insert(0, str(skill_path))
 
 from scripts import (
@@ -264,12 +264,12 @@ All modules have command-line interfaces:
 
 ```bash
 # Download RMC
-python3 ~/.agents/skills/rebeca-tooling/scripts/download_rmc.py \
+python3 ~/.agents/skills/rebeca_tooling/scripts/download_rmc.py \
   --url https://github.com/rebeca-lang/org.rebecalang.rmc/releases/latest \
   --dest-dir .agents/rmc
 
 # Run verification
-python3 ~/.agents/skills/rebeca-tooling/scripts/run_rmc.py \
+python3 ~/.agents/skills/rebeca_tooling/scripts/run_rmc.py \
   --jar .agents/rmc/rmc.jar \
   --model model.rebeca \
   --property property.property \
@@ -278,19 +278,19 @@ python3 ~/.agents/skills/rebeca-tooling/scripts/run_rmc.py \
   --jvm-opt "-Xmx2g"
 
 # Pre-run check
-python3 ~/.agents/skills/rebeca-tooling/scripts/pre_run_rmc_check.py
+python3 ~/.agents/skills/rebeca_tooling/scripts/pre_run_rmc_check.py
 ```
 
 ### Rule Triage
 
 ```bash
 # Classify rule status
-python3 ~/.agents/skills/rebeca-tooling/scripts/classify_rule_status.py \
+python3 ~/.agents/skills/rebeca_tooling/scripts/classify_rule_status.py \
   --legata-path legata/Rule-22.legata \
   --output-json
 
 # COLREG fallback mapping
-python3 ~/.agents/skills/rebeca-tooling/scripts/colreg_fallback_mapper.py \
+python3 ~/.agents/skills/rebeca_tooling/scripts/colreg_fallback_mapper.py \
   --rule-id Rule-99 \
   --colreg-text "Every vessel shall maintain a proper lookout" \
   --output-json
@@ -300,13 +300,13 @@ python3 ~/.agents/skills/rebeca-tooling/scripts/colreg_fallback_mapper.py \
 
 ```bash
 # Score single rule
-python3 ~/.agents/skills/rebeca-tooling/scripts/score_single_rule.py \
+python3 ~/.agents/skills/rebeca_tooling/scripts/score_single_rule.py \
   --rule-id Rule-22 \
   --verify-status pass \
   --output-json
 
 # Generate report
-python3 ~/.agents/skills/rebeca-tooling/scripts/generate_report.py \
+python3 ~/.agents/skills/rebeca_tooling/scripts/generate_report.py \
   --input-scores results.json \
   --output-dir reports/ \
   --format both
@@ -318,12 +318,12 @@ python3 ~/.agents/skills/rebeca-tooling/scripts/generate_report.py \
 # Complete setup (use setup.py instead — see above)
 
 # Install artifacts only
-python3 ~/.agents/skills/rebeca-tooling/scripts/install_artifacts.py \
+python3 ~/.agents/skills/rebeca_tooling/scripts/install_artifacts.py \
   --target-root .claude \
   --mode all
 
 # Verify installation
-python3 ~/.agents/skills/rebeca-tooling/scripts/verify_installation.py .claude
+python3 ~/.agents/skills/rebeca_tooling/scripts/verify_installation.py .claude
 ```
 
 ## Platform Support
@@ -377,8 +377,8 @@ Other skills can reference this tooling skill:
 import sys
 from pathlib import Path
 
-# Reference rebeca-tooling skill
-tooling_skill = Path("~/.agents/skills/rebeca-tooling").expanduser()
+# Reference rebeca_tooling skill
+tooling_skill = Path("~/.agents/skills/rebeca_tooling").expanduser()
 sys.path.insert(0, str(tooling_skill))
 
 from scripts import run_rmc, RuleStatusClassifier
@@ -423,7 +423,7 @@ if status["status"] == "formalized":
 If you get `ModuleNotFoundError`:
 ```python
 # Ensure skill path is correct
-skill_path = Path("~/.agents/skills/rebeca-tooling").expanduser()
+skill_path = Path("~/.agents/skills/rebeca_tooling").expanduser()
 print(f"Skill path exists: {skill_path.exists()}")
 print(f"Scripts path exists: {(skill_path / 'scripts').exists()}")
 ```
@@ -453,6 +453,6 @@ Install if missing:
 
 ## See Also
 
-- **legata-to-rebeca** skill - Workflow guidance
+- **legata_to_rebeca** skill - Workflow guidance
 - **rebeca-handbook** skill - Modeling best practices
-- **legata-to-rebeca** agent - Main orchestration agent
+- **legata_to_rebeca** agent - Main orchestration agent

@@ -87,7 +87,7 @@ Additional diagnostic fields:
 ### 1) Capture Golden Snapshot
 
 ```bash
-python3 ~/.agents/skills/rebeca-tooling/scripts/snapshotter.py \
+python3 ~/.agents/skills/rebeca_tooling/scripts/snapshotter.py \
   --rule-id Rule22 \
   --model models/rule22.rebeca \
   --property models/rule22.property \
@@ -97,7 +97,7 @@ python3 ~/.agents/skills/rebeca-tooling/scripts/snapshotter.py \
 ### 2) Audit Hallucinations
 
 ```bash
-python3 ~/.agents/skills/rebeca-tooling/scripts/symbol_differ.py \
+python3 ~/.agents/skills/rebeca_tooling/scripts/symbol_differ.py \
   --snapshot output/rule22_golden_snapshot.json \
   --model output/rule22_current.rebeca \
   --property output/rule22_current.property \

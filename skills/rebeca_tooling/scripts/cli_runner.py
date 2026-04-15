@@ -2,16 +2,22 @@
 import json
 import sys
 import argparse
-from typing import Callable, Any, Dict
+import importlib.util
+from pathlib import Path
+from typing import Any, Dict
 
-# Centralized imports from rebeca-tooling
-from classify_rule_status import RuleStatusClassifier
-from run_rmc import run_rmc
-from mutation_engine import MutationEngine
-from vacuity_checker import check_vacuity
-from symbol_differ import detect_hallucinations
+def _load_symbol(script_name: str, symbol_name: str) -> Any:
+    """Load a symbol from a sibling script file (supports hyphenated filenames)."""
+    script_path = Path(__file__).with_name(script_name)
+    spec = importlib.util.spec_from_file_location(f"rebeca_tooling_{script_name}", script_path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Unable to load module from: {script_path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return getattr(module, symbol_name)
 
 def run_triage(data: Dict[str, Any]) -> Dict[str, Any]:
+    RuleStatusClassifier = _load_symbol("classify-rule-status.py", "RuleStatusClassifier")
     classifier = RuleStatusClassifier()
     status = classifier.classify(data["source_file_path"])
     return {
@@ -32,18 +38,18 @@ def dispatch():
     parser.add_argument("--tool", required=True)
     parser.add_argument("--input", required=True)
     args = parser.parse_args()
-    
+
     input_data = json.loads(args.input)
-    
+
     tools = {
         "triage": run_triage,
         "verification": run_verification
     }
-    
+
     if args.tool not in tools:
         print(json.dumps({"status": "error", "message": f"Tool {args.tool} not found"}), file=sys.stderr)
         sys.exit(1)
-        
+
     try:
         result = tools[args.tool](input_data)
         print(json.dumps(result))
