@@ -15,28 +15,28 @@ An unmatched guard is a specification violation and MUST transition to `error` w
 
 ## Step Bindings
 
-| Step | Agent | Primary output fields used for transitions |
-|------|-------|---------------------------------------------|
-| Step01 | `init_agent` | `status` |
-| Step02 | `triage_agent` | `classification.status`, `routing.path`, `routing.eligible_for_mapping` |
-| Step03 | `abstraction_agent` | `abstraction_summary.actor_map`, `abstraction_summary.variable_map` |
-| Step04 | `mapping_agent` | `model_artifact.path`, `property_artifact.path` |
-| Step05 | `synthesis_agent` | `candidate_artifacts[]`, `is_candidate`, `mapping_path` |
-| Step06 | `verification_agent` | `verified`, `rmc_exit_code`, `rmc_outcome`, `vacuity_status`, `mutation_score` |
-| Step07 | `packaging_agent` | `generated_files[]`, `installation_report[]` |
-| Step08 | `reporting_agent` | `report_path`, `report_md_path`, `summary` |
+| Step | Tools to execute | Primary output fields used for transitions |
+|------|-----------------|---------------------------------------------|
+| Step01 | `pre_run_rmc_check.py` · `verify_installation.py` · `snapshotter.py` | `status` |
+| Step02 | `classify_rule_status.py` · `colreg_fallback_mapper.py` (colreg path only) | `classification.status`, `routing.path`, `routing.eligible_for_mapping` |
+| Step03 | *(reason from Legata source — no dumb tool)* | `abstraction_summary.actor_map`, `abstraction_summary.variable_map` |
+| Step04 | `transformation_utils.py` format helpers | `model_artifact.path`, `property_artifact.path` |
+| Step05 | `mutation_engine.py` property-side strategies | `candidate_artifacts[]`, `is_candidate`, `mapping_path` |
+| Step06 | `run_rmc.py` → `vacuity_checker.py` → `mutation_engine.py` | `verified`, `rmc_exit_code`, `rmc_outcome`, `vacuity_status`, `mutation_score` |
+| Step07 | *(filesystem I/O — copy artifacts to dest_dir)* | `generated_files[]`, `installation_report[]` |
+| Step08 | `generate_report.py` · `score_single_rule.py` | `report_path`, `report_md_path`, `summary` |
 
 ## issue_class Legend
 
 | `issue_class` | Source field | Refinement target | Refinement prompt must include |
 |---------------|-------------|-------------------|-------------------------------|
-| `syntax` | malformed artifact content; or `step06.rmc_outcome in {"parse_failed","cpp_compile_failed"}` | `mapping_agent` (Step04) | prior step04 output + parse/compile diagnostics |
-| `reference` | symbol diff / validation mismatch in artifact content | `mapping_agent` (Step04) | prior step04 output + symbol diff report |
-| `mapping_gap` | missing or invalid artifact contract | `mapping_agent` (Step04) | prior step04 output + missing field list |
-| `weak_mutation` | `step06.mutation_score < 80.0` | `synthesis_agent` (Step05) | prior step05 output + mutation detail |
-| `vacuity` | `step06.vacuity_status.is_vacuous == true` | `synthesis_agent` (Step05) | prior step05 output + vacuity explanation |
-| `schema_invalid` | output schema/type violation from the current step's agent | same step's agent | prior output + schema violation list |
-| `hallucination` | hallucination audit failure from the current step's agent | same step's agent | prior output + hallucinated symbol list |
+| `syntax` | malformed artifact content; or `step06.rmc_outcome in {"parse_failed","cpp_compile_failed"}` | Step04 tools (`transformation_utils.py`) | prior step04 output + parse/compile diagnostics |
+| `reference` | symbol diff / validation mismatch in artifact content | Step04 tools (`transformation_utils.py`) | prior step04 output + symbol diff report |
+| `mapping_gap` | missing or invalid artifact contract | Step04 tools (`transformation_utils.py`) | prior step04 output + missing field list |
+| `weak_mutation` | `step06.mutation_score < 80.0` | Step05 tools (`mutation_engine.py`) | prior step05 output + mutation detail |
+| `vacuity` | `step06.vacuity_status.is_vacuous == true` | Step05 tools (`mutation_engine.py`) | prior step05 output + vacuity explanation |
+| `schema_invalid` | output schema/type violation from the current step | same step's tools | prior output + schema violation list |
+| `hallucination` | hallucination audit failure from the current step | same step's tools | prior output + hallucinated symbol list |
 
 `refine_budget_left(state)` = `refinement_attempts[state] < 3`
 
@@ -47,31 +47,31 @@ Evaluate top-to-bottom for the current state. Each row is mutually exclusive.
 | Current state | Guard | `issue_class` | Next state | Action |
 |---------------|-------|---------------|------------|--------|
 | `initialized` | `step01.status == "error"` | n/a | `error` | propagate envelope |
-| `initialized` | `step01.status == "ok"` | null | `triaged` | invoke `triage_agent` · `{rule_id, legata_path: source_file_path, colreg_text: ""}` |
+| `initialized` | `step01.status == "ok"` | null | `triaged` | execute `classify_rule_status.py --legata-path {source_file_path}`; if colreg path: execute `colreg_fallback_mapper.py`; apply classification logic per issue_class legend |
 | `triaged` | `step02.status == "error"` | n/a | `error` | propagate envelope |
 | `triaged` | `step02.classification.status == "todo-placeholder" && step02.routing.path == "skip"` | null | `skipped` | emit skip summary with `{rule_id, reason: step02.classification.next_action}` |
 | `triaged` | `step02.classification.status in {"incomplete","incorrect"} && step02.routing.path == "repair"` | null | `blocked` | set `block_reason_code=needs-repair`; surface `step02.classification.defects` |
-| `triaged` | `step02.classification.status in {"formalized","not-formalized"} && step02.routing.path in {"normal","colreg-fallback"}` | null | `abstracted` | invoke `abstraction_agent` · `{rule_id, legata_path: source_file_path, classification: step02.classification, routing: step02.routing}` |
+| `triaged` | `step02.classification.status in {"formalized","not-formalized"} && step02.routing.path in {"normal","colreg-fallback"}` | null | `abstracted` | read Legata source at `{source_file_path}`; extract actors (PascalCase) and variables (camelCase) per rebeca-handbook naming; emit `abstraction_summary.actor_map` and `variable_map` |
 | `triaged` | `step02.classification.status` and `step02.routing.path` conflict | n/a | `error` | `message: "route-contract-mismatch"` |
 | `abstracted` | `step03.status == "error"` | n/a | `error` | propagate envelope |
-| `abstracted` | `step03.status == "ok" && len(actor_map) >= 1 && len(variable_map) >= 1` | null | `mapped` | invoke `mapping_agent` · `{rule_id, actor_map: step03.abstraction_summary.actor_map, variable_map: step03.abstraction_summary.variable_map, routing_path: step02.routing.path, fallback_mapping: step02.routing.fallback_mapping}` |
+| `abstracted` | `step03.status == "ok" && len(actor_map) >= 1 && len(variable_map) >= 1` | null | `mapped` | use `transformation_utils.get_canonical_assertion()` and `format_rebeca_define()` to generate `.rebeca` model and `.property` artifact; write to `output_dir`; emit `model_artifact` and `property_artifact` |
 | `abstracted` | `step03.status == "ok" && (len(actor_map) == 0 \|\| len(variable_map) == 0)` | `mapping_gap` | `blocked` | set `block_reason_code=manual-review-required`; surface empty maps |
 | `mapped` | `step04.status == "error"` | n/a | `error` | propagate envelope |
-| `mapped` | `step04.status == "ok" && issue_class == null` | null | `synthesized` | invoke `synthesis_agent` · `{rule_id, model_path: step04.model_artifact.path, property_path: step04.property_artifact.path}` |
-| `mapped` | `step04.status == "ok" && issue_class != null && refine_budget_left("mapped")` | `syntax` \| `reference` \| `mapping_gap` \| `schema_invalid` \| `hallucination` | `mapped` | invoke `mapping_agent` · `{same as initial} + {refinement_ctx: {issue_class, diagnostics: see legend, prior_output: step04}}`; append refinement event |
+| `mapped` | `step04.status == "ok" && issue_class == null` | null | `synthesized` | execute `mutation_engine.py` property-side strategies on `{step04.property_artifact.path}`; select best variant by edit-delta; write synthesized artifacts to `output_dir`; emit `candidate_artifacts[]` with `is_candidate=true`, `mapping_path="synthesis-agent"` |
+| `mapped` | `step04.status == "ok" && issue_class != null && refine_budget_left("mapped")` | `syntax` \| `reference` \| `mapping_gap` \| `schema_invalid` \| `hallucination` | `mapped` | re-execute Step04 tools with `refinement_ctx: {issue_class, diagnostics: see legend, prior_output: step04}`; append refinement event |
 | `mapped` | `step04.status == "ok" && issue_class != null && !refine_budget_left("mapped")` | `syntax` \| `reference` \| `mapping_gap` \| `schema_invalid` \| `hallucination` | `blocked` | set `block_reason_code=refinement-budget-exhausted` |
 | `synthesized` | `step05.status == "error"` | n/a | `error` | propagate envelope |
-| `synthesized` | `step05.status == "ok" && issue_class == null && all(c.is_candidate == true && c.mapping_path == "synthesis-agent" for c in candidate_artifacts)` | null | `verified` | invoke `verification_agent` · `{rule_id, model_path: step05.candidate_artifacts[0].model_path, property_path: step05.candidate_artifacts[0].property_path, jar_path, output_dir}` |
-| `synthesized` | `step05.status == "ok" && issue_class != null && refine_budget_left("synthesized")` | `syntax` \| `reference` \| `mapping_gap` \| `schema_invalid` \| `hallucination` | `synthesized` | invoke `synthesis_agent` · `{same as initial} + {refinement_ctx: {issue_class, diagnostics: see legend, prior_output: step05}}`; append refinement event |
+| `synthesized` | `step05.status == "ok" && issue_class == null && all(c.is_candidate == true && c.mapping_path == "synthesis-agent" for c in candidate_artifacts)` | null | `verified` | execute `run_rmc.py --jar-path {jar_path} --model-path {step05.candidate_artifacts[0].model_path} --property-path {step05.candidate_artifacts[0].property_path} --output-dir {output_dir}`; if exit 0: execute `vacuity_checker.py`; execute `mutation_engine.py` for mutation scoring |
+| `synthesized` | `step05.status == "ok" && issue_class != null && refine_budget_left("synthesized")` | `syntax` \| `reference` \| `mapping_gap` \| `schema_invalid` \| `hallucination` | `synthesized` | re-execute Step05 tools (`mutation_engine.py`) with `refinement_ctx: {issue_class, diagnostics: see legend, prior_output: step05}`; append refinement event |
 | `synthesized` | `step05.status == "ok" && issue_class != null && !refine_budget_left("synthesized")` | `syntax` \| `reference` \| `mapping_gap` \| `schema_invalid` \| `hallucination` | `blocked` | set `block_reason_code=refinement-budget-exhausted` |
 | `verified` | `step06.status == "error"` | n/a | `error` | propagate envelope |
-| `verified` | `step06.status == "ok" && step06.verified == true && step06.vacuity_status.is_vacuous == false && step06.mutation_score >= 80.0` | null | `packaged` | invoke `packaging_agent` · `{rule_id, model_path: step05.selected_model_path, property_path: step05.selected_property_path, rmc_output_dir: step06.rmc_output_dir, dest_dir}` |
-| `verified` | `step06.status == "ok" && issue_class in {"syntax","reference"} && refine_budget_left("verified")` | `syntax` \| `reference` | `mapped` | invoke `mapping_agent` · `{same as step04 initial} + {refinement_ctx: {issue_class, diagnostics: step06 parse/compile or symbol-diff report, prior_output: step04}}`; append refinement event |
-| `verified` | `step06.status == "ok" && issue_class in {"weak_mutation","vacuity"} && refine_budget_left("verified")` | `weak_mutation` \| `vacuity` | `synthesized` | invoke `synthesis_agent` · `{same as step05 initial} + {refinement_ctx: {issue_class, diagnostics: step06 mutation detail or vacuity explanation, prior_output: step05}}`; append refinement event |
-| `verified` | `step06.status == "ok" && issue_class in {"schema_invalid","hallucination"} && refine_budget_left("verified")` | `schema_invalid` \| `hallucination` | `verified` | invoke `verification_agent` · `{same as initial} + {refinement_ctx: {issue_class, diagnostics: schema violation list or hallucinated symbol list, prior_output: step06}}`; append refinement event |
+| `verified` | `step06.status == "ok" && step06.verified == true && step06.vacuity_status.is_vacuous == false && step06.mutation_score >= 80.0` | null | `packaged` | copy `{step05.candidate_artifacts[0].model_path}`, `{step05.candidate_artifacts[0].property_path}`, `{step06.rmc_output_dir}/*.log` to `dest_dir/{rule_id}/{model,property,logs}/`; emit `generated_files[]` and `installation_report[]` |
+| `verified` | `step06.status == "ok" && issue_class in {"syntax","reference"} && refine_budget_left("verified")` | `syntax` \| `reference` | `mapped` | re-execute Step04 tools with `refinement_ctx: {issue_class, diagnostics: step06 parse/compile or symbol-diff report, prior_output: step04}`; append refinement event |
+| `verified` | `step06.status == "ok" && issue_class in {"weak_mutation","vacuity"} && refine_budget_left("verified")` | `weak_mutation` \| `vacuity` | `synthesized` | re-execute Step05 tools (`mutation_engine.py`) with `refinement_ctx: {issue_class, diagnostics: step06 mutation detail or vacuity explanation, prior_output: step05}`; append refinement event |
+| `verified` | `step06.status == "ok" && issue_class in {"schema_invalid","hallucination"} && refine_budget_left("verified")` | `schema_invalid` \| `hallucination` | `verified` | re-execute Step06 tools (`run_rmc.py`, `vacuity_checker.py`, `mutation_engine.py`) with `refinement_ctx: {issue_class, diagnostics: schema violation list or hallucinated symbol list, prior_output: step06}`; append refinement event |
 | `verified` | `step06.status == "ok" && issue_class != null && !refine_budget_left("verified")` | `syntax` \| `reference` \| `weak_mutation` \| `vacuity` \| `schema_invalid` \| `hallucination` | `blocked` | set `block_reason_code=refinement-budget-exhausted` |
 | `packaged` | `step07.status == "error"` | n/a | `error` | propagate envelope |
-| `packaged` | `step07.status == "ok"` | null | `reported` | invoke `reporting_agent` · `{scorecards: [step02..step06 summaries], output_dir}` |
+| `packaged` | `step07.status == "ok"` | null | `reported` | execute `generate_report.py` and `score_single_rule.py` with `{scorecards: [step02..step06 summaries], output_dir}`; emit `report_path`, `report_md_path`, `summary` |
 | `reported` | `step08.status == "error"` | n/a | `error` | propagate envelope |
 | `reported` | `step08.status == "ok"` | null | terminal success | return `workflow_summary` |
 
