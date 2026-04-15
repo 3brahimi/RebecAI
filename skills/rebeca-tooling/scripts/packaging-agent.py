@@ -1,3 +1,7 @@
+import json
+import shutil
+from typing import Any, Dict, List, Optional, Tuple
+from pathlib import Path
 #!/usr/bin/env python3
 """
 packaging-agent (WF-07): Artifact Collection, Manifest Generation, Installation Report
@@ -16,7 +20,7 @@ Exit codes:
 """
 
 import sys
-from utils import safe_path  # noqa: E402
+from .utils import safe_path  # noqa: E402
 
 
 
