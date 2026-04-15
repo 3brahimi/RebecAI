@@ -2,7 +2,7 @@
 """
 validate-tooling.py
 
-CI linting suite for skills/rebeca-tooling/scripts/.
+CI linting suite for skills/rebeca_tooling/scripts/.
 Runs mypy --strict and flake8 --select=E,F,W on every .py file in the scripts
 directory. Reports all violations and exits non-zero if any check fails.
 
@@ -21,7 +21,7 @@ from typing import List, Tuple
 
 
 _DEFAULT_SCRIPTS = (
-    Path(__file__).parent.parent / "skills" / "rebeca-tooling" / "scripts"
+    Path(__file__).parent.parent / "skills" / "rebeca_tooling" / "scripts"
 )
 
 
@@ -74,11 +74,11 @@ def run_flake8(scripts_dir: Path) -> Tuple[bool, str]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="validate-tooling: mypy + flake8 linting suite for rebeca-tooling scripts"
+        description="validate-tooling: mypy + flake8 linting suite for rebeca_tooling scripts"
     )
     parser.add_argument(
         "--scripts-dir", default=str(_DEFAULT_SCRIPTS),
-        help="Path to scripts directory (default: skills/rebeca-tooling/scripts/)",
+        help="Path to scripts directory (default: skills/rebeca_tooling/scripts/)",
     )
     parser.add_argument("--mypy-only",   action="store_true", help="Run only mypy")
     parser.add_argument("--flake8-only", action="store_true", help="Run only flake8")

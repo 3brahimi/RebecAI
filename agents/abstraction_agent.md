@@ -7,11 +7,11 @@ description: |
   naming conventions, discretizes to Rebeca-compatible types, and emits a
   JSON contract into coordinator shared_state.step03.
 user-invocable: false
-implementation: skills/rebeca-tooling/scripts/abstraction_agent.py
-schema: skills/rebeca-tooling/scripts/abstraction_agent.schema.json
+implementation: skills/rebeca_tooling/scripts/abstraction_agent.py
+schema: skills/rebeca_tooling/scripts/abstraction_agent.schema.json
 skills:
-  - rebeca-tooling
-  - rebeca-handbook
+  - rebeca_tooling
+  - rebeca_handbook
 ---
 
 # abstraction_agent (Step03): Abstraction and Discretization Setup
@@ -31,7 +31,7 @@ Operates on one `source_file_path` per invocation.
 | `snapshot_path` | string | no       | Step01 snapshot JSON; seeds variable_map when present     |
 | `colreg_text`   | string | no       | Supplementary COLREG text for actor/condition extraction |
 
-Schema: `skills/rebeca-tooling/scripts/abstraction_agent.schema.json` → `input` block.
+Schema: `skills/rebeca_tooling/scripts/abstraction_agent.schema.json` → `input` block.
 
 ## Tasks (in order)
 
@@ -66,7 +66,7 @@ Schema: `skills/rebeca-tooling/scripts/abstraction_agent.schema.json` → `input
 ## CLI
 
 ```bash
-python skills/rebeca-tooling/scripts/abstraction_agent.py \
+python skills/rebeca_tooling/scripts/abstraction_agent.py \
   --rule-id       Rule-22 \
   --legata-path   input/Rule-22.legata \
   [--snapshot-path output/snapshots/Rule-22.snapshot.json] \

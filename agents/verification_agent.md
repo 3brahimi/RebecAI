@@ -6,8 +6,8 @@ description: |
   Orchestrates run_rmc → vacuity_checker → mutation_engine for a single rule.
 user-invocable: false
 skills:
-  - rebeca-tooling
-  - rebeca-handbook
+  - rebeca_tooling
+  - rebeca_handbook
 ---
 
 # Step06 Subagent: Verification and Mutation Scoring

@@ -7,7 +7,7 @@ import tempfile
 from unittest.mock import patch
 from pathlib import Path
 
-_SKILL_ROOT = Path(__file__).resolve().parents[1] / "skills" / "rebeca-tooling"
+_SKILL_ROOT = Path(__file__).resolve().parents[1] / "skills" / "rebeca_tooling"
 _SCRIPTS_DIR = _SKILL_ROOT / "scripts"
 sys.path.insert(0, str(_SKILL_ROOT))
 sys.path.insert(0, str(_SCRIPTS_DIR))
@@ -172,7 +172,7 @@ def test_symbol_differ_cli_exit_codes_match_skill_contract():
         snapshot = capture_snapshot(str(golden_model), str(golden_prop), "Rule-22")
         _write(snapshot_path, json.dumps(snapshot))
 
-        script = Path(__file__).parents[1] / "skills" / "rebeca-tooling" / "scripts" / "symbol_differ.py"
+        script = Path(__file__).parents[1] / "skills" / "rebeca_tooling" / "scripts" / "symbol_differ.py"
 
         pass_run = subprocess.run(
             [

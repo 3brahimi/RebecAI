@@ -6,7 +6,7 @@ description: |
   manifest, and emitting a per-artifact installation report.
 user-invocable: false
 skills:
-  - rebeca-tooling
+  - rebeca_tooling
 ---
 
 # Step07 Subagent: Packaging and Artifact Manifest

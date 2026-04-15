@@ -1,5 +1,5 @@
 """
-Shared sample content for rebeca-tooling tests.
+Shared sample content for rebeca_tooling tests.
 """
 
 RULE_ID = "Rule-22"

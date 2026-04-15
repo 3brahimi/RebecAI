@@ -1,6 +1,6 @@
 # API Reference
 
-Complete Python library reference for `skills/rebeca-tooling/scripts/`.
+Complete Python library reference for `skills/rebeca_tooling/scripts/`.
 
 ## Installation
 
@@ -8,8 +8,8 @@ Complete Python library reference for `skills/rebeca-tooling/scripts/`.
 import sys
 from pathlib import Path
 
-# Add rebeca-tooling skill to path
-tooling_skill = Path("~/.agents/skills/rebeca-tooling").expanduser()
+# Add rebeca_tooling skill to path
+tooling_skill = Path("~/.agents/skills/rebeca_tooling").expanduser()
 sys.path.insert(0, str(tooling_skill))
 
 from scripts import *

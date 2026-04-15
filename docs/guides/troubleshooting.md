@@ -42,7 +42,7 @@ Counterexample trace:
 | `chained assignment` | `x = (y = condition)` is not allowed; define `y` separately |
 
 **How to fix:**
-See the [rebeca-handbook skill](skills/rebeca-handbook.md) for forbidden patterns and syntax reference.
+See the [rebeca_handbook skill](skills/rebeca_handbook.md) for forbidden patterns and syntax reference.
 
 ---
 
@@ -227,7 +227,7 @@ Detail: model.cpp:42: error: 'undeclaredVar' was not declared
 
 **Fix:**
 ```bash
-python3 ~/.agents/skills/rebeca-tooling/scripts/download_rmc.py \
+python3 ~/.agents/skills/rebeca_tooling/scripts/download_rmc.py \
   --url https://github.com/rebeca-lang/org.rebecalang.rmc/releases/latest \
   --dest-dir .agents/rmc
 ```
@@ -242,7 +242,7 @@ If the download fails (network issue), try manual download or check network conn
 
 **Fix:** Increase timeout when running RMC:
 ```bash
-python3 ~/.agents/skills/rebeca-tooling/scripts/run_rmc.py \
+python3 ~/.agents/skills/rebeca_tooling/scripts/run_rmc.py \
   --jar ~/.agents/rmc/rmc.jar \
   --model model.rebeca \
   --property property.property \
@@ -257,7 +257,7 @@ Or simplify the actor model to reduce state space.
 **Fix:** Increase Java heap size when running RMC:
 ```bash
 export JAVA_OPTS="-Xmx4g"
-python3 ~/.agents/skills/rebeca-tooling/scripts/run_rmc.py ...
+python3 ~/.agents/skills/rebeca_tooling/scripts/run_rmc.py ...
 ```
 
 ---
@@ -292,8 +292,8 @@ Provide more specific text, e.g., include terms like `vessel`, `light`, `visibil
 ```bash
 # Correct:
 cd /path/to/RebecAI
-python3 skills/rebeca-tooling/scripts/install_artifacts.py --target-root ~/.agents --mode all
+python3 skills/rebeca_tooling/scripts/install_artifacts.py --target-root ~/.agents --mode all
 
 # Wrong:
-cd rebecai/skills && python3 rebeca-tooling/scripts/install_artifacts.py ...
+cd rebecai/skills && python3 rebeca_tooling/scripts/install_artifacts.py ...
 ```

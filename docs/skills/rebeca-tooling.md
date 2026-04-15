@@ -1,4 +1,4 @@
-# rebeca-tooling Skill
+# rebeca_tooling Skill
 
 Cross-platform Python library providing automation for RMC model checking, rule classification, scoring, and reporting.
 
@@ -14,7 +14,7 @@ This skill provides:
 
 ## Python Modules
 
-The skill contains Python modules in `skills/rebeca-tooling/scripts/`:
+The skill contains Python modules in `skills/rebeca_tooling/scripts/`:
 
 | Module | Purpose | CLI | Library |
 |--------|---------|-----|---------|
@@ -42,8 +42,8 @@ The skill contains Python modules in `skills/rebeca-tooling/scripts/`:
 import sys
 from pathlib import Path
 
-# Add rebeca-tooling skill to path
-tooling_skill = Path("~/.agents/skills/rebeca-tooling").expanduser()
+# Add rebeca_tooling skill to path
+tooling_skill = Path("~/.agents/skills/rebeca_tooling").expanduser()
 sys.path.insert(0, str(tooling_skill))
 
 from scripts import (
@@ -74,12 +74,12 @@ result = run_rmc(
 python3 setup.py
 
 # Download RMC
-python3 ~/.agents/skills/rebeca-tooling/scripts/download_rmc.py \
+python3 ~/.agents/skills/rebeca_tooling/scripts/download_rmc.py \
   --url https://github.com/rebeca-lang/org.rebecalang.rmc/releases/latest \
   --dest-dir ~/.agents/rmc
 
 # Run verification
-python3 ~/.agents/skills/rebeca-tooling/scripts/run_rmc.py \
+python3 ~/.agents/skills/rebeca_tooling/scripts/run_rmc.py \
   --jar ~/.agents/rmc/rmc.jar \
   --model model.rebeca \
   --property property.property \
@@ -87,18 +87,18 @@ python3 ~/.agents/skills/rebeca-tooling/scripts/run_rmc.py \
   --timeout-seconds 120
 
 # Classify rule
-python3 ~/.agents/skills/rebeca-tooling/scripts/classify_rule_status.py \
+python3 ~/.agents/skills/rebeca_tooling/scripts/classify_rule_status.py \
   --legata-path legata/Rule-22.legata \
   --output-json
 
 # Score rule
-python3 ~/.agents/skills/rebeca-tooling/scripts/score_single_rule.py \
+python3 ~/.agents/skills/rebeca_tooling/scripts/score_single_rule.py \
   --rule-id Rule-22 \
   --verify-status pass \
   --output-json
 
 # Generate report
-python3 ~/.agents/skills/rebeca-tooling/scripts/generate_report.py \
+python3 ~/.agents/skills/rebeca_tooling/scripts/generate_report.py \
   --input-scores results.json \
   --output-dir reports/ \
   --format both
@@ -132,7 +132,7 @@ See [API Reference Guide](../guides/api-reference.md) for complete function sign
 ## Related Skills
 
 - **[legata_to_rebeca](legata_to_rebeca.md)** - Workflow guidance
-- **[rebeca-handbook](rebeca-handbook.md)** - Modeling best practices
+- **[rebeca_handbook](rebeca_handbook.md)** - Modeling best practices
 
 ## Related Agents
 

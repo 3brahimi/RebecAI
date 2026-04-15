@@ -116,7 +116,7 @@ If you prefer manual setup:
 ### Step 1: Download RMC
 
 ```bash
-python3 skills/rebeca-tooling/scripts/download_rmc.py \
+python3 skills/rebeca_tooling/scripts/download_rmc.py \
   --url https://github.com/rebeca-lang/org.rebecalang.rmc/releases/latest \
   --dest-dir ~/.agents/rmc
 ```
@@ -124,14 +124,14 @@ python3 skills/rebeca-tooling/scripts/download_rmc.py \
 ### Step 2: Verify RMC
 
 ```bash
-python3 skills/rebeca-tooling/scripts/verify_installation.py \
+python3 skills/rebeca_tooling/scripts/verify_installation.py \
   --rmc-jar ~/.agents/rmc/rmc.jar
 ```
 
 ### Step 3: Install Agents and Skills
 
 ```bash
-python3 skills/rebeca-tooling/scripts/install_artifacts.py \
+python3 skills/rebeca_tooling/scripts/install_artifacts.py \
   --target-root ~/.agents \
   --mode all
 ```
@@ -200,7 +200,7 @@ sudo apt install build-essential
 wget https://github.com/rebeca-lang/org.rebecalang.rmc/releases/download/v2.8.2/rmc.jar -O ~/.agents/rmc/rmc.jar
 
 # Or specify version explicitly
-python3 skills/rebeca-tooling/scripts/download_rmc.py \
+python3 skills/rebeca_tooling/scripts/download_rmc.py \
   --url https://github.com/rebeca-lang/org.rebecalang.rmc/releases/download/v2.8.2/rmc.jar \
   --dest-dir ~/.agents/rmc
 ```

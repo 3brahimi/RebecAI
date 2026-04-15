@@ -1,5 +1,5 @@
 """
-Integration tests for the rebeca-mutation skill: end-to-end mutation scoring
+Integration tests for the rebeca_mutation skill: end-to-end mutation scoring
 using the real rmc.jar.
 
 For each mutant the test writes it to a temp file, calls run_rmc() for real,

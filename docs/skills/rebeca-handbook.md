@@ -1,4 +1,4 @@
-# rebeca-handbook Skill
+# rebeca_handbook Skill
 
 Modeling best practices, syntax examples, and common pitfalls for writing correct Rebeca actor models.
 
@@ -199,7 +199,7 @@ Assertion:         Rule23: !isPowerDriven || isSmall || lightsOn;
 ## Related Skills
 
 - **[legata_to_rebeca](legata_to_rebeca.md)** - Workflow guidance
-- **[rebeca-tooling](rebeca-tooling.md)** - Python automation library
+- **[rebeca_tooling](rebeca_tooling.md)** - Python automation library
 
 ## Related Agents
 

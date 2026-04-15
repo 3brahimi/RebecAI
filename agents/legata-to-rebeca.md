@@ -49,18 +49,18 @@ Strict responsibility split between agent layer (reasoning) and skill layer (pro
 
 | Step | Agent | Skill | Agent Responsibility | Skill Responsibility |
 |------|-------|-------|----------------------|----------------------|
-| 01 Init | `init_agent` | `rebeca-tooling` | Decides to start; validates environment | Probes toolchain path; provisions RMC |
-| 02 Triage | `triage_agent` | `rebeca-tooling` | Reasons about rule status; makes routing decision; generates fallback property | Runs deterministic regex signal extraction (`classify-rule-status`, `colreg-fallback-mapper`) |
-| 03 Abstraction | `abstraction_agent` | `rebeca-handbook` | Reasons about actor/variable discretization; applies naming contract | Provides naming patterns and Rebeca type rules |
-| 04 Mapping | `mapping_agent` | `rebeca-handbook` | Decides assertion logic; resolves thresholds | Provides canonical formalization patterns (`transformation-utils`) |
-| 05 Synthesis | `synthesis_agent` | `rebeca-mutation` | Reasons about which alternative formulation to select | Applies mutation transformation rules (`mutation-engine`) |
-| 06 Verification | `verification_agent` | `rebeca-tooling` | Decides to accept/reject RMC result; interprets vacuity and mutation scores | Runs RMC, vacuity checker, mutation suite |
-| 07 Packaging | `packaging_agent` | `rebeca-tooling` | Decides what artifacts to export and their destination layout | Performs filesystem ops (copy, manifest generation) |
-| 08 Reporting | `reporting_agent` | `rebeca-tooling` | Reasons about aggregate quality; interprets pass/fail thresholds | Formats JSON/MD reports (`generate-report`) |
+| 01 Init | `init_agent` | `rebeca_tooling` | Decides to start; validates environment | Probes toolchain path; provisions RMC |
+| 02 Triage | `triage_agent` | `rebeca_tooling` | Reasons about rule status; makes routing decision; generates fallback property | Runs deterministic regex signal extraction (`classify-rule-status`, `colreg-fallback-mapper`) |
+| 03 Abstraction | `abstraction_agent` | `rebeca_handbook` | Reasons about actor/variable discretization; applies naming contract | Provides naming patterns and Rebeca type rules |
+| 04 Mapping | `mapping_agent` | `rebeca_handbook` | Decides assertion logic; resolves thresholds | Provides canonical formalization patterns (`transformation-utils`) |
+| 05 Synthesis | `synthesis_agent` | `rebeca_mutation` | Reasons about which alternative formulation to select | Applies mutation transformation rules (`mutation-engine`) |
+| 06 Verification | `verification_agent` | `rebeca_tooling` | Decides to accept/reject RMC result; interprets vacuity and mutation scores | Runs RMC, vacuity checker, mutation suite |
+| 07 Packaging | `packaging_agent` | `rebeca_tooling` | Decides what artifacts to export and their destination layout | Performs filesystem ops (copy, manifest generation) |
+| 08 Reporting | `reporting_agent` | `rebeca_tooling` | Reasons about aggregate quality; interprets pass/fail thresholds | Formats JSON/MD reports (`generate-report`) |
 
 ### Architectural Invariants
 
-- **Dumb Tools**: Scripts in `skills/rebeca-tooling/scripts/` perform exactly ONE deterministic task (regex, file I/O, tool invocation). Zero heuristic interpretation of natural language.
+- **Dumb Tools**: Scripts in `skills/rebeca_tooling/scripts/` perform exactly ONE deterministic task (regex, file I/O, tool invocation). Zero heuristic interpretation of natural language.
 - **Smart Agents**: All classification, fallback selection, routing, and workflow sequencing decisions live in agent `.md` specs and `.py` orchestrators.
 - **`UnparseableInputError` (exit 2)**: Any tool that receives input it cannot handle deterministically emits exit code 2 with a JSON error envelope — never silently guesses.
 - **Single Source of Truth**: This coordinator owns `shared_state.json`. Sub_agents receive only the fields they need; they return JSON patches the coordinator merges.

@@ -5,7 +5,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-_SKILL_ROOT = Path(__file__).resolve().parents[1] / "skills" / "rebeca-tooling"
+_SKILL_ROOT = Path(__file__).resolve().parents[1] / "skills" / "rebeca_tooling"
 _SCRIPTS_DIR = _SKILL_ROOT / "scripts"
 sys.path.insert(0, str(_SKILL_ROOT))
 sys.path.insert(0, str(_SCRIPTS_DIR))

@@ -121,8 +121,8 @@ Total maximum: **100 points**. Scores are computed by `RubricScorer` in `scripts
 The agent leverages three skills:
 
 - **[legata_to_rebeca](../skills/legata_to_rebeca.md)** - Workflow guidance
-- **[rebeca-handbook](../skills/rebeca-handbook.md)** - Modeling best practices
-- **[rebeca-tooling](../skills/rebeca-tooling.md)** - Python library for automation
+- **[rebeca_handbook](../skills/rebeca_handbook.md)** - Modeling best practices
+- **[rebeca_tooling](../skills/rebeca_tooling.md)** - Python library for automation
 
 ## Installation
 

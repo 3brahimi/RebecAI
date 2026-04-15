@@ -115,8 +115,8 @@ Run RMC verification with 300-second timeout.
 import sys
 from pathlib import Path
 
-# Add rebeca-tooling skill to path
-tooling_skill = Path("~/.agents/skills/rebeca-tooling").expanduser()
+# Add rebeca_tooling skill to path
+tooling_skill = Path("~/.agents/skills/rebeca_tooling").expanduser()
 sys.path.insert(0, str(tooling_skill))
 
 from scripts import (
@@ -206,7 +206,7 @@ python3 setup.py
 ### Run Verification
 
 ```bash
-python3 ~/.agents/skills/rebeca-tooling/scripts/run_rmc.py \
+python3 ~/.agents/skills/rebeca_tooling/scripts/run_rmc.py \
   --jar ~/.agents/rmc/rmc.jar \
   --model output/Rule-22.rebeca \
   --property output/Rule-22.property \
@@ -217,7 +217,7 @@ python3 ~/.agents/skills/rebeca-tooling/scripts/run_rmc.py \
 ### Classify Rule
 
 ```bash
-python3 ~/.agents/skills/rebeca-tooling/scripts/classify_rule_status.py \
+python3 ~/.agents/skills/rebeca_tooling/scripts/classify_rule_status.py \
   --legata-path legata/Rule-22-Equipment-Range.legata \
   --output-json
 ```
@@ -225,7 +225,7 @@ python3 ~/.agents/skills/rebeca-tooling/scripts/classify_rule_status.py \
 ### Score Rule
 
 ```bash
-python3 ~/.agents/skills/rebeca-tooling/scripts/score_single_rule.py \
+python3 ~/.agents/skills/rebeca_tooling/scripts/score_single_rule.py \
   --rule-id Rule-22 \
   --verify-status pass \
   --output-json
@@ -234,7 +234,7 @@ python3 ~/.agents/skills/rebeca-tooling/scripts/score_single_rule.py \
 ### Generate Report
 
 ```bash
-python3 ~/.agents/skills/rebeca-tooling/scripts/generate_report.py \
+python3 ~/.agents/skills/rebeca_tooling/scripts/generate_report.py \
   --input-scores output/scorecards.json \
   --output-dir output/reports \
   --format both

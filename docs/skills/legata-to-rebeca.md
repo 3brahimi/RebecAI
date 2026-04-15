@@ -81,8 +81,8 @@ See [Usage Guide](../guides/usage.md) for complete examples.
 
 ## Related Skills
 
-- **[rebeca-handbook](rebeca-handbook.md)** - Modeling best practices
-- **[rebeca-tooling](rebeca-tooling.md)** - Python automation library
+- **[rebeca_handbook](rebeca_handbook.md)** - Modeling best practices
+- **[rebeca_tooling](rebeca_tooling.md)** - Python automation library
 
 ## Related Agents
 

@@ -404,7 +404,7 @@ class TestCLI:
             prop = Path(td) / "model.property"
             model.write_text(SAMPLE_MODEL)
             prop.write_text(SAMPLE_PROPERTY)
-            scripts_dir = str(Path(__file__).parent.parent / "skills" / "rebeca-tooling" / "scripts")
+            scripts_dir = str(Path(__file__).parent.parent / "skills" / "rebeca_tooling" / "scripts")
             result = subprocess.run(
                 [sys.executable, "mutation_engine.py",
                  "--rule-id", "Rule-22",
@@ -421,7 +421,7 @@ class TestCLI:
 
     def test_exit_1_no_files(self):
         import subprocess
-        scripts_dir = str(Path(__file__).parent.parent / "skills" / "rebeca-tooling" / "scripts")
+        scripts_dir = str(Path(__file__).parent.parent / "skills" / "rebeca_tooling" / "scripts")
         result = subprocess.run(
             [sys.executable, "mutation_engine.py", "--rule-id", "Rule-22"],
             cwd=scripts_dir,
@@ -431,7 +431,7 @@ class TestCLI:
 
     def test_exit_1_missing_model_file(self, tmp_path):
         import subprocess
-        scripts_dir = str(Path(__file__).parent.parent / "skills" / "rebeca-tooling" / "scripts")
+        scripts_dir = str(Path(__file__).parent.parent / "skills" / "rebeca_tooling" / "scripts")
         result = subprocess.run(
             [sys.executable, "mutation_engine.py",
              "--rule-id", "Rule-22",

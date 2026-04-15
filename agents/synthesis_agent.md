@@ -8,8 +8,8 @@ description: |
   MUST be routed to Step05 (verification_agent) before any downstream use.
 user-invocable: false
 skills:
-  - rebeca-tooling
-  - rebeca-handbook
+  - rebeca_tooling
+  - rebeca_handbook
 ---
 
 # Step05 Subagent: LLM-Assisted Candidate Generation

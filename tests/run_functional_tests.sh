@@ -19,7 +19,7 @@ REPO_ROOT="$PROJECT_ROOT"
 SYNTAX_CHECKER="$SCRIPT_DIR/check_rebeca_syntax.py"
 SCENARIOS_DIR="$REPO_ROOT/src/PromptingExperimentDoc/RebecaCodeScenarios"
 RMC_JAR="${RMC_JAR:-.agents/rmc/rmc.jar}"
-TOOLING_SCRIPTS="$PROJECT_ROOT/skills/rebeca-tooling/scripts"
+TOOLING_SCRIPTS="$PROJECT_ROOT/skills/rebeca_tooling/scripts"
 
 PASSED=0
 FAILED=0

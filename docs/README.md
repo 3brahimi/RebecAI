@@ -20,11 +20,11 @@ Complete documentation for RebecAI agents and skills.
   - 8-phase transformation process
   - Practical examples and best practices
 
-- **[rebeca-handbook](skills/rebeca-handbook.md)** - Modeling best practices skill
+- **[rebeca_handbook](skills/rebeca_handbook.md)** - Modeling best practices skill
   - Syntax reference and modeling patterns
   - Common pitfalls and debugging tips
 
-- **[rebeca-tooling](skills/rebeca-tooling.md)** - Python library skill
+- **[rebeca_tooling](skills/rebeca_tooling.md)** - Python library skill
   - 11 cross-platform modules
   - CLI and library usage
 
@@ -49,8 +49,8 @@ docs/
 │   └── legata_to_rebeca.md            # Legata→Rebeca agent
 ├── skills/                             # Per-skill documentation
 │   ├── legata_to_rebeca.md            # Workflow guidance skill
-│   ├── rebeca-handbook.md             # Modeling best practices skill
-│   └── rebeca-tooling.md              # Python library skill
+│   ├── rebeca_handbook.md             # Modeling best practices skill
+│   └── rebeca_tooling.md              # Python library skill
 └── guides/                             # Installation, usage, architecture
     ├── installation.md                 # Setup instructions
     ├── usage.md                        # Workflow examples
@@ -76,7 +76,7 @@ docs/
 
 **Researchers:**
 1. Review [legata_to_rebeca agent](agents/legata_to_rebeca.md) for workflow
-2. Check [rebeca-handbook skill](skills/rebeca-handbook.md) for modeling
+2. Check [rebeca_handbook skill](skills/rebeca_handbook.md) for modeling
 3. See [Architecture Guide](guides/architecture.md) for system design
 
 ### By Task
@@ -89,10 +89,10 @@ docs/
 - [Usage Guide](guides/usage.md)
 
 **Writing Models:**
-- [rebeca-handbook skill](skills/rebeca-handbook.md)
+- [rebeca_handbook skill](skills/rebeca_handbook.md)
 
 **Using Python Library:**
-- [rebeca-tooling skill](skills/rebeca-tooling.md)
+- [rebeca_tooling skill](skills/rebeca_tooling.md)
 - [API Reference](guides/api-reference.md)
 
 **Troubleshooting:**

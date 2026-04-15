@@ -227,7 +227,7 @@ class TestVacuityCLI:
 
     def test_exit_0_non_vacuous(self, rmc_jar, model_file, home_tmp):
         import subprocess
-        scripts_dir = str(Path(__file__).parent.parent / "skills" / "rebeca-tooling" / "scripts")
+        scripts_dir = str(Path(__file__).parent.parent / "skills" / "rebeca_tooling" / "scripts")
         prop = home_tmp / "cli_nv.property"
         prop.write_text(PROPERTY_NON_VACUOUS, encoding="utf-8")
         result = subprocess.run(
@@ -243,7 +243,7 @@ class TestVacuityCLI:
 
     def test_exit_1_missing_property(self, rmc_jar, model_file, home_tmp):
         import subprocess
-        scripts_dir = str(Path(__file__).parent.parent / "skills" / "rebeca-tooling" / "scripts")
+        scripts_dir = str(Path(__file__).parent.parent / "skills" / "rebeca_tooling" / "scripts")
         result = subprocess.run(
             [sys.executable, "vacuity_checker.py",
              "--jar", rmc_jar,

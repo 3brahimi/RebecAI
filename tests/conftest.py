@@ -6,7 +6,7 @@ import tempfile
 from pathlib import Path
 
 _ROOT = Path(__file__).parent.parent
-_SCRIPTS = _ROOT / "skills" / "rebeca-tooling" / "scripts"
+_SCRIPTS = _ROOT / "skills" / "rebeca_tooling" / "scripts"
 _TESTS = Path(__file__).parent
 
 sys.path.insert(0, str(_SCRIPTS))

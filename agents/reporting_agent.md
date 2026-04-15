@@ -7,8 +7,8 @@ description: |
   and report.md from coordinator-supplied per-rule scorecards.
 user-invocable: false
 skills:
-  - rebeca-tooling
-  - rebeca-handbook
+  - rebeca_tooling
+  - rebeca_handbook
 ---
 
 # Step08 Subagent: Scoring and Reporting

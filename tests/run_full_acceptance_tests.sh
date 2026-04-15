@@ -136,8 +136,8 @@ fi
 
 # AT-006: download_rmc script exists and handles URL/destination/checksum parameters
 echo -n "AT-006 (RMC Download Script): "
-if check_file "$ARTIFACT_ROOT/skills/rebeca-tooling/scripts/download_rmc.py" && \
-   check_grep "url\|dest_dir" "$ARTIFACT_ROOT/skills/rebeca-tooling/scripts/download_rmc.py"; then
+if check_file "$ARTIFACT_ROOT/skills/rebeca_tooling/scripts/download_rmc.py" && \
+   check_grep "url\|dest_dir" "$ARTIFACT_ROOT/skills/rebeca_tooling/scripts/download_rmc.py"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -148,7 +148,7 @@ fi
 
 # AT-007: download_rmc script handles error cases
 echo -n "AT-007 (RMC Download Error Handling): "
-if check_grep "exit\|error\|Error" "$ARTIFACT_ROOT/skills/rebeca-tooling/scripts/download_rmc.py"; then
+if check_grep "exit\|error\|Error" "$ARTIFACT_ROOT/skills/rebeca_tooling/scripts/download_rmc.py"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -159,8 +159,8 @@ fi
 
 # AT-008: run_rmc script exists and validates model/property paths
 echo -n "AT-008 (RMC Run Script): "
-if check_file "$ARTIFACT_ROOT/skills/rebeca-tooling/scripts/run_rmc.py" && \
-   check_grep "jar\|model" "$ARTIFACT_ROOT/skills/rebeca-tooling/scripts/run_rmc.py"; then
+if check_file "$ARTIFACT_ROOT/skills/rebeca_tooling/scripts/run_rmc.py" && \
+   check_grep "jar\|model" "$ARTIFACT_ROOT/skills/rebeca_tooling/scripts/run_rmc.py"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -171,7 +171,7 @@ fi
 
 # AT-009: run_rmc script supports timeout and output configuration
 echo -n "AT-009 (RMC Run Configuration): "
-if check_grep "timeout" "$ARTIFACT_ROOT/skills/rebeca-tooling/scripts/run_rmc.py"; then
+if check_grep "timeout" "$ARTIFACT_ROOT/skills/rebeca_tooling/scripts/run_rmc.py"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -230,7 +230,7 @@ fi
 
 # AT-014: Hooks automation exists
 echo -n "AT-014 (Hooks Automation): "
-if check_file "$ARTIFACT_ROOT/skills/rebeca-tooling/scripts/pre_run_rmc_check.py"; then
+if check_file "$ARTIFACT_ROOT/skills/rebeca_tooling/scripts/pre_run_rmc_check.py"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -241,7 +241,7 @@ fi
 
 # AT-015: Single-rule scoring exists
 echo -n "AT-015 (Single-Rule Scoring): "
-if check_file "$ARTIFACT_ROOT/skills/rebeca-tooling/scripts/score_single_rule.py"; then
+if check_file "$ARTIFACT_ROOT/skills/rebeca_tooling/scripts/score_single_rule.py"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -252,7 +252,7 @@ fi
 
 # AT-016: Reporting mechanism exists
 echo -n "AT-016 (Reporting Mechanism): "
-if check_file "$ARTIFACT_ROOT/skills/rebeca-tooling/scripts/generate_report.py"; then
+if check_file "$ARTIFACT_ROOT/skills/rebeca_tooling/scripts/generate_report.py"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -263,7 +263,7 @@ fi
 
 # AT-017: Rule-status triage exists
 echo -n "AT-017 (Rule Status Triage): "
-if check_file "$ARTIFACT_ROOT/skills/rebeca-tooling/scripts/classify_rule_status.py"; then
+if check_file "$ARTIFACT_ROOT/skills/rebeca_tooling/scripts/classify_rule_status.py"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -274,7 +274,7 @@ fi
 
 # AT-018: COLREG fallback mapping exists
 echo -n "AT-018 (COLREG Fallback): "
-if check_file "$ARTIFACT_ROOT/skills/rebeca-tooling/scripts/colreg_fallback_mapper.py"; then
+if check_file "$ARTIFACT_ROOT/skills/rebeca_tooling/scripts/colreg_fallback_mapper.py"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -309,13 +309,13 @@ fi
 # AT-021: No requirement leakage (FR-*, AT-*, requirements/**)
 echo -n "AT-021 (No Requirement Leakage): "
 LEAKAGE_CLEAN=true
-if grep -r "FR-" "$ARTIFACT_ROOT/agents/" "$ARTIFACT_ROOT/skills/" "$ARTIFACT_ROOT/skills/rebeca-tooling/scripts/" 2>/dev/null | grep -v "Binary"; then
+if grep -r "FR-" "$ARTIFACT_ROOT/agents/" "$ARTIFACT_ROOT/skills/" "$ARTIFACT_ROOT/skills/rebeca_tooling/scripts/" 2>/dev/null | grep -v "Binary"; then
   LEAKAGE_CLEAN=false
 fi
-if grep -r "AT-[0-9]" "$ARTIFACT_ROOT/agents/" "$ARTIFACT_ROOT/skills/" "$ARTIFACT_ROOT/skills/rebeca-tooling/scripts/" 2>/dev/null | grep -v "Binary"; then
+if grep -r "AT-[0-9]" "$ARTIFACT_ROOT/agents/" "$ARTIFACT_ROOT/skills/" "$ARTIFACT_ROOT/skills/rebeca_tooling/scripts/" 2>/dev/null | grep -v "Binary"; then
   LEAKAGE_CLEAN=false
 fi
-if grep -r "requirements/" "$ARTIFACT_ROOT/agents/" "$ARTIFACT_ROOT/skills/" "$ARTIFACT_ROOT/skills/rebeca-tooling/scripts/" 2>/dev/null | grep -v "Binary"; then
+if grep -r "requirements/" "$ARTIFACT_ROOT/agents/" "$ARTIFACT_ROOT/skills/" "$ARTIFACT_ROOT/skills/rebeca_tooling/scripts/" 2>/dev/null | grep -v "Binary"; then
   LEAKAGE_CLEAN=false
 fi
 if [[ "$LEAKAGE_CLEAN" == true ]]; then
@@ -329,9 +329,9 @@ fi
 
 # AT-022: Dedicated Rebeca modeling skill with Do/Don'ts and examples
 echo -n "AT-022 (Rebeca Modeling Skill): "
-if check_file "$ARTIFACT_ROOT/skills/rebeca-handbook/SKILL.md" && \
-   check_grep_ci "do\|don't" "$ARTIFACT_ROOT/skills/rebeca-handbook/SKILL.md" && \
-   check_grep_ci "example" "$ARTIFACT_ROOT/skills/rebeca-handbook/SKILL.md"; then
+if check_file "$ARTIFACT_ROOT/skills/rebeca_handbook/SKILL.md" && \
+   check_grep_ci "do\|don't" "$ARTIFACT_ROOT/skills/rebeca_handbook/SKILL.md" && \
+   check_grep_ci "example" "$ARTIFACT_ROOT/skills/rebeca_handbook/SKILL.md"; then
   echo "PASS"
   ((PASSED++))
 else

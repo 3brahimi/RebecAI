@@ -40,7 +40,7 @@ RebecAI follows a modular architecture with three main layers:
 ┌─────────────────────────────────────────────────────────┐
 │                   Tooling Layer                         │
 │  ┌───────────────────────────────────────────────────┐  │
-│  │       skills/rebeca-tooling/scripts/              │  │
+│  │       skills/rebeca_tooling/scripts/              │  │
 │  │  - utils.py              (security guards)        │  │
 │  │  - download_rmc.py                                │  │
 │  │  - run_rmc.py                                     │  │
@@ -79,7 +79,7 @@ RebecAI follows a modular architecture with three main layers:
 
 ### 4. Claude Code Compliance
 - Follows `~/.agents/agents/` and `~/.agents/skills/` conventions
-- Tooling embedded in `skills/rebeca-tooling/scripts/`
+- Tooling embedded in `skills/rebeca_tooling/scripts/`
 - Root `setup.py` and `purge.py` are project-level utilities, not installed artifacts
 
 ## Workflow Execution
@@ -92,12 +92,12 @@ User → @legata_to_rebeca → Agent reads definition
 ### Phase 2: Skill Consultation
 ```
 Agent → legata_to_rebeca skill → Workflow guidance
-Agent → rebeca-handbook skill → Modeling patterns
+Agent → rebeca_handbook skill → Modeling patterns
 ```
 
 ### Phase 3: Tooling Execution
 ```
-Agent → rebeca-tooling skill → Python library
+Agent → rebeca_tooling skill → Python library
 Python library → RMC → Verification result
 ```
 
@@ -162,9 +162,9 @@ rebecai/
 ├── skills/
 │   ├── legata_to_rebeca/
 │   │   └── SKILL.md                 # Workflow guidance
-│   ├── rebeca-handbook/
+│   ├── rebeca_handbook/
 │   │   └── SKILL.md                 # Modeling best practices
-│   └── rebeca-tooling/
+│   └── rebeca_tooling/
 │       ├── SKILL.md                 # Tooling documentation
 │       └── scripts/                 # Python library (10 modules)
 ├── docs/                            # Developer documentation
@@ -177,8 +177,8 @@ rebecai/
 │   └── legata_to_rebeca.md
 ├── skills/
 │   ├── legata_to_rebeca/
-│   ├── rebeca-handbook/
-│   └── rebeca-tooling/
+│   ├── rebeca_handbook/
+│   └── rebeca_tooling/
 │       └── scripts/                 # Python library (10 modules)
 └── rmc/
     └── rmc.jar                      # RMC model checker
@@ -192,8 +192,8 @@ After running `python3 setup.py` from the project root, artifacts are placed at:
 |----------|---------------|
 | Agent definition | `~/.agents/agents/legata_to_rebeca.md` |
 | Workflow guidance skill | `~/.agents/skills/legata_to_rebeca/SKILL.md` |
-| Modeling handbook skill | `~/.agents/skills/rebeca-handbook/SKILL.md` |
-| Tooling skill + scripts | `~/.agents/skills/rebeca-tooling/scripts/` |
+| Modeling handbook skill | `~/.agents/skills/rebeca_handbook/SKILL.md` |
+| Tooling skill + scripts | `~/.agents/skills/rebeca_tooling/scripts/` |
 | RMC model checker | `~/.agents/rmc/rmc.jar` |
 
 To clean up all installed artifacts before a re-install: `python3 purge.py && python3 setup.py`
@@ -216,7 +216,7 @@ To clean up all installed artifacts before a re-install: `python3 purge.py && py
 
 ### Adding New Tooling
 
-1. Create module in `skills/rebeca-tooling/scripts/`
+1. Create module in `skills/rebeca_tooling/scripts/`
 2. Add CLI interface with argparse
 3. Export from `__init__.py`
 4. Update skill documentation

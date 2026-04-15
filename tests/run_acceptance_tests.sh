@@ -46,7 +46,7 @@ fi
 
 # AT-022: Rebeca Guidance Skill
 echo -n "AT-022 (Rebeca Skill): "
-if [[ -f ".agents/skills/rebeca-modeling-guidelines/SKILL.md" ]]; then
+if [[ -f ".agents/skills/rebeca_modeling-guidelines/SKILL.md" ]]; then
   echo "PASS"
   ((PASSED++))
 else

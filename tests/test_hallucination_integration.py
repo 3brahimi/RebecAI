@@ -1,4 +1,4 @@
-"""Integration tests for rebeca-hallucination orchestration behavior."""
+"""Integration tests for rebeca_hallucination orchestration behavior."""
 
 import json
 import subprocess
@@ -61,8 +61,8 @@ def test_orchestration_flow_snapshot_then_audit_clean_pass():
         _write(golden_model, GOLDEN_MODEL)
         _write(golden_prop, GOLDEN_PROPERTY)
 
-        snapshotter = Path(__file__).parents[1] / "skills" / "rebeca-tooling" / "scripts" / "snapshotter.py"
-        differ = Path(__file__).parents[1] / "skills" / "rebeca-tooling" / "scripts" / "symbol_differ.py"
+        snapshotter = Path(__file__).parents[1] / "skills" / "rebeca_tooling" / "scripts" / "snapshotter.py"
+        differ = Path(__file__).parents[1] / "skills" / "rebeca_tooling" / "scripts" / "symbol_differ.py"
 
         snap_run = subprocess.run(
             [
@@ -115,8 +115,8 @@ def test_orchestration_flow_reference_hallucination_with_mocked_rmc_stderr():
         _write(current_prop, CURRENT_PROPERTY_WITH_REFERENCE_HALLUCINATION)
         _write(stderr_log, "Error: Unknown variable shadowState at line 4")
 
-        snapshotter = Path(__file__).parents[1] / "skills" / "rebeca-tooling" / "scripts" / "snapshotter.py"
-        differ = Path(__file__).parents[1] / "skills" / "rebeca-tooling" / "scripts" / "symbol_differ.py"
+        snapshotter = Path(__file__).parents[1] / "skills" / "rebeca_tooling" / "scripts" / "snapshotter.py"
+        differ = Path(__file__).parents[1] / "skills" / "rebeca_tooling" / "scripts" / "symbol_differ.py"
 
         snap_run = subprocess.run(
             [

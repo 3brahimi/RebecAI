@@ -118,7 +118,7 @@ Include:
 
 ### 1. Create Module
 
-Create `skills/rebeca-tooling/scripts/your_module.py`:
+Create `skills/rebeca_tooling/scripts/your_module.py`:
 
 ```python
 """
@@ -160,7 +160,7 @@ if __name__ == "__main__":
 
 ### 2. Export from Package
 
-Update `skills/rebeca-tooling/scripts/__init__.py`:
+Update `skills/rebeca_tooling/scripts/__init__.py`:
 
 ```python
 from .your_module import your_function
@@ -203,7 +203,7 @@ result = your_function(param1="value", param2=42)
 
 ### 5. Update Skill Documentation
 
-Update `skills/rebeca-tooling/SKILL.md` to document the new module.
+Update `skills/rebeca_tooling/SKILL.md` to document the new module.
 
 ### 6. Submit Pull Request
 

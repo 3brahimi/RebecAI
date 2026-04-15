@@ -28,7 +28,7 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-LIB_DIR="$PROJECT_ROOT/skills/rebeca-tooling/scripts"
+LIB_DIR="$PROJECT_ROOT/skills/rebeca_tooling/scripts"
 
 RMC_TAG="${RMC_TAG:-}"
 KEEP_ARTIFACTS="${KEEP_ARTIFACTS:-0}"

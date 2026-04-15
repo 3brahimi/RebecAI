@@ -42,8 +42,8 @@ Currently, the following components are implemented and available for use:
 | Skill | Description | Implementation Path |
 | :--- | :--- | :--- |
 | `legata_to_rebeca` | Workflow guidance and pattern application. | `skills/legata_to_rebeca/` |
-| `rebeca-handbook` | Best practices for actor-based modeling. | `skills/rebeca-handbook/` |
-| `rebeca-tooling` | Python library/CLI for RMC execution and reporting. | `skills/rebeca-tooling/` |
+| `rebeca_handbook` | Best practices for actor-based modeling. | `skills/rebeca_handbook/` |
+| `rebeca_tooling` | Python library/CLI for RMC execution and reporting. | `skills/rebeca_tooling/` |
 
 # Quick Start
 
