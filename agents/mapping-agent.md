@@ -6,8 +6,8 @@ description: |
   Consumes the Step03 abstraction summary and produces a pair of files —
   a .rebeca actor model and a .property assertion file — for each rule.
 user-invocable: false
-implementation: agents/mapping-agent.py
-schema: agents/mapping-agent.schema.json
+implementation: skills/rebeca-tooling/scripts/mapping-agent.py
+schema: skills/rebeca-tooling/scripts/mapping-agent.schema.json
 skills:
   - rebeca-tooling
   - rebeca-handbook
@@ -30,7 +30,7 @@ RMC can verify: a Timed Rebeca model file and a property file. Operates on one
 | `abstraction_summary`| object | yes      | Step03 output (`actor_map`, `variable_map`, `naming_contract`) |
 | `output_dir`         | string | yes      | Directory where `.rebeca` and `.property` are written |
 
-Schema: `agents/mapping-agent.schema.json` → `input` block.
+Schema: `skills/rebeca-tooling/scripts/mapping-agent.schema.json` → `input` block.
 
 ## Tasks (in order)
 
@@ -104,7 +104,7 @@ extracted from the Legata section text. Operator is inferred from `>=`, `>`, `<=
 ## CLI
 
 ```bash
-python agents/mapping-agent.py \
+python skills/rebeca-tooling/scripts/mapping-agent.py \
   --rule-id            Rule-22 \
   --legata-path        input/Rule-22.legata \
   --abstraction-json   '{"naming_contract":{...},"actor_map":[...],"variable_map":[...]}' \

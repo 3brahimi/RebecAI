@@ -7,8 +7,8 @@ description: |
   repair, COLREG-fallback, or skip. Emits a JSON contract into
   coordinator shared_state.step02.
 user-invocable: false
-implementation: agents/triage-agent.py
-schema: agents/triage-agent.schema.json
+implementation: skills/rebeca-tooling/scripts/triage-agent.py
+schema: skills/rebeca-tooling/scripts/triage-agent.schema.json
 skills:
   - rebeca-tooling
 ---
@@ -29,7 +29,7 @@ invocation (the coordinator loops for multi-rule pipelines).
 | `legata_path` | string | yes      | Path to the `.legata` source file                 |
 | `colreg_text` | string | no       | Raw COLREG text; required when fallback is likely |
 
-Schema: `agents/triage-agent.schema.json` → `input` block.
+Schema: `skills/rebeca-tooling/scripts/triage-agent.schema.json` → `input` block.
 
 ## Tasks (in order)
 
@@ -54,7 +54,7 @@ If any step fails, emit the **Error Envelope** to stdout and exit 1.
 ## CLI
 
 ```bash
-python agents/triage-agent.py \
+python skills/rebeca-tooling/scripts/triage-agent.py \
   --rule-id     Rule-22 \
   --legata-path input/Rule-22.legata \
   [--colreg-text "Every vessel shall exhibit lights..."]
@@ -105,7 +105,7 @@ When `path == colreg-fallback`, `routing.fallback_mapping` is populated:
 
 ## Error Envelope (failure)
 
-Conforms to the canonical Error Envelope defined in `agents/legata-to-rebeca.md`:
+Conforms to the canonical Error Envelope defined in `skills/rebeca-tooling/scripts/legata-to-rebeca.md`:
 
 ```json
 {
