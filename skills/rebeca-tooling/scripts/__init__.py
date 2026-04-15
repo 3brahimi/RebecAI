@@ -33,3 +33,4 @@ __all__ = [
     "MutationEngine", "Mutation", "check_vacuity", "extract_precondition",
     "build_negated_property", "capture_snapshot", "detect_hallucinations", "HallucinationResult"
 ]
+from .transformation_utils import get_canonical_assertion, format_rebeca_define
