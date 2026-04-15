@@ -12,19 +12,13 @@ Exit codes:
   1: Failure — error envelope written to stdout
 """
 
-import argparse
 import importlib
-import json
-import sys
 import tempfile
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
 
 # ---------------------------------------------------------------------------
 # Bootstrap
 # ---------------------------------------------------------------------------
 _SCRIPTS = Path(__file__).parent
-sys.path.insert(0, str(_SCRIPTS))
 
 _rmc_mod      = importlib.import_module("run-rmc")
 _vacuity_mod  = importlib.import_module("vacuity-checker")
@@ -84,16 +78,12 @@ def _checked_safe_path(p: str, label: str) -> Tuple[Optional[Path], Optional[str
 
 
 def _validate_output(result: Dict[str, Any]) -> Optional[str]:
-    schema_path = Path(__file__).parent.parent / "schemas" / "verification-agent.schema.json"
     try:
-        import jsonschema  # type: ignore
         if not schema_path.exists():
             return None
-        root = json.loads(schema_path.read_text(encoding="utf-8"))
         output_schema = root.get("output")
         if output_schema:
             combined = {"definitions": root.get("definitions", {}), **output_schema}
-            errors = list(jsonschema.Draft7Validator(combined).iter_errors(result))
             if errors:
                 return f"Output schema validation failed: {errors[0].message}"
     except ImportError:
@@ -206,7 +196,6 @@ def run_verification(
     try:
         rmc_exit_code = run_rmc(str(jp), str(mp), str(pp), str(od), timeout)
     except SystemExit as exc:
-        return _error(f"run_rmc called sys.exit({exc.code})"), 1
     except Exception as exc:
         return _error(f"run_rmc raised unexpected exception: {exc}"), 1
 
@@ -232,7 +221,6 @@ def run_verification(
                 "explanation":          vr.get("explanation", ""),
             }
         except SystemExit as exc:
-            return _error(f"check_vacuity called sys.exit({exc.code})"), 1
         except Exception as exc:
             return _error(f"check_vacuity raised unexpected exception: {exc}"), 1
 
@@ -275,7 +263,6 @@ def run_verification(
 # ---------------------------------------------------------------------------
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
         description="verification-agent (WF-06): RMC verification, vacuity, mutation scoring"
     )
     parser.add_argument("--rule-id",       required=True)
@@ -290,8 +277,6 @@ def main() -> None:
         args.rule_id, args.model_path, args.property_path,
         args.jar_path, args.output_dir, args.timeout,
     )
-    print(json.dumps(result, indent=2))
-    sys.exit(exit_code)
 
 
 if __name__ == "__main__":
