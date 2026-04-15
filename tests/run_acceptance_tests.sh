@@ -3,6 +3,12 @@ set -euo pipefail
 
 # Run acceptance tests AT-001 through AT-022
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ARTIFACT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+AGENT_FILE="$ARTIFACT_ROOT/agents/legata_to_rebeca.md"
+SKILL_FILE="$ARTIFACT_ROOT/skills/rebeca_handbook/SKILL.md"
+
 echo "Running Acceptance Tests..."
 echo ""
 
@@ -11,8 +17,8 @@ FAILED=0
 
 # AT-001: Prescribed Workflow
 echo -n "AT-001 (Prescribed Workflow): "
-if [[ -f ".agents/agents/legata-formalization.agent.md" ]]; then
-  if grep -q "WF-01" ".agents/agents/legata-formalization.agent.md"; then
+if [[ -f "$AGENT_FILE" ]]; then
+  if grep -q "Step01\|WF-01" "$AGENT_FILE"; then
     echo "PASS"
     ((PASSED++))
   else
@@ -26,7 +32,7 @@ fi
 
 # AT-002: Agent Structure
 echo -n "AT-002 (Agent Structure): "
-if grep -q "Rebeca" ".agents/agents/legata-formalization.agent.md"; then
+if grep -q "Rebeca" "$AGENT_FILE"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -36,7 +42,7 @@ fi
 
 # AT-021: No Requirements Leakage
 echo -n "AT-021 (No Leakage): "
-if ! grep -q "FR-" ".agents/agents/legata-formalization.agent.md" 2>/dev/null; then
+if ! grep -q "FR-" "$AGENT_FILE" 2>/dev/null; then
   echo "PASS"
   ((PASSED++))
 else
@@ -46,7 +52,7 @@ fi
 
 # AT-022: Rebeca Guidance Skill
 echo -n "AT-022 (Rebeca Skill): "
-if [[ -f ".agents/skills/rebeca_modeling-guidelines/SKILL.md" ]]; then
+if [[ -f "$SKILL_FILE" ]]; then
   echo "PASS"
   ((PASSED++))
 else

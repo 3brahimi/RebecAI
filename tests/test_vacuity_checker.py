@@ -6,8 +6,8 @@ Exit-code semantics (from vacuity_checker.py docstring):
   1  Invalid inputs / runtime error
   2  Vacuous (property passes trivially)
 
-safe_path() restricts all file paths to be under Path.home().
-All temp dirs are created with tempfile.mkdtemp(dir=Path.home()).
+safe_path() restricts all file paths to be under /tmp.
+All temp dirs are created with tempfile.mkdtemp(dir=/tmp).
 """
 import sys
 import tempfile
@@ -21,11 +21,11 @@ from vacuity_checker import build_negated_property, check_vacuity, extract_preco
 # Sample content (not tied to real RMC)
 # ===========================================================================
 
-# Non-vacuous: the precondition !isLong is reachable (s1.length starts at 60 > 50)
+# Non-vacuous: the precondition !isLong is reachable (s1.length starts at 0 < 50)
 PROPERTY_NON_VACUOUS = """\
 property {
   define {
-    isLong = (s1.length > 50);
+    isLong = (s1.x > 5);
     lightOn = (s1.hasLight == true);
   }
   Assertion {
@@ -34,12 +34,13 @@ property {
 }
 """
 
+
 # Vacuous: precondition is never reachable (length starts at 60, always > 50, so
 # isLong is always true; !isLong is always false → assertion trivially holds)
 PROPERTY_VACUOUS = """\
 property {
   define {
-    isLong = (s1.length > 50);
+    isLong = (s1.x > 5);
     lightOn = (s1.hasLight == true);
   }
   Assertion {
@@ -194,7 +195,7 @@ class TestCheckVacuityReal:
         prop.write_text(PROPERTY_NON_VACUOUS, encoding="utf-8")
 
         files_before = set(Path(tempfile.gettempdir()).iterdir())
-        home_files_before = set(Path.home().iterdir())
+        home_files_before = set(Path("/tmp").iterdir())
 
         check_vacuity(
             jar=rmc_jar, model=model_file,
@@ -205,7 +206,7 @@ class TestCheckVacuityReal:
 
         # No new .property temp files should remain
         new_tmp = set(Path(tempfile.gettempdir()).iterdir()) - files_before
-        new_home = set(Path.home().iterdir()) - home_files_before
+        new_home = set(Path("/tmp").iterdir()) - home_files_before
         stale = [f for f in new_tmp | new_home
                  if f.suffix == ".property" and f.exists()]
         assert stale == [], f"Stale temp property files: {stale}"

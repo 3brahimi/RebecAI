@@ -10,7 +10,7 @@ _SCRIPTS_DIR = _SKILL_ROOT / "scripts"
 sys.path.insert(0, str(_SKILL_ROOT))
 sys.path.insert(0, str(_SCRIPTS_DIR))
 
-from scripts import capture_snapshot
+from skills.rebeca_tooling.scripts import capture_snapshot
 
 
 MODEL_TEXT = """\

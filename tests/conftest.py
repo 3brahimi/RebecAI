@@ -9,6 +9,7 @@ _ROOT = Path(__file__).parent.parent
 _SCRIPTS = _ROOT / "skills" / "rebeca_tooling" / "scripts"
 _TESTS = Path(__file__).parent
 
+sys.path.insert(0, str(_ROOT))
 sys.path.insert(0, str(_SCRIPTS))
 sys.path.insert(0, str(_TESTS))
 
