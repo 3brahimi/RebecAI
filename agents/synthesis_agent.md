@@ -4,8 +4,8 @@ version: 1.0.0
 description: |
   Step05 specialist for LLM-assisted candidate property generation.
   Runs in parallel with Step04 (mapping_agent) after Step03 completes.
-  ALL outputs are tagged is_candidate=true, mapping_path=llm-lane, and
-  MUST be routed to Step05 (verification_agent) before any downstream use.
+  ALL outputs are tagged is_candidate=true, mapping_path=synthesis-agent, and
+  MUST be routed to Step06 (verification_agent) before any downstream use.
 user-invocable: false
 skills:
   - rebeca_tooling
@@ -65,7 +65,7 @@ Every entry in `candidate_artifacts` carries:
 
 | Field          | Value       | Meaning                                      |
 |----------------|-------------|----------------------------------------------|
-| `mapping_path` | `"llm-lane"`| Distinguishes from Step04 (`"legata"`) and Step02 COLREG fallback |
+| `mapping_path` | `"synthesis-agent"`| Distinguishes from Step04 (`"legata"`) and Step02 COLREG fallback |
 | `is_candidate` | `true`      | Coordinator MUST route to Step05 before use   |
 
 The coordinator checks `is_candidate == true` before committing any artifact
@@ -79,25 +79,25 @@ to `generated_files` — this is the mandatory verification gate.
   "source_file_path": "Rule-22",
   "candidate_artifacts": [
     {
-      "artifact_id":      "Rule-22_llm_base",
+      "artifact_id":      "Rule-22_synth_base",
       "strategy":         "base",
-      "model_path":       "/path/Rule-22_llm_base.rebeca",
-      "property_path":    "/path/Rule-22_llm_base.property",
+      "model_path":       "/path/Rule-22_synth_base.rebeca",
+      "property_path":    "/path/Rule-22_synth_base.property",
       "model_content":    "reactiveclass ...",
       "property_content": "property { ... }",
-      "mapping_path":     "llm-lane",
+      "mapping_path":     "synthesis-agent",
       "is_candidate":     true,
       "confidence":       "high",
       "assumptions":      []
     },
     {
-      "artifact_id":      "Rule-22_llm_temporal",
+      "artifact_id":      "Rule-22_synth_temporal",
       "strategy":         "temporal",
-      "model_path":       "/path/Rule-22_llm_temporal.rebeca",
-      "property_path":    "/path/Rule-22_llm_temporal.property",
+      "model_path":       "/path/Rule-22_synth_temporal.rebeca",
+      "property_path":    "/path/Rule-22_synth_temporal.property",
       "model_content":    "reactiveclass ...",
       "property_content": "property { define {...} Assertion {...} LTL { G(Rule22); } }",
-      "mapping_path":     "llm-lane",
+      "mapping_path":     "synthesis-agent",
       "is_candidate":     true,
       "confidence":       "medium",
       "assumptions":      ["LTL block requires Timed Rebeca LTL model checker support"]
@@ -113,7 +113,7 @@ to `generated_files` — this is the mandatory verification gate.
 {
   "status":  "error",
   "phase":   "step05",
-  "agent":   "llm-lane_agent",
+  "agent":   "synthesis_agent",
   "message": "Human-readable description of failure"
 }
 ```

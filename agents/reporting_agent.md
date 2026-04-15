@@ -19,6 +19,15 @@ Consume per-rule scorecards assembled by the coordinator (from Step05 outputs),
 finalize aggregate metrics via `ReportGenerator`, and write `report.json` +
 `report.md` to the designated output directory.
 
+All report outputs are versioned and deterministic.
+
+## Determinism Rules
+
+- Sort input scorecards by `source_file_path` ascending before aggregation.
+- Sort `top_failure_reasons` and `aggregate_remediation_hints` lexicographically.
+- Emit stable JSON key order and stable markdown section order.
+- Include `report_schema_version` in output for forward-compatible consumers.
+
 ## Scorecard Contract
 
 Each scorecard passed to this agent MUST conform to the fields consumed by
@@ -46,6 +55,28 @@ Each scorecard passed to this agent MUST conform to the fields consumed by
 
 Scoring is performed BEFORE this agent — the coordinator passes finalized
 scorecards in. This agent only aggregates and formats.
+
+## Output Schema
+
+```json
+{
+  "status": "ok",
+  "report_path":    "/path/to/output/report.json",
+  "report_md_path": "/path/to/output/report.md",
+  "report_schema_version": "1.1.0",
+  "summary": {
+    "total_rules":          1,
+    "rules_passed":         1,
+    "rules_failed":         0,
+    "score_mean":           100.0,
+    "score_min":            100,
+    "score_max":            100,
+    "success_rate":         100.0,
+    "fallback_usage_count": 0,
+    "blocked_rules_count":  0
+  }
+}
+```
 
 ## Input Schema
 
@@ -80,6 +111,7 @@ scorecards (from coordinator)
   "status": "ok",
   "report_path":    "/path/to/output/report.json",
   "report_md_path": "/path/to/output/report.md",
+  "report_schema_version": "1.1.0",
   "summary": {
     "total_rules":          1,
     "rules_passed":         1,
@@ -113,4 +145,5 @@ failure, or schema validation violation.
 - `workflow_summary.step08`
 - `report_path` — for downstream archival
 - `report_md_path` — for human review
+- `report_schema_version` — schema compatibility pin
 - `summary` — aggregate statistics

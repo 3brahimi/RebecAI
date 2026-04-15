@@ -69,7 +69,7 @@ from scripts import (
     run_rmc,
     pre_run_rmc_check,
     RuleStatusClassifier,
-    COLREGFallbackMapper
+    map_fallback
 )
 ```
 
@@ -156,10 +156,9 @@ result = classifier.classify("path/to/rule.legata")
 #### COLREG Fallback Mapping
 
 ```python
-from scripts import COLREGFallbackMapper
+from scripts import map_fallback
 
-mapper = COLREGFallbackMapper()
-result = mapper.map_rule(
+result = map_fallback(
     rule_id="Rule-99",
     colreg_text="Every vessel shall maintain a proper lookout"
 )
@@ -192,10 +191,35 @@ scorecard = scorer.score_rule(
 # - score_breakdown: {syntax:10, semantic_alignment:55, verification_outcome:25, hallucination_penalty:10}
 # - status: Pass|Fail|Conditional|Blocked|Unknown
 # - confidence: 0.0-1.0
-# - mapping_path: legata|colreg-fallback
+# - mapping_path: legata|colreg-fallback|synthesis-agent
 # - failure_reasons: list
 # - remediation_hints: list
 ```
+
+## API/CLI Contract Sync (auto-generated source of truth)
+
+To avoid doc drift, regenerate and review the live API/CLI contract directly from scripts:
+
+```bash
+python3 - <<'PY'
+import importlib
+from pathlib import Path
+
+scripts = Path("skills/rebeca_tooling/scripts")
+exports = importlib.import_module("skills.rebeca_tooling.scripts").__all__
+print("# Exported symbols")
+for name in sorted(exports):
+    print(f"- {name}")
+
+print("\n# CLI modules")
+for p in sorted(scripts.glob("*.py")):
+    if p.name in {"__init__.py", "utils.py"}:
+        continue
+    print(f"- {p.name}")
+PY
+```
+
+Policy: if this generated list differs from SKILL.md examples, update SKILL.md in the same change.
 
 #### Generate Aggregate Report
 

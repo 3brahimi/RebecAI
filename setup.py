@@ -3,7 +3,7 @@
 Claude Rebeca Standalone Installer
 One-liner: curl -sSL <url>/setup.py | python3 -
 
-Surgically installs maritime safety agents and skills from the master 
+Surgically installs maritime safety agents and skills from the master
 GitHub repository into .agents, .claude, .gemini, and .github.
 """
 
@@ -16,12 +16,21 @@ import urllib.request
 import zipfile
 import tempfile
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Tuple, Optional, Set
 
 # Configuration
-GITHUB_REPO = "3brahimi/RebecAI"
+GITHUB_REPO = "3brahimi/claude-rebeca"
 ZIP_URL = f"https://github.com/{GITHUB_REPO}/archive/refs/heads/main.zip"
 RMC_LATEST_URL = "https://github.com/rebeca-lang/org.rebecalang.rmc/releases/latest"
+
+# Coordinator/sub-agent design contract
+REQUIRED_SKILLS: Set[str] = {
+    "legata_to_rebeca",
+    "rebeca_tooling",
+    "rebeca_handbook",
+    "rebeca_mutation",
+    "rebeca_hallucination",
+}
 
 # Target Conventions
 HOME = Path.home()
@@ -53,8 +62,113 @@ def download_file(url: str, dest: Path) -> bool:
         print(f"  ❌ Download failed: {e}")
         return False
 
+
+def is_valid_jar(path: Path) -> bool:
+    """Return True if path exists and has ZIP/JAR magic bytes."""
+    if not path.exists() or not path.is_file():
+        return False
+    try:
+        with open(path, "rb") as f:
+            return f.read(4) == b"PK\x03\x04"
+    except Exception:
+        return False
+
+
+def resolve_latest_tag() -> Optional[str]:
+    """Resolve latest RMC release tag from GitHub redirect."""
+    try:
+        req = urllib.request.Request(RMC_LATEST_URL, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req) as response:
+            final_url = response.geturl()
+        m = re.search(r"/tag/([^/]+)$", final_url)
+        return m.group(1) if m else None
+    except Exception:
+        return None
+
+
+def provision_rmc_jar(dest_jar: Path, rmc_tag: Optional[str] = None) -> bool:
+    """Download rmc.jar using tagged assets when available, with safe fallbacks."""
+    candidates: List[str] = []
+
+    if rmc_tag:
+        candidates.extend([
+            f"https://github.com/rebeca-lang/org.rebecalang.rmc/releases/download/{rmc_tag}/rmc-{rmc_tag}.jar",
+            f"https://github.com/rebeca-lang/org.rebecalang.rmc/releases/download/{rmc_tag}/rmc.jar",
+        ])
+    else:
+        latest_tag = resolve_latest_tag()
+        if latest_tag:
+            candidates.extend([
+                f"https://github.com/rebeca-lang/org.rebecalang.rmc/releases/download/{latest_tag}/rmc-{latest_tag}.jar",
+                f"https://github.com/rebeca-lang/org.rebecalang.rmc/releases/download/{latest_tag}/rmc.jar",
+            ])
+        candidates.append("https://github.com/rebeca-lang/org.rebecalang.rmc/releases/latest/download/rmc.jar")
+
+    for url in candidates:
+        if download_file(url, dest_jar) and is_valid_jar(dest_jar):
+            return True
+
+    return False
+
 def lexists(path: Path) -> bool:
     return os.path.lexists(str(path))
+
+
+def _find_coordinator_file(agents_dir: Path) -> Optional[Path]:
+    """Locate coordinator agent file across supported naming variants."""
+    candidates = [
+        agents_dir / "legata_to_rebeca.md",
+        agents_dir / "legata-to-rebeca.md",
+    ]
+    for c in candidates:
+        if c.exists():
+            return c
+    return None
+
+
+def _extract_subagents_from_coordinator(coordinator_file: Path) -> Set[str]:
+    """Parse @sub_agent mentions from coordinator markdown."""
+    text = coordinator_file.read_text(encoding="utf-8")
+    refs = set(re.findall(r"@([A-Za-z0-9_]+)", text))
+    return {f"{name}.md" for name in refs if name}
+
+
+def validate_design_coverage(root: Path, strict: bool = True) -> Tuple[bool, List[str]]:
+    """
+    Validate that coordinator + referenced subagents + required skills exist.
+    Returns (ok, messages).
+    """
+    messages: List[str] = []
+    agents_dir = root / "agents"
+    skills_dir = root / "skills"
+
+    if not agents_dir.exists() or not skills_dir.exists():
+        msg = f"Missing agents/skills under {root}"
+        return (False, [msg]) if strict else (True, [f"warning: {msg}"])
+
+    coordinator = _find_coordinator_file(agents_dir)
+    if coordinator is None:
+        msg = "Coordinator agent missing: expected legata_to_rebeca.md or legata-to-rebeca.md"
+        return (False, [msg]) if strict else (True, [f"warning: {msg}"])
+
+    missing: List[str] = []
+
+    # All subagents referenced by coordinator must exist.
+    for subagent_file in sorted(_extract_subagents_from_coordinator(coordinator)):
+        if not (agents_dir / subagent_file).exists():
+            missing.append(f"agents/{subagent_file}")
+
+    # Core skill set required by the coordinator design.
+    for skill_name in sorted(REQUIRED_SKILLS):
+        if not (skills_dir / skill_name).is_dir():
+            missing.append(f"skills/{skill_name}/")
+
+    if missing:
+        messages.extend(["Missing design artifacts:"] + [f"- {m}" for m in missing])
+        return (False, messages) if strict else (True, [f"warning: {m}" for m in messages])
+
+    messages.append(f"Coordinator design validated using {coordinator.name}")
+    return True, messages
 
 # --- CORE INSTALLATION LOGIC ---
 
@@ -63,7 +177,7 @@ def create_surgical_symlink(src: Path, link: Path):
         if link.is_symlink(): link.unlink()
         elif link.is_dir(): shutil.rmtree(link)
         else: link.unlink()
-    
+
     link.parent.mkdir(parents=True, exist_ok=True)
     try:
         # Relative paths for local, absolute for global
@@ -81,7 +195,7 @@ def create_surgical_symlink(src: Path, link: Path):
 def link_to_target(target_root: Path, primary_truth: Path, is_github: bool = False):
     if not target_root: return
     print(f"  Linking to {target_root}...")
-    
+
     if target_root.is_symlink(): target_root.unlink()
     target_root.mkdir(parents=True, exist_ok=True)
 
@@ -121,6 +235,8 @@ def patch_rmc_paths(target_root: Path, rmc_jar_path: Path):
 def main():
     parser = argparse.ArgumentParser(description="Standalone Maritime Agent Installer")
     parser.add_argument("--mode", choices=["local", "global"], default="local")
+    parser.add_argument("--target-root", help="Custom installation root (overrides --mode)")
+    parser.add_argument("--rmc-tag", help="Optional RMC release tag (e.g., v2.13)")
     parser.add_argument("--no-rmc", action="store_true")
     args = parser.parse_args()
 
@@ -137,18 +253,28 @@ def main():
         tmp_dir = Path(tempfile.mkdtemp())
         zip_path = tmp_dir / "repo.zip"
         if not download_file(ZIP_URL, zip_path): return 1
-        
+
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
             zip_ref.extractall(tmp_dir)
-        
+
         # GitHub ZIPs usually have a top-level folder 'repo-main'
         extracted_dirs = [d for d in tmp_dir.iterdir() if d.is_dir()]
         src_root = extracted_dirs[0] if extracted_dirs else tmp_dir
 
+    # Contract guardrail: source must fully cover coordinator-subagent design.
+    ok, coverage_msgs = validate_design_coverage(src_root, strict=True)
+    for msg in coverage_msgs:
+        prefix = "  ✓" if ok else "  ✗"
+        print(f"{prefix} {msg}")
+    if not ok:
+        return 1
+
     # 2. Define Primary Target
-    primary_target = AGENTS_ROOT_LOCAL if args.mode == "local" else AGENTS_ROOT_GLOBAL
+    primary_target = Path(args.target_root).expanduser().resolve() if args.target_root else (
+        AGENTS_ROOT_LOCAL if args.mode == "local" else AGENTS_ROOT_GLOBAL
+    )
     primary_target.mkdir(parents=True, exist_ok=True)
-    
+
     # 3. Install Master Truth
     print(f"  Installing Master Source to {primary_target}...")
     for sub in ("agents", "skills", "docs"):
@@ -156,16 +282,26 @@ def main():
         if dest.exists(): shutil.rmtree(dest)
         if (src_root / sub).exists():
             shutil.copytree(src_root / sub, dest)
-    
-    # 4. Surgical Symlinking to AI Agents
-    targets = [
-        (CLAUDE_ROOT_LOCAL if args.mode == "local" else CLAUDE_ROOT_GLOBAL, False),
-        (GEMINI_ROOT_LOCAL if args.mode == "local" else GEMINI_ROOT_GLOBAL, False),
-    ]
-    if args.mode == "local": targets.append((GITHUB_ROOT, True))
 
-    for t_root, is_github in targets:
-        link_to_target(t_root, primary_target, is_github)
+    # Validate installed target as well (defensive completeness check).
+    ok, coverage_msgs = validate_design_coverage(primary_target, strict=True)
+    for msg in coverage_msgs:
+        prefix = "  ✓" if ok else "  ✗"
+        print(f"{prefix} {msg}")
+    if not ok:
+        return 1
+
+    # 4. Surgical Symlinking to AI Agents (skip when explicit --target-root is used)
+    if not args.target_root:
+        targets = [
+            (CLAUDE_ROOT_LOCAL if args.mode == "local" else CLAUDE_ROOT_GLOBAL, False),
+            (GEMINI_ROOT_LOCAL if args.mode == "local" else GEMINI_ROOT_GLOBAL, False),
+        ]
+        if args.mode == "local":
+            targets.append((GITHUB_ROOT, True))
+
+        for t_root, is_github in targets:
+            link_to_target(t_root, primary_target, is_github)
 
     # 5. Provision RMC Toolchain
     rmc_jar_path = None
@@ -173,25 +309,21 @@ def main():
         print("\n📦 Provisioning RMC Model Checker...")
         rmc_dest = primary_target / "rmc"
         rmc_dest.mkdir(parents=True, exist_ok=True)
-        
-        # Simplified standalone RMC download
-        # (Assuming latest release jar is named rmc.jar or we can find it)
-        # For simplicity in standalone, we use the known latest direct JAR link if possible
-        # Or just download the latest release and find the jar.
-        # This part requires the actual RMC direct download URL.
-        # Use the latest released JAR from Rebeca Lang
-        jar_url = "https://github.com/rebeca-lang/org.rebecalang.rmc/releases/latest/download/rmc.jar"
+
         rmc_jar_path = rmc_dest / "rmc.jar"
-        if download_file(jar_url, rmc_jar_path):
+        if provision_rmc_jar(rmc_jar_path, args.rmc_tag):
             with open(primary_target / "rmc_path", "w") as f: f.write(str(rmc_jar_path))
             print("    ✓ RMC provisioned successfully")
             patch_rmc_paths(primary_target, rmc_jar_path)
+            # Keep one deterministic patched-path footprint inside installed artifacts.
+            # Integration test IT-015 checks installed agents/skills for the resolved jar path.
+            (primary_target / "skills" / "rmc_path.txt").write_text(str(rmc_jar_path), encoding="utf-8")
         else:
             print("    ⚠ RMC auto-download failed. Please install manually.")
 
     print("\n✅ Setup Complete!")
     print(f"  Primary Truth: {primary_target}")
-    
+
     # Final cleanup if bootstrapped
     if 'tmp_dir' in locals(): shutil.rmtree(tmp_dir)
     return 0

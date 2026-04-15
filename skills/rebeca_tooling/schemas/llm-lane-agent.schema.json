@@ -1,15 +1,15 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "llm-lane-agent",
-  "description": "WF-06: LLM-assisted candidate property generation, parallel to WF-04. All outputs tagged is_candidate=true, mapping_path=llm-lane for mandatory WF-05 verification.",
+  "title": "synthesis-agent-legacy-alias",
+  "description": "Legacy alias for synthesis-agent candidate-generation contract. All outputs tagged is_candidate=true, mapping_path=synthesis-agent for mandatory WF-06 verification.",
   "definitions": {
     "ErrorEnvelope": {
       "type": "object",
       "required": ["status", "phase", "agent", "message"],
       "properties": {
         "status":  { "type": "string", "enum": ["error"] },
-        "phase":   { "type": "string", "enum": ["step06"] },
-        "agent":   { "type": "string", "enum": ["llm-lane-agent"] },
+        "phase":   { "type": "string", "enum": ["step05"] },
+        "agent":   { "type": "string", "enum": ["synthesis-agent"] },
         "message": { "type": "string" }
       },
       "additionalProperties": false
@@ -24,7 +24,7 @@
         "property_path":     { "type": "string" },
         "model_content":     { "type": "string" },
         "property_content":  { "type": "string" },
-        "mapping_path":      { "type": "string", "enum": ["llm-lane"] },
+        "mapping_path":      { "type": "string", "enum": ["synthesis-agent"] },
         "is_candidate":      { "type": "boolean", "enum": [true] },
         "confidence":        { "type": "string", "enum": ["high", "medium", "low"] },
         "assumptions":       { "type": "array", "items": { "type": "string" } }
