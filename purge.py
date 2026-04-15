@@ -12,25 +12,67 @@ import os
 import shutil
 import sys
 from pathlib import Path
+from typing import List, Set
 
 REPO_ROOT = Path(__file__).parent
 
-# 1. Manifest of all project-owned relative paths
-OWNED_ITEMS = [
-    "agents/legata_to_rebeca.md",
-    "agents/legata_to_rebeca.agent.md",
-    "skills/legata_to_rebeca",
-    "skills/rebeca_handbook",
-    "skills/rebeca_tooling",
-    "skills/rebeca_mutation",
-    "skills/rebeca_hallucination",
-    "rmc",
-    "rmc_path",
-    "instructions", # .github/instructions link
-]
+# 1. Required core skills for fallback coverage
+CORE_SKILLS = {
+    "legata_to_rebeca",
+    "rebeca_handbook",
+    "rebeca_tooling",
+    "rebeca_mutation",
+    "rebeca_hallucination",
+}
 
 def lexists(path: Path) -> bool:
     return os.path.lexists(str(path))
+
+
+def discover_owned_items() -> List[str]:
+    """
+    Discover removable project artifacts from repo truth.
+
+    Includes:
+      - all agents/*.md
+      - corresponding .agent.md aliases (used by some targets)
+      - compatibility aliases for hyphen/underscore renames
+      - all skills/* directories (+ core fallback set)
+      - rmc/tooling metadata
+    """
+    owned: Set[str] = {
+        "rmc",
+        "rmc_path",
+        "instructions",  # .github/instructions link
+    }
+
+    agents_dir = REPO_ROOT / "agents"
+    if agents_dir.is_dir():
+        for agent in agents_dir.glob("*.md"):
+            owned.add(f"agents/{agent.name}")
+            stem = agent.stem
+            owned.add(f"agents/{stem}.agent.md")
+
+            # Compatibility aliases so purge handles historical filename style flips.
+            if "_" in stem:
+                alt = stem.replace("_", "-")
+                owned.add(f"agents/{alt}.md")
+                owned.add(f"agents/{alt}.agent.md")
+            if "-" in stem:
+                alt = stem.replace("-", "_")
+                owned.add(f"agents/{alt}.md")
+                owned.add(f"agents/{alt}.agent.md")
+
+    skills_dir = REPO_ROOT / "skills"
+    if skills_dir.is_dir():
+        for skill in skills_dir.iterdir():
+            if skill.is_dir() and not skill.name.startswith("__"):
+                owned.add(f"skills/{skill.name}")
+
+    for skill_name in CORE_SKILLS:
+        owned.add(f"skills/{skill_name}")
+
+    return sorted(owned)
 
 def is_empty(path: Path) -> bool:
     """Check if a directory is empty (not counting .DS_Store)."""
@@ -51,7 +93,7 @@ def remove_and_cleanup(path: Path, dry_run: bool):
 
     # Record parent before deletion
     parent = path.parent
-    
+
     # Delete the item
     try:
         if path.is_symlink():
@@ -92,6 +134,9 @@ def main():
     print(f"🚀 Initializing Surgical Purge (mode: {args.mode})")
     print("-----------------------------------------------")
 
+    owned_items = discover_owned_items()
+    print(f"  Discovered {len(owned_items)} owned artifact pattern(s)")
+
     # Define all potential roots to check
     roots = []
     if args.mode in ("local", "both"):
@@ -112,12 +157,12 @@ def main():
     for root in roots:
         if not lexists(root):
             continue
-            
+
         # Root special case: If the root itself is a symlink pointing to an .agents folder
         # we are purging, we don't delete the symlink UNLESS the target becomes empty.
         # However, the user's requirement is to check individual files.
-        
-        for item_rel in OWNED_ITEMS:
+
+        for item_rel in owned_items:
             target_path = root / item_rel
             if lexists(target_path):
                 remove_and_cleanup(target_path, args.dry_run)
@@ -130,14 +175,14 @@ def main():
                 print(f"  ✓ Removed empty root: {root}")
             else:
                 print(f"  [dry-run] would remove empty root: {root}")
-        
+
         # Also clean up dangling symlinks for roots
         if lexists(root) and root.is_symlink():
             target = Path(os.readlink(str(root)))
             # If it was a relative link, make it absolute for checking
             if not target.is_absolute():
                 target = (root.parent / target).resolve()
-            
+
             if not lexists(target):
                 if not args.dry_run:
                     root.unlink()
