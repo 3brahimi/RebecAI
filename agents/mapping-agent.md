@@ -19,13 +19,13 @@ skills:
 
 Translate the locked symbol namespace from Step03 into two concrete artifacts that
 RMC can verify: a Timed Rebeca model file and a property file. Operates on one
-`rule_id` per invocation.
+`source_file_path` per invocation.
 
 ## Inputs (from coordinator `shared_state`)
 
 | Field                | Type   | Required | Description                                         |
 |----------------------|--------|----------|-----------------------------------------------------|
-| `rule_id`            | string | yes      | Rule identifier, e.g. `Rule-22`                     |
+| `source_file_path`            | string | yes      | Rule identifier, e.g. `Rule-22`                     |
 | `legata_path`        | string | yes      | Path to the `.legata` source file                   |
 | `abstraction_summary`| object | yes      | Step03 output (`actor_map`, `variable_map`, `naming_contract`) |
 | `output_dir`         | string | yes      | Directory where `.rebeca` and `.property` are written |
@@ -120,7 +120,7 @@ Merged into coordinator `phase_results.step04`:
 ```json
 {
   "status": "ok",
-  "rule_id": "Rule-22",
+  "source_file_path": "Rule-22",
   "model_artifact": {
     "path": "/abs/output/Rule-22/Rule-22.rebeca",
     "content": "reactiveclass Vessel(10) { ... }"

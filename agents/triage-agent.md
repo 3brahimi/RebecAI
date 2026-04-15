@@ -18,14 +18,14 @@ skills:
 ## Goal
 
 Classify a single Legata rule's formalization quality and decide the downstream
-path for it — before any model generation starts. Operates on one `rule_id` per
+path for it — before any model generation starts. Operates on one `source_file_path` per
 invocation (the coordinator loops for multi-rule pipelines).
 
 ## Inputs (from coordinator `shared_state`)
 
 | Field         | Type   | Required | Description                                       |
 |---------------|--------|----------|---------------------------------------------------|
-| `rule_id`     | string | yes      | Rule identifier, e.g. `Rule-22`                   |
+| `source_file_path`     | string | yes      | Rule identifier, e.g. `Rule-22`                   |
 | `legata_path` | string | yes      | Path to the `.legata` source file                 |
 | `colreg_text` | string | no       | Raw COLREG text; required when fallback is likely |
 
@@ -33,7 +33,7 @@ Schema: `agents/triage-agent.schema.json` → `input` block.
 
 ## Tasks (in order)
 
-1. Validate `rule_id` and `legata_path` (schema + `safe_path`).
+1. Validate `source_file_path` and `legata_path` (schema + `safe_path`).
 2. Call `RuleStatusClassifier().classify(legata_path)` — returns `status`,
    `clause_count`, `evidence`, `defects`, `next_action`.
 3. Map classifier status to a routing decision:
@@ -46,7 +46,7 @@ Schema: `agents/triage-agent.schema.json` → `input` block.
    | `not-formalized`    | `colreg-fallback`| `false`                |
    | `todo-placeholder`  | `skip`           | `false`                |
 
-4. If `path == colreg-fallback`, call `COLREGFallbackMapper().map_rule(rule_id, colreg_text)`.
+4. If `path == colreg-fallback`, call `COLREGFallbackMapper().map_rule(source_file_path, colreg_text)`.
 5. Emit success contract JSON to stdout; exit 0.
 
 If any step fails, emit the **Error Envelope** to stdout and exit 1.
@@ -69,7 +69,7 @@ Merged into coordinator `phase_results.step02`:
 ```json
 {
   "status": "ok",
-  "rule_id": "Rule-22",
+  "source_file_path": "Rule-22",
   "classification": {
     "status": "formalized",
     "clause_count": 3,
@@ -92,7 +92,7 @@ When `path == colreg-fallback`, `routing.fallback_mapping` is populated:
     "path": "colreg-fallback",
     "eligible_for_mapping": false,
     "fallback_mapping": {
-      "rule_id": "Rule-22",
+      "source_file_path": "Rule-22",
       "provisional_property": "property { ... }",
       "confidence": "low",
       "assumptions": ["Negation detected - obligation mapped to !guard || assure pattern"],

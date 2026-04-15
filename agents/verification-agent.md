@@ -21,7 +21,7 @@ and compute a mutation score. Return a fully machine-actionable outcome.
 
 | Field           | Type    | Required | Description                                |
 |-----------------|---------|----------|--------------------------------------------|
-| `rule_id`       | string  | yes      | Rule identifier (e.g. `Rule-22`)           |
+| `source_file_path`       | string  | yes      | Rule identifier (e.g. `Rule-22`)           |
 | `model_path`    | string  | yes      | Path to `.rebeca` model file               |
 | `property_path` | string  | yes      | Path to `.property` file                   |
 | `jar_path`      | string  | yes      | Path to `rmc.jar`                          |
@@ -78,7 +78,7 @@ A mutant is **killed** if its `run_rmc` exit code is non-zero.
 ```json
 {
   "status": "ok",
-  "rule_id": "Rule-22",
+  "source_file_path": "Rule-22",
   "verified": true,
   "rmc_exit_code": 0,
   "rmc_outcome": "verified",

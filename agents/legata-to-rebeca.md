@@ -42,13 +42,13 @@ All sub-agents emit this structure on failure. The coordinator must detect it by
   "message": "Human-readable description of what failed"
 }
 ```
-- **Determinism**: Ensure that for a given `rule_id` and artifact set, your output is consistent.
+- **Determinism**: Ensure that for a given `source_file_path` and artifact set, your output is consistent.
 
 ## Global State Template
 You must maintain the following structure in your internal memory:
 ```json
 {
-  "rule_id": "string",
+  "source_file_path": "string",
   "phase_results": {
     "step01": {},
     "step02": {},

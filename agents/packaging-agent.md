@@ -22,7 +22,7 @@ that tool installs the framework itself, not pipeline outputs.
 
 | Field           | Type    | Required | Description                                              |
 |-----------------|---------|----------|----------------------------------------------------------|
-| `rule_id`       | string  | yes      | Rule identifier (e.g. `Rule-22`)                         |
+| `source_file_path`       | string  | yes      | Rule identifier (e.g. `Rule-22`)                         |
 | `model_path`    | string  | yes      | Path to `.rebeca` model produced by Step04                |
 | `property_path` | string  | yes      | Path to `.property` file produced by Step04               |
 | `rmc_output_dir`| string  | yes      | Directory written by `run_rmc` in Step05                  |
@@ -49,7 +49,7 @@ Each artifact is tagged with one of:
 
 ```
 {dest_dir}/
-  {rule_id}/
+  {source_file_path}/
     model/    ← .rebeca file
     property/ ← .property file
     logs/     ← *.log files from rmc_output_dir
@@ -61,7 +61,7 @@ Each artifact is tagged with one of:
 ```json
 {
   "status": "ok",
-  "rule_id": "Rule-22",
+  "source_file_path": "Rule-22",
   "dest_dir": "/path/to/dest",
   "dry_run": false,
   "generated_files": [

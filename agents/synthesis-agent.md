@@ -37,7 +37,7 @@ Step03 (abstraction-agent)
 
 | Field                | Type            | Required | Description                              |
 |----------------------|-----------------|----------|------------------------------------------|
-| `rule_id`            | string          | yes      | Rule identifier (e.g. `Rule-22`)         |
+| `source_file_path`            | string          | yes      | Rule identifier (e.g. `Rule-22`)         |
 | `abstraction_summary`| object          | yes      | Step03 output: `actor_map`, `variable_map` |
 | `legata_text`        | string          | no       | Raw Legata source (enriches heuristics)  |
 | `output_dir`         | string          | yes      | Directory to write candidate artifacts   |
@@ -76,7 +76,7 @@ to `generated_files` — this is the mandatory verification gate.
 ```json
 {
   "status": "ok",
-  "rule_id": "Rule-22",
+  "source_file_path": "Rule-22",
   "candidate_artifacts": [
     {
       "artifact_id":      "Rule-22_llm_base",
@@ -124,6 +124,6 @@ failure, schema validation violation.
 ## Output Patch (for coordinator)
 
 - `workflow_summary.step06`
-- `phase_results.step04_llm` ← full output contract
+- `phase_results.step06_synthesis` ← full output contract
 - `candidate_artifacts[]` ← each entry appended to coordinator's transformed_artifacts
   with `is_candidate: true` for mandatory Step05 routing

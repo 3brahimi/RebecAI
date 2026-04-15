@@ -26,7 +26,7 @@ Each scorecard passed to this agent MUST conform to the fields consumed by
 
 | Field               | Type           | Source               |
 |---------------------|----------------|----------------------|
-| `rule_id`           | string         | Step01 input          |
+| `source_file_path`           | string         | Step01 input          |
 | `score_total`       | int (0–100)    | `RubricScorer`       |
 | `status`            | Pass/Fail/Blocked/Conditional/Unknown | `RubricScorer` |
 | `input_status`      | formalized/incomplete/…  | `RubricScorer._infer_input_status` |

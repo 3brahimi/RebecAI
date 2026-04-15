@@ -20,13 +20,13 @@ skills:
 
 Lock in a deterministic symbol namespace before any model or property file is
 generated, preventing symbol collisions and hallucinated identifiers in later phases.
-Operates on one `rule_id` per invocation.
+Operates on one `source_file_path` per invocation.
 
 ## Inputs (from coordinator `shared_state`)
 
 | Field           | Type   | Required | Description                                              |
 |-----------------|--------|----------|----------------------------------------------------------|
-| `rule_id`       | string | yes      | Rule identifier, e.g. `Rule-22`                          |
+| `source_file_path`       | string | yes      | Rule identifier, e.g. `Rule-22`                          |
 | `legata_path`   | string | yes      | Path to the `.legata` source file                        |
 | `snapshot_path` | string | no       | Step01 snapshot JSON; seeds variable_map when present     |
 | `colreg_text`   | string | no       | Supplementary COLREG text for actor/condition extraction |
@@ -82,7 +82,7 @@ Merged into coordinator `phase_results.step03`:
 ```json
 {
   "status": "ok",
-  "rule_id": "Rule-22",
+  "source_file_path": "Rule-22",
   "abstraction_summary": {
     "naming_contract": {
       "reactive_class_style": "PascalCase",
