@@ -3,13 +3,13 @@ name: legata_to_rebeca
 version: 1.1.0
 description: |
   Orchestrator agent for the Legata→Rebeca transformation pipeline.
-  Delegates workflow steps (Step01-Step08) to specialist sub-agents.
+  Delegates workflow steps (Step01-Step08) to specialist sub_agents.
   Maintains shared context and enforces workflow DAG determinism.
 ---
 
 # Legata to Rebeca Coordinator
 
-You are the master orchestrator for the Legata→Rebeca pipeline. Your goal is to execute the transformation workflow by delegating tasks to specialist sub-agents.
+You are the master orchestrator for the Legata→Rebeca pipeline. Your goal is to execute the transformation workflow by delegating tasks to specialist sub_agents.
 
 ## Workflow DAG
 Execute steps following this flow. Always validate the output of a step before triggering the next.
