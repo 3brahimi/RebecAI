@@ -5,7 +5,7 @@ description: |
   Step06 specialist for LLM-assisted candidate property generation.
   Runs in parallel with Step04 (mapping-agent) after Step03 completes.
   ALL outputs are tagged is_candidate=true, mapping_path=llm-lane, and
-  MUST be routed to Step05 (verification-agent) before any downstream use.
+  MUST be routed to Step06 (verification-agent) before any downstream use.
 user-invocable: false
 skills:
   - rebeca-tooling
@@ -28,9 +28,9 @@ Step03 (abstraction-agent)
          │
          ├──► Step04 (mapping-agent)     [deterministic, final path]
          │
-         └──► Step06 (llm-lane-agent)    [candidate path ← THIS AGENT]
+         └──► Step06 (synthesis-agent)    [candidate path ← THIS AGENT]
                         │
-                        └──► Step05 (verification-agent)  [MANDATORY]
+                        └──► Step06 (verification-agent)  [MANDATORY]
 ```
 
 ## Input Schema
@@ -124,6 +124,6 @@ failure, schema validation violation.
 ## Output Patch (for coordinator)
 
 - `workflow_summary.step06`
-- `phase_results.step05` ← full output contract
+- `phase_results.step06` ← full output contract
 - `candidate_artifacts[]` ← each entry appended to coordinator's transformed_artifacts
   with `is_candidate: true` for mandatory Step05 routing

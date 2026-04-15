@@ -13,7 +13,7 @@ skills:
 
 ## Goal
 
-Collect all artifacts produced by Step04 (model, property) and Step05
+Collect all artifacts produced by Step04 (model, property) and Step06
 (RMC logs, compilation output), copy them to a destination directory,
 and emit a structured manifest. Does NOT invoke `install_artifacts` —
 that tool installs the framework itself, not pipeline outputs.
@@ -25,7 +25,7 @@ that tool installs the framework itself, not pipeline outputs.
 | `source_file_path`       | string  | yes      | Rule identifier (e.g. `Rule-22`)                         |
 | `model_path`    | string  | yes      | Path to `.rebeca` model produced by Step04                |
 | `property_path` | string  | yes      | Path to `.property` file produced by Step04               |
-| `rmc_output_dir`| string  | yes      | Directory written by `run_rmc` in Step05                  |
+| `rmc_output_dir`| string  | yes      | Directory written by `run_rmc` in Step06                  |
 | `dest_dir`      | string  | yes      | Destination directory for packaged artifacts             |
 | `snapshot_path` | string  | no       | Optional Step01 snapshot file to include in package       |
 | `dry_run`       | boolean | no       | If true, compute manifest but do not copy files (default false) |
