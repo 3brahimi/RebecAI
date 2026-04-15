@@ -15,28 +15,28 @@ An unmatched guard is a specification violation and MUST transition to `error` w
 
 ## Step Bindings
 
-| Step | Tools to execute | Primary output fields used for transitions |
-|------|-----------------|---------------------------------------------|
-| Step01 | `pre_run_rmc_check.py` · `verify_installation.py` · `snapshotter.py` | `status` |
-| Step02 | `classify_rule_status.py` · `colreg_fallback_mapper.py` (colreg path only) | `classification.status`, `routing.path`, `routing.eligible_for_mapping` |
-| Step03 | *(reason from Legata source — no dumb tool)* | `abstraction_summary.actor_map`, `abstraction_summary.variable_map` |
-| Step04 | `transformation_utils.py` format helpers | `model_artifact.path`, `property_artifact.path` |
-| Step05 | `mutation_engine.py` property-side strategies | `candidate_artifacts[]`, `is_candidate`, `mapping_path` |
-| Step06 | `run_rmc.py` → `vacuity_checker.py` → `mutation_engine.py` | `verified`, `rmc_exit_code`, `rmc_outcome`, `vacuity_status`, `mutation_score` |
-| Step07 | *(filesystem I/O — copy artifacts to dest_dir)* | `generated_files[]`, `installation_report[]` |
-| Step08 | `generate_report.py` · `score_single_rule.py` | `report_path`, `report_md_path`, `summary` |
+| Step | Agent | Tools available to agent | Primary output fields used for transitions |
+|------|-------|--------------------------|---------------------------------------------|
+| Step01 | `init_agent` | `pre_run_rmc_check.py` · `verify_installation.py` · `snapshotter.py` | `status` |
+| Step02 | `triage_agent` | `classify_rule_status.py` · `colreg_fallback_mapper.py` (colreg path only) | `classification.status`, `routing.path`, `routing.eligible_for_mapping` |
+| Step03 | `abstraction_agent` | *(reason from Legata source — no dumb tool)* | `abstraction_summary.actor_map`, `abstraction_summary.variable_map` |
+| Step04 | `mapping_agent` | `transformation_utils.py` format helpers | `model_artifact.path`, `property_artifact.path` |
+| Step05 | `synthesis_agent` | `mutation_engine.py` property-side strategies | `candidate_artifacts[]`, `is_candidate`, `mapping_path` |
+| Step06 | `verification_agent` | `run_rmc.py` → `vacuity_checker.py` → `mutation_engine.py` | `verified`, `rmc_exit_code`, `rmc_outcome`, `vacuity_status`, `mutation_score` |
+| Step07 | `packaging_agent` | *(filesystem I/O — copy artifacts to dest_dir)* | `generated_files[]`, `installation_report[]` |
+| Step08 | `reporting_agent` | `generate_report.py` · `score_single_rule.py` | `report_path`, `report_md_path`, `summary` |
 
 ## issue_class Legend
 
 | `issue_class` | Source field | Refinement target | Refinement prompt must include |
 |---------------|-------------|-------------------|-------------------------------|
-| `syntax` | malformed artifact content; or `step06.rmc_outcome in {"parse_failed","cpp_compile_failed"}` | Step04 tools (`transformation_utils.py`) | prior step04 output + parse/compile diagnostics |
-| `reference` | symbol diff / validation mismatch in artifact content | Step04 tools (`transformation_utils.py`) | prior step04 output + symbol diff report |
-| `mapping_gap` | missing or invalid artifact contract | Step04 tools (`transformation_utils.py`) | prior step04 output + missing field list |
-| `weak_mutation` | `step06.mutation_score < 80.0` | Step05 tools (`mutation_engine.py`) | prior step05 output + mutation detail |
-| `vacuity` | `step06.vacuity_status.is_vacuous == true` | Step05 tools (`mutation_engine.py`) | prior step05 output + vacuity explanation |
-| `schema_invalid` | output schema/type violation from the current step | same step's tools | prior output + schema violation list |
-| `hallucination` | hallucination audit failure from the current step | same step's tools | prior output + hallucinated symbol list |
+| `syntax` | malformed artifact content; or `step06.rmc_outcome in {"parse_failed","cpp_compile_failed"}` | `mapping_agent` (Step04) | prior step04 output + parse/compile diagnostics |
+| `reference` | symbol diff / validation mismatch in artifact content | `mapping_agent` (Step04) | prior step04 output + symbol diff report |
+| `mapping_gap` | missing or invalid artifact contract | `mapping_agent` (Step04) | prior step04 output + missing field list |
+| `weak_mutation` | `step06.mutation_score < 80.0` | `synthesis_agent` (Step05) | prior step05 output + mutation detail |
+| `vacuity` | `step06.vacuity_status.is_vacuous == true` | `synthesis_agent` (Step05) | prior step05 output + vacuity explanation |
+| `schema_invalid` | output schema/type violation from the current step | same step's agent | prior output + schema violation list |
+| `hallucination` | hallucination audit failure from the current step | same step's agent | prior output + hallucinated symbol list |
 
 `refine_budget_left(state)` = `refinement_attempts[state] < 3`
 
