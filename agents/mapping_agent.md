@@ -1,5 +1,5 @@
 ---
-name: mapping-agent
+name: mapping_agent
 version: 1.0.0
 description: |
   Step04 specialist: generates canonical Legata→Rebeca transformation artifacts.
@@ -7,13 +7,13 @@ description: |
   a .rebeca actor model and a .property assertion file — for each rule.
 user-invocable: false
 implementation: skills/rebeca-tooling/scripts/mapping_agent.py
-schema: skills/rebeca-tooling/scripts/mapping-agent.schema.json
+schema: skills/rebeca-tooling/scripts/mapping_agent.schema.json
 skills:
   - rebeca-tooling
   - rebeca-handbook
 ---
 
-# mapping-agent (Step04): Manual Mapping Core
+# mapping_agent (Step04): Manual Mapping Core
 
 ## Goal
 
@@ -30,7 +30,7 @@ RMC can verify: a Timed Rebeca model file and a property file. Operates on one
 | `abstraction_summary`| object | yes      | Step03 output (`actor_map`, `variable_map`, `naming_contract`) |
 | `output_dir`         | string | yes      | Directory where `.rebeca` and `.property` are written |
 
-Schema: `skills/rebeca-tooling/scripts/mapping-agent.schema.json` → `input` block.
+Schema: `skills/rebeca-tooling/scripts/mapping_agent.schema.json` → `input` block.
 
 ## Tasks (in order)
 
@@ -141,7 +141,7 @@ Merged into coordinator `phase_results.step04`:
 {
   "status":  "error",
   "phase":   "step04",
-  "agent":   "mapping-agent",
+  "agent":   "mapping_agent",
   "message": "Human-readable description of what failed"
 }
 ```

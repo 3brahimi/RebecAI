@@ -1,5 +1,5 @@
 ---
-name: init-agent
+name: init_agent
 version: 1.0.0
 description: |
   Step01 specialist: validates inputs, provisions RMC, pins toolchain metadata,
@@ -10,13 +10,13 @@ skills:
   - rebeca-tooling
 ---
 
-# init-agent (Step01): Toolchain and Inputs Initialization
+# init_agent (Step01): Toolchain and Inputs Initialization
 
 ## Goal
 
 Bootstrap a deterministic transformation session: verify files exist, ensure RMC is
 available (downloading if needed), record pinned toolchain versions, and capture a
-golden snapshot so downstream agents (`verification-agent`, `integrity-agent`) have a
+golden snapshot so downstream agents (`verification_agent`, `integrity_agent`) have a
 tamper-evident baseline.
 
 ## Inputs (from coordinator `shared_state`)
@@ -79,13 +79,13 @@ Merged into coordinator `phase_results.step01`:
 ## Error Envelope (failure)
 
 All failures from this agent conform to the canonical **Error Envelope** schema, which
-is also the standard format across all sub-agents in this pipeline:
+is also the standard format across all sub_agents in this pipeline:
 
 ```json
 {
   "status":  "error",
   "phase":   "step01",
-  "agent":   "init-agent",
+  "agent":   "init_agent",
   "message": "Human-readable description of what failed"
 }
 ```

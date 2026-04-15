@@ -1,5 +1,5 @@
 ---
-name: triage-agent
+name: triage_agent
 version: 1.0.0
 description: |
   Step02 specialist: classifies each Legata rule's formalization status,
@@ -8,12 +8,12 @@ description: |
   coordinator shared_state.step02.
 user-invocable: false
 implementation: skills/rebeca-tooling/scripts/triage_agent.py
-schema: skills/rebeca-tooling/scripts/triage-agent.schema.json
+schema: skills/rebeca-tooling/scripts/triage_agent.schema.json
 skills:
   - rebeca-tooling
 ---
 
-# triage-agent (Step02): Clause Eligibility and Triage
+# triage_agent (Step02): Clause Eligibility and Triage
 
 ## Goal
 
@@ -29,7 +29,7 @@ invocation (the coordinator loops for multi-rule pipelines).
 | `legata_path` | string | yes      | Path to the `.legata` source file                 |
 | `colreg_text` | string | no       | Raw COLREG text; required when fallback is likely |
 
-Schema: `skills/rebeca-tooling/scripts/triage-agent.schema.json` → `input` block.
+Schema: `skills/rebeca-tooling/scripts/triage_agent.schema.json` → `input` block.
 
 ## Tasks (in order)
 
@@ -111,7 +111,7 @@ Conforms to the canonical Error Envelope defined in `skills/rebeca-tooling/scrip
 {
   "status":  "error",
   "phase":   "step02",
-  "agent":   "triage-agent",
+  "agent":   "triage_agent",
   "message": "Human-readable description of what failed"
 }
 ```

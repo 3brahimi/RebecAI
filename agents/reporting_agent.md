@@ -1,5 +1,5 @@
 ---
-name: reporting-agent
+name: reporting_agent
 version: 1.0.0
 description: |
   Step08 specialist for aggregate scoring and report generation.
@@ -100,7 +100,7 @@ scorecards (from coordinator)
 {
   "status":  "error",
   "phase":   "step08",
-  "agent":   "reporting-agent",
+  "agent":   "reporting_agent",
   "message": "Human-readable description of failure"
 }
 ```

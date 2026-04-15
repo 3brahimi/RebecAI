@@ -1,5 +1,5 @@
 ---
-name: packaging-agent
+name: packaging_agent
 version: 1.0.0
 description: |
   Step07 specialist for collecting pipeline artifacts, building a finalized
@@ -96,7 +96,7 @@ Each artifact is tagged with one of:
 {
   "status":  "error",
   "phase":   "step07",
-  "agent":   "packaging-agent",
+  "agent":   "packaging_agent",
   "message": "Human-readable description of failure"
 }
 ```

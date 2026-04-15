@@ -1,5 +1,5 @@
 ---
-name: verification-agent
+name: verification_agent
 version: 1.0.0
 description: |
   Step06 specialist for RMC verification, vacuity checking, and mutation scoring.
@@ -104,7 +104,7 @@ A mutant is **killed** if its `run_rmc` exit code is non-zero.
 {
   "status":  "error",
   "phase":   "step06",
-  "agent":   "verification-agent",
+  "agent":   "verification_agent",
   "message": "Human-readable description of failure"
 }
 ```

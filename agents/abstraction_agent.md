@@ -1,5 +1,5 @@
 ---
-name: abstraction-agent
+name: abstraction_agent
 version: 1.0.0
 description: |
   Step03 specialist: produces stable abstraction rules before model/property
@@ -8,13 +8,13 @@ description: |
   JSON contract into coordinator shared_state.step03.
 user-invocable: false
 implementation: skills/rebeca-tooling/scripts/abstraction_agent.py
-schema: skills/rebeca-tooling/scripts/abstraction-agent.schema.json
+schema: skills/rebeca-tooling/scripts/abstraction_agent.schema.json
 skills:
   - rebeca-tooling
   - rebeca-handbook
 ---
 
-# abstraction-agent (Step03): Abstraction and Discretization Setup
+# abstraction_agent (Step03): Abstraction and Discretization Setup
 
 ## Goal
 
@@ -31,7 +31,7 @@ Operates on one `source_file_path` per invocation.
 | `snapshot_path` | string | no       | Step01 snapshot JSON; seeds variable_map when present     |
 | `colreg_text`   | string | no       | Supplementary COLREG text for actor/condition extraction |
 
-Schema: `skills/rebeca-tooling/scripts/abstraction-agent.schema.json` → `input` block.
+Schema: `skills/rebeca-tooling/scripts/abstraction_agent.schema.json` → `input` block.
 
 ## Tasks (in order)
 
@@ -124,7 +124,7 @@ Merged into coordinator `phase_results.step03`:
 {
   "status":  "error",
   "phase":   "step03",
-  "agent":   "abstraction-agent",
+  "agent":   "abstraction_agent",
   "message": "Human-readable description of what failed"
 }
 ```

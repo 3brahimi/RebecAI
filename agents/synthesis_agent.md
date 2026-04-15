@@ -1,11 +1,11 @@
 ---
-name: synthesis-agent
+name: synthesis_agent
 version: 1.0.0
 description: |
   Step05 specialist for LLM-assisted candidate property generation.
-  Runs in parallel with Step04 (mapping-agent) after Step03 completes.
+  Runs in parallel with Step04 (mapping_agent) after Step03 completes.
   ALL outputs are tagged is_candidate=true, mapping_path=llm-lane, and
-  MUST be routed to Step05 (verification-agent) before any downstream use.
+  MUST be routed to Step05 (verification_agent) before any downstream use.
 user-invocable: false
 skills:
   - rebeca-tooling
@@ -18,19 +18,19 @@ skills:
 
 Generate alternative candidate Rebeca model+property pairs from the same
 Step03 abstraction summary that feeds Step04. Candidates explore formulations
-that the deterministic mapping-agent cannot produce. Every artifact is
+that the deterministic mapping_agent cannot produce. Every artifact is
 explicitly non-final and must pass Step05 verification before promotion.
 
 ## Position in Pipeline
 
 ```
-Step03 (abstraction-agent)
+Step03 (abstraction_agent)
          │
-         ├──► Step04 (mapping-agent)     [deterministic, final path]
+         ├──► Step04 (mapping_agent)     [deterministic, final path]
          │
-         └──► Step05 (synthesis-agent)    [candidate path ← THIS AGENT]
+         └──► Step05 (synthesis_agent)    [candidate path ← THIS AGENT]
                         │
-                        └──► Step05 (verification-agent)  [MANDATORY]
+                        └──► Step05 (verification_agent)  [MANDATORY]
 ```
 
 ## Input Schema
@@ -113,7 +113,7 @@ to `generated_files` — this is the mandatory verification gate.
 {
   "status":  "error",
   "phase":   "step05",
-  "agent":   "llm-lane-agent",
+  "agent":   "llm-lane_agent",
   "message": "Human-readable description of failure"
 }
 ```
