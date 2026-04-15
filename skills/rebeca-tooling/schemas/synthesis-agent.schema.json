@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "synthesis-agent",
+  "description": "WF-05: Property synthesis using MutationEngine strategies before WF-06 verification",
+  "definitions": {
+    "ErrorEnvelope": {
+      "type": "object",
+      "required": ["status", "phase", "agent", "message"],
+      "properties": {
+        "status":  { "type": "string", "enum": ["error"] },
+        "phase":   { "type": "string", "enum": ["step05"] },
+        "agent":   { "type": "string", "enum": ["synthesis-agent"] },
+        "message": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "SynthesisSummary": {
+      "type": "object",
+      "required": ["strategies_tried", "variants_generated", "selected_strategy", "rationale", "property_changed"],
+      "properties": {
+        "strategies_tried":   { "type": "array", "items": { "type": "string" } },
+        "variants_generated": { "type": "integer", "minimum": 0 },
+        "selected_strategy":  { "type": "string" },
+        "rationale":          { "type": "string" },
+        "property_changed":   { "type": "boolean" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "input": {
+    "type": "object",
+    "required": ["rule_id", "model_path", "property_path", "output_dir"],
+    "properties": {
+      "rule_id":       { "type": "string", "minLength": 1 },
+      "model_path":    { "type": "string", "minLength": 1 },
+      "property_path": { "type": "string", "minLength": 1 },
+      "output_dir":    { "type": "string", "minLength": 1 }
+    },
+    "additionalProperties": false
+  },
+  "output": {
+    "oneOf": [
+      {
+        "type": "object",
+        "required": ["status", "rule_id", "selected_model_path", "selected_property_path", "synthesis_summary"],
+        "properties": {
+          "status":                  { "type": "string", "enum": ["ok"] },
+          "rule_id":                 { "type": "string" },
+          "selected_model_path":     { "type": "string" },
+          "selected_property_path":  { "type": "string" },
+          "synthesis_summary":       { "$ref": "#/definitions/SynthesisSummary" },
+          "open_assumptions":        { "type": "array", "items": { "type": "string" } }
+        },
+        "additionalProperties": false
+      },
+      { "$ref": "#/definitions/ErrorEnvelope" }
+    ]
+  }
+}
