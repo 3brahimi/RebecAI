@@ -2,7 +2,7 @@
 name: verification-agent
 version: 1.0.0
 description: |
-  Step05 specialist for RMC verification, vacuity checking, and mutation scoring.
+  Step06 specialist for RMC verification, vacuity checking, and mutation scoring.
   Orchestrates run_rmc → vacuity_checker → mutation_engine for a single rule.
 user-invocable: false
 skills:
@@ -10,7 +10,7 @@ skills:
   - rebeca-handbook
 ---
 
-# Step05 Subagent: Verification and Mutation Scoring
+# Step06 Subagent: Verification and Mutation Scoring
 
 ## Goal
 
@@ -103,7 +103,7 @@ A mutant is **killed** if its `run_rmc` exit code is non-zero.
 ```json
 {
   "status":  "error",
-  "phase":   "step05",
+  "phase":   "step06",
   "agent":   "verification-agent",
   "message": "Human-readable description of failure"
 }
@@ -117,7 +117,7 @@ Emit on: invalid paths, `run_rmc` internal exception, `check_vacuity` exception,
 
 ## Output Patch (for coordinator)
 
-- `workflow_summary.step05`
+- `workflow_summary.step06`
 - `verification_report` (entire output contract)
 - `single_rule_scorecard.failure_reasons` ← `rmc_outcome` when `verified=false`
 - `single_rule_scorecard.remediation_hints` ← populated from `vacuity_status.explanation`
