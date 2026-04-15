@@ -1,3 +1,4 @@
+from transformation_utils import get_canonical_assertion, format_rebeca_define
 #!/usr/bin/env python3
 """
 mapping-agent (WF-04): Manual Mapping Core
