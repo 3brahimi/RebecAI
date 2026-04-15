@@ -53,9 +53,9 @@ You must maintain the following structure in your internal memory:
     "step01": {},
     "step02": {},
     "step03": {},
-    "step04_manual": {},
-    "step04_llm": {},
+    "step04": {},
     "step05": {},
+    "step06": {},
     "step07": {},
     "step08": {}
   },

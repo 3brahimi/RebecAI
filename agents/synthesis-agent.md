@@ -124,6 +124,6 @@ failure, schema validation violation.
 ## Output Patch (for coordinator)
 
 - `workflow_summary.step06`
-- `phase_results.step06_synthesis` ← full output contract
+- `phase_results.step05` ← full output contract
 - `candidate_artifacts[]` ← each entry appended to coordinator's transformed_artifacts
   with `is_candidate: true` for mandatory Step05 routing
