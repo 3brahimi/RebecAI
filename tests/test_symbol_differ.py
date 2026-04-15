@@ -12,7 +12,7 @@ _SCRIPTS_DIR = _SKILL_ROOT / "scripts"
 sys.path.insert(0, str(_SKILL_ROOT))
 sys.path.insert(0, str(_SCRIPTS_DIR))
 
-from scripts import capture_snapshot, detect_hallucinations
+from skills.rebeca_tooling.scripts import capture_snapshot, detect_hallucinations
 
 
 GOLDEN_MODEL = """\
@@ -96,7 +96,7 @@ def test_tier1_dead_code_hallucination_detection():
         snapshot_path = base / "snapshot.json"
         _write(snapshot_path, json.dumps(snapshot))
 
-        with patch("scripts.symbol_differ.extract_model_logic_identifiers", return_value=set()):
+        with patch("skills.rebeca_tooling.scripts.symbol_differ.extract_model_logic_identifiers", return_value=set()):
             result = detect_hallucinations(
                 snapshot_path=str(snapshot_path),
                 current_model=str(curr_model),

@@ -29,6 +29,7 @@ from fixtures import RULE_ID
 #  - msgsrv with assignments (transition_bypass)
 #  - if-condition (predicate_flip)
 #  - numeric literal (assignment_mutation)
+# A model with a clear condition and a verifiable property
 MUTATION_MODEL = """\
 reactiveclass Ship(10) {
   statevars {
@@ -41,9 +42,6 @@ reactiveclass Ship(10) {
   }
   msgsrv tick() {
     length = length + 1;
-    if (length > 100) {
-      hasLight = false;
-    }
   }
 }
 main {
@@ -58,7 +56,7 @@ property {
     lightOn = (s1.hasLight == true);
   }
   Assertion {
-    Rule22: !isLong || lightOn;
+    Rule22: isLong && lightOn;
   }
 }
 """
