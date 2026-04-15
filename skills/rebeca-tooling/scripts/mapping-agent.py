@@ -24,8 +24,6 @@ from typing import Any, Dict, List, Optional, Tuple
 # ---------------------------------------------------------------------------
 # Bootstrap
 # ---------------------------------------------------------------------------
-_SCRIPTS = Path(__file__).parent.parent / "skills" / "rebeca-tooling" / "scripts"
-sys.path.insert(0, str(_SCRIPTS))
 
 from utils import safe_path  # noqa: E402
 
