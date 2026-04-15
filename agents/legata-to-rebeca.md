@@ -18,8 +18,8 @@ Execute steps following this flow. Always validate the output of a step before t
 2. **Step02 (Triage)**: Call `@triage-agent`
 3. **Step03 (Abstraction)**: Call `@abstraction-agent`
 4. **Step04 (Mapping)**: Call `@mapping-agent`
-5. **Step05 (Verification)**: Call `@verification-agent`
-6. **Step06 (Synthesis)**: Call `@synthesis-agent`
+5. **Step05 (Synthesis)**: Call `@synthesis-agent`
+6. **Step06 (Verification)**: Call `@verification-agent`
 7. **Step07 (Packaging)**: Call `@packaging-agent`
 8. **Step08 (Reporting)**: Call `@reporting-agent`
 
