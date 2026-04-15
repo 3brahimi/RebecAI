@@ -5,7 +5,6 @@ description: |
   Step01 specialist: validates inputs, provisions RMC, pins toolchain metadata,
   and captures a golden snapshot. Emits a JSON contract into coordinator shared_state.step01.
 user-invocable: false
-implementation: skills/rebeca_tooling/scripts/init_agent.py
 skills:
   - rebeca_tooling
 ---

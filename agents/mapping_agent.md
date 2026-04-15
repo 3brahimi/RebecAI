@@ -6,8 +6,6 @@ description: |
   Consumes the Step03 abstraction summary and produces a pair of files —
   a .rebeca actor model and a .property assertion file — for each rule.
 user-invocable: false
-implementation: skills/rebeca_tooling/scripts/mapping_agent.py
-schema: skills/rebeca_tooling/scripts/mapping_agent.schema.json
 skills:
   - rebeca_tooling
   - rebeca_handbook
