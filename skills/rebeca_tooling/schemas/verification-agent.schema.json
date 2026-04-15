@@ -8,7 +8,7 @@
       "required": ["status", "phase", "agent", "message"],
       "properties": {
         "status":  { "type": "string", "enum": ["error"] },
-        "phase":   { "type": "string", "enum": ["step05"] },
+        "phase":   { "type": "string", "enum": ["step06"] },
         "agent":   { "type": "string", "enum": ["verification-agent"] },
         "message": { "type": "string" }
       },
