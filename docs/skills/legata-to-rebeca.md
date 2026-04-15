@@ -1,4 +1,4 @@
-# legata-to-rebeca Skill
+# legata_to_rebeca Skill
 
 Step-by-step workflow guidance for transforming Legata formal specifications into verifiable Rebeca actor models.
 
@@ -86,4 +86,4 @@ See [Usage Guide](../guides/usage.md) for complete examples.
 
 ## Related Agents
 
-- **[legata-to-rebeca](../agents/legata-to-rebeca.md)** - Uses this skill for workflow guidance
+- **[legata_to_rebeca](../agents/legata_to_rebeca.md)** - Uses this skill for workflow guidance

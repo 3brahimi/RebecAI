@@ -61,9 +61,9 @@ check_grep_not() {
 
 # AT-001: Prescribed workflow artifact exists with WF-01..WF-08
 echo -n "AT-001 (Prescribed Workflow Artifact): "
-if check_file "$ARTIFACT_ROOT/agents/legata-to-rebeca.md" && \
-   check_grep "WF-01" "$ARTIFACT_ROOT/agents/legata-to-rebeca.md" && \
-   check_grep "WF-08" "$ARTIFACT_ROOT/agents/legata-to-rebeca.md"; then
+if check_file "$ARTIFACT_ROOT/agents/legata_to_rebeca.md" && \
+   check_grep "WF-01" "$ARTIFACT_ROOT/agents/legata_to_rebeca.md" && \
+   check_grep "WF-08" "$ARTIFACT_ROOT/agents/legata_to_rebeca.md"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -74,9 +74,9 @@ fi
 
 # AT-002: Agent file exists with handbook-derived Rebeca constraints
 echo -n "AT-002 (Agent Structure & Handbook): "
-if check_file "$ARTIFACT_ROOT/agents/legata-to-rebeca.md" && \
-   check_grep "Rebeca" "$ARTIFACT_ROOT/agents/legata-to-rebeca.md" && \
-   check_grep "condition" "$ARTIFACT_ROOT/agents/legata-to-rebeca.md"; then
+if check_file "$ARTIFACT_ROOT/agents/legata_to_rebeca.md" && \
+   check_grep "Rebeca" "$ARTIFACT_ROOT/agents/legata_to_rebeca.md" && \
+   check_grep "condition" "$ARTIFACT_ROOT/agents/legata_to_rebeca.md"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -87,9 +87,9 @@ fi
 
 # AT-003: Agent workflow explicitly covers WF-01..WF-08 with status
 echo -n "AT-003 (Agent Workflow Phases): "
-if check_grep "WF-01" "$ARTIFACT_ROOT/agents/legata-to-rebeca.md" && \
-   check_grep "WF-02" "$ARTIFACT_ROOT/agents/legata-to-rebeca.md" && \
-   check_grep "WF-07" "$ARTIFACT_ROOT/agents/legata-to-rebeca.md"; then
+if check_grep "WF-01" "$ARTIFACT_ROOT/agents/legata_to_rebeca.md" && \
+   check_grep "WF-02" "$ARTIFACT_ROOT/agents/legata_to_rebeca.md" && \
+   check_grep "WF-07" "$ARTIFACT_ROOT/agents/legata_to_rebeca.md"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -100,8 +100,8 @@ fi
 
 # AT-003a: For formalized rules, output includes model_artifact and property_artifact
 echo -n "AT-003a (Dual Artifact Output): "
-if check_grep "model_artifact" "$ARTIFACT_ROOT/agents/legata-to-rebeca.md" && \
-   check_grep "property_artifact" "$ARTIFACT_ROOT/agents/legata-to-rebeca.md"; then
+if check_grep "model_artifact" "$ARTIFACT_ROOT/agents/legata_to_rebeca.md" && \
+   check_grep "property_artifact" "$ARTIFACT_ROOT/agents/legata_to_rebeca.md"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -112,8 +112,8 @@ fi
 
 # AT-004: Skill directory exists with SKILL.md and trigger description
 echo -n "AT-004 (Workflow Skill Structure): "
-if check_file "$ARTIFACT_ROOT/skills/legata-to-rebeca/SKILL.md" && \
-   check_grep_ci "when to use" "$ARTIFACT_ROOT/skills/legata-to-rebeca/SKILL.md"; then
+if check_file "$ARTIFACT_ROOT/skills/legata_to_rebeca/SKILL.md" && \
+   check_grep_ci "when to use" "$ARTIFACT_ROOT/skills/legata_to_rebeca/SKILL.md"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -124,8 +124,8 @@ fi
 
 # AT-005: Workflow skill includes WF-01..WF-08 with embedded Rebeca constraints
 echo -n "AT-005 (Workflow Skill Content): "
-if check_grep "Legata" "$ARTIFACT_ROOT/skills/legata-to-rebeca/SKILL.md" && \
-   check_grep "Rebeca" "$ARTIFACT_ROOT/skills/legata-to-rebeca/SKILL.md"; then
+if check_grep "Legata" "$ARTIFACT_ROOT/skills/legata_to_rebeca/SKILL.md" && \
+   check_grep "Rebeca" "$ARTIFACT_ROOT/skills/legata_to_rebeca/SKILL.md"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -182,8 +182,8 @@ fi
 
 # AT-010: Agent and skill reference script interfaces
 echo -n "AT-010 (Script Interfaces): "
-if check_grep "download_rmc\|run_rmc" "$ARTIFACT_ROOT/agents/legata-to-rebeca.md" || \
-   check_grep "download_rmc\|run_rmc" "$ARTIFACT_ROOT/skills/legata-to-rebeca/SKILL.md"; then
+if check_grep "download_rmc\|run_rmc" "$ARTIFACT_ROOT/agents/legata_to_rebeca.md" || \
+   check_grep "download_rmc\|run_rmc" "$ARTIFACT_ROOT/skills/legata_to_rebeca/SKILL.md"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -195,7 +195,7 @@ fi
 # AT-011: Prompts for implementation and review exist
 echo -n "AT-011 (Implementation Prompts): "
 if check_dir "$ARTIFACT_ROOT" && \
-   check_file "$ARTIFACT_ROOT/agents/legata-to-rebeca.md"; then
+   check_file "$ARTIFACT_ROOT/agents/legata_to_rebeca.md"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -285,8 +285,8 @@ fi
 
 # AT-019: Incorrect/incomplete handling documented
 echo -n "AT-019 (Degraded Input Handling): "
-if check_grep_ci "incomplete\|incorrect" "$ARTIFACT_ROOT/skills/legata-to-rebeca/SKILL.md" || \
-   check_grep_ci "defect\|repair" "$ARTIFACT_ROOT/agents/legata-to-rebeca.md"; then
+if check_grep_ci "incomplete\|incorrect" "$ARTIFACT_ROOT/skills/legata_to_rebeca/SKILL.md" || \
+   check_grep_ci "defect\|repair" "$ARTIFACT_ROOT/agents/legata_to_rebeca.md"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -297,7 +297,7 @@ fi
 
 # AT-020: No silent skips - all outcomes reported
 echo -n "AT-020 (No Silent Skips): "
-if check_grep_ci "report\|output" "$ARTIFACT_ROOT/agents/legata-to-rebeca.md"; then
+if check_grep_ci "report\|output" "$ARTIFACT_ROOT/agents/legata_to_rebeca.md"; then
   echo "PASS"
   ((PASSED++))
 else

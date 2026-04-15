@@ -1,6 +1,6 @@
 # Usage Guide
 
-Complete workflow execution examples for the legata-to-rebeca agent.
+Complete workflow execution examples for the legata_to_rebeca agent.
 
 ## Environment Maintenance
 
@@ -16,7 +16,7 @@ python3 purge.py
 ...existing code...
 
 ```
-@legata-to-rebeca Transform legata/Rule-22-Equipment-Range.legata to Rebeca.
+@legata_to_rebeca Transform legata/Rule-22-Equipment-Range.legata to Rebeca.
 Reference model: src/PromptingExperimentDoc/SimulationModelCode.rebeca
 Reference property: src/PromptingExperimentDoc/SimulationModelCode.property
 ```
@@ -30,7 +30,7 @@ Reference property: src/PromptingExperimentDoc/SimulationModelCode.property
 ### Transform with Verification
 
 ```
-@legata-to-rebeca
+@legata_to_rebeca
 Transform legata/Rule-22-Equipment-Range.legata to Rebeca.
 Reference model: src/PromptingExperimentDoc/SimulationModelCode.rebeca
 Reference property: src/PromptingExperimentDoc/SimulationModelCode.property
@@ -46,7 +46,7 @@ Run RMC verification and report results.
 ### Transform with Fallback
 
 ```
-@legata-to-rebeca Transform Rule-23 to Rebeca. If Legata is incomplete, use COLREG text fallback.
+@legata_to_rebeca Transform Rule-23 to Rebeca. If Legata is incomplete, use COLREG text fallback.
 Reference model: src/PromptingExperimentDoc/SimulationModelCode.rebeca
 Reference property: src/PromptingExperimentDoc/SimulationModelCode.property
 ```
@@ -61,7 +61,7 @@ Reference property: src/PromptingExperimentDoc/SimulationModelCode.property
 ### Batch Transformation
 
 ```
-@legata-to-rebeca
+@legata_to_rebeca
 Transform all rules in legata/ directory to Rebeca models.
 Reference model: src/PromptingExperimentDoc/SimulationModelCode.rebeca
 Reference property: src/PromptingExperimentDoc/SimulationModelCode.property
@@ -82,7 +82,7 @@ For each rule:
 ### Triage and Classify
 
 ```
-@legata-to-rebeca
+@legata_to_rebeca
 Classify all Legata rules in legata/ directory.
 For incomplete or incorrect rules, suggest repairs.
 For not-formalized rules, attempt COLREG fallback mapping.
@@ -96,7 +96,7 @@ For not-formalized rules, attempt COLREG fallback mapping.
 ### Custom Timeout
 
 ```
-@legata-to-rebeca
+@legata_to_rebeca
 Transform legata/Rule-22-Equipment-Range.legata to Rebeca.
 Reference model: src/PromptingExperimentDoc/SimulationModelCode.rebeca
 Reference property: src/PromptingExperimentDoc/SimulationModelCode.property

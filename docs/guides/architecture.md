@@ -16,7 +16,7 @@ RebecAI follows a modular architecture with three main layers:
 ┌─────────────────────────────────────────────────────────┐
 │                    Agent Layer                          │
 │  ┌───────────────────────────────────────────────────┐  │
-│  │         legata-to-rebeca Agent                    │  │
+│  │         legata_to_rebeca Agent                    │  │
 │  │  - Orchestrates 8-phase workflow                  │  │
 │  │  - Invokes skills for guidance                    │  │
 │  │  - Calls tooling for automation                   │  │
@@ -86,12 +86,12 @@ RebecAI follows a modular architecture with three main layers:
 
 ### Phase 1: Agent Invocation
 ```
-User → @legata-to-rebeca → Agent reads definition
+User → @legata_to_rebeca → Agent reads definition
 ```
 
 ### Phase 2: Skill Consultation
 ```
-Agent → legata-to-rebeca skill → Workflow guidance
+Agent → legata_to_rebeca skill → Workflow guidance
 Agent → rebeca-handbook skill → Modeling patterns
 ```
 
@@ -158,9 +158,9 @@ Agent → User → Results and recommendations
 # Repository (source of truth)
 rebecai/
 ├── agents/
-│   └── legata-to-rebeca.md          # Agent definition
+│   └── legata_to_rebeca.md          # Agent definition
 ├── skills/
-│   ├── legata-to-rebeca/
+│   ├── legata_to_rebeca/
 │   │   └── SKILL.md                 # Workflow guidance
 │   ├── rebeca-handbook/
 │   │   └── SKILL.md                 # Modeling best practices
@@ -174,9 +174,9 @@ rebecai/
 # Installed (after running setup.py)
 ~/.agents/
 ├── agents/
-│   └── legata-to-rebeca.md
+│   └── legata_to_rebeca.md
 ├── skills/
-│   ├── legata-to-rebeca/
+│   ├── legata_to_rebeca/
 │   ├── rebeca-handbook/
 │   └── rebeca-tooling/
 │       └── scripts/                 # Python library (10 modules)
@@ -190,8 +190,8 @@ After running `python3 setup.py` from the project root, artifacts are placed at:
 
 | Artifact | Installed Path |
 |----------|---------------|
-| Agent definition | `~/.agents/agents/legata-to-rebeca.md` |
-| Workflow guidance skill | `~/.agents/skills/legata-to-rebeca/SKILL.md` |
+| Agent definition | `~/.agents/agents/legata_to_rebeca.md` |
+| Workflow guidance skill | `~/.agents/skills/legata_to_rebeca/SKILL.md` |
 | Modeling handbook skill | `~/.agents/skills/rebeca-handbook/SKILL.md` |
 | Tooling skill + scripts | `~/.agents/skills/rebeca-tooling/scripts/` |
 | RMC model checker | `~/.agents/rmc/rmc.jar` |

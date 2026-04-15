@@ -10,13 +10,13 @@ Complete documentation for RebecAI agents and skills.
 
 ## Agents
 
-- **[legata-to-rebeca](agents/legata-to-rebeca.md)** - Transform Legata/COLREG rules to Rebeca models
+- **[legata_to_rebeca](agents/legata_to_rebeca.md)** - Transform Legata/COLREG rules to Rebeca models
   - Capabilities, workflow phases, scoring rubric
   - Usage examples and expected output
 
 ## Skills
 
-- **[legata-to-rebeca](skills/legata-to-rebeca.md)** - Workflow guidance skill
+- **[legata_to_rebeca](skills/legata_to_rebeca.md)** - Workflow guidance skill
   - 8-phase transformation process
   - Practical examples and best practices
 
@@ -46,9 +46,9 @@ Complete documentation for RebecAI agents and skills.
 docs/
 ├── README.md                           # This file
 ├── agents/                             # Per-agent documentation
-│   └── legata-to-rebeca.md            # Legata→Rebeca agent
+│   └── legata_to_rebeca.md            # Legata→Rebeca agent
 ├── skills/                             # Per-skill documentation
-│   ├── legata-to-rebeca.md            # Workflow guidance skill
+│   ├── legata_to_rebeca.md            # Workflow guidance skill
 │   ├── rebeca-handbook.md             # Modeling best practices skill
 │   └── rebeca-tooling.md              # Python library skill
 └── guides/                             # Installation, usage, architecture
@@ -67,7 +67,7 @@ docs/
 **New Users:**
 1. Start with [Installation Guide](guides/installation.md)
 2. Read [Usage Guide](guides/usage.md)
-3. Try examples from [legata-to-rebeca agent](agents/legata-to-rebeca.md)
+3. Try examples from [legata_to_rebeca agent](agents/legata_to_rebeca.md)
 
 **Developers:**
 1. Read [Architecture Guide](guides/architecture.md)
@@ -75,7 +75,7 @@ docs/
 3. Check [Contributing Guide](guides/contributing.md)
 
 **Researchers:**
-1. Review [legata-to-rebeca agent](agents/legata-to-rebeca.md) for workflow
+1. Review [legata_to_rebeca agent](agents/legata_to_rebeca.md) for workflow
 2. Check [rebeca-handbook skill](skills/rebeca-handbook.md) for modeling
 3. See [Architecture Guide](guides/architecture.md) for system design
 
@@ -85,7 +85,7 @@ docs/
 - [Installation Guide](guides/installation.md)
 
 **Transforming Rules:**
-- [legata-to-rebeca agent](agents/legata-to-rebeca.md)
+- [legata_to_rebeca agent](agents/legata_to_rebeca.md)
 - [Usage Guide](guides/usage.md)
 
 **Writing Models:**

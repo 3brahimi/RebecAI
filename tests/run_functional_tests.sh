@@ -53,7 +53,7 @@ extract_rule_name() {
   # If it's a file like rule22manual.property, extract from filename
   local base
   base=$(basename "$path" .property)
-  if [[ "$dir" == "ManualTransformation_legata-to-rebeca_properties" ]]; then
+  if [[ "$dir" == "ManualTransformation_legata_to_rebeca_properties" ]]; then
     # e.g. rule22manual -> Rule22
     echo "${base%manual}" | sed 's/^./\U&/;s/rule/Rule/;s/^r/R/'
   else

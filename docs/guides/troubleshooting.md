@@ -284,7 +284,7 @@ Provide more specific text, e.g., include terms like `vessel`, `light`, `visibil
 ### install_artifacts reports missing source
 
 ```
-⚠ Agent source not found: /path/to/rebecai/agents/legata-to-rebeca.md
+⚠ Agent source not found: /path/to/rebecai/agents/legata_to_rebeca.md
 ```
 
 **Fix:** Ensure the script is being run from the project root directory, not from inside `rebecai/`.

@@ -105,7 +105,7 @@ When `path == colreg-fallback`, `routing.fallback_mapping` is populated:
 
 ## Error Envelope (failure)
 
-Conforms to the canonical Error Envelope defined in `skills/rebeca-tooling/scripts/legata-to-rebeca.md`:
+Conforms to the canonical Error Envelope defined in `skills/rebeca-tooling/scripts/legata_to_rebeca.md`:
 
 ```json
 {

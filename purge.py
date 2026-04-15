@@ -17,9 +17,9 @@ REPO_ROOT = Path(__file__).parent
 
 # 1. Manifest of all project-owned relative paths
 OWNED_ITEMS = [
-    "agents/legata-to-rebeca.md",
-    "agents/legata-to-rebeca.agent.md",
-    "skills/legata-to-rebeca",
+    "agents/legata_to_rebeca.md",
+    "agents/legata_to_rebeca.agent.md",
+    "skills/legata_to_rebeca",
     "skills/rebeca-handbook",
     "skills/rebeca-tooling",
     "skills/rebeca-mutation",

@@ -131,9 +131,9 @@ See [API Reference Guide](../guides/api-reference.md) for complete function sign
 
 ## Related Skills
 
-- **[legata-to-rebeca](legata-to-rebeca.md)** - Workflow guidance
+- **[legata_to_rebeca](legata_to_rebeca.md)** - Workflow guidance
 - **[rebeca-handbook](rebeca-handbook.md)** - Modeling best practices
 
 ## Related Agents
 
-- **[legata-to-rebeca](../agents/legata-to-rebeca.md)** - Uses this skill for automation
+- **[legata_to_rebeca](../agents/legata_to_rebeca.md)** - Uses this skill for automation

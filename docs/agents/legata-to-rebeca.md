@@ -1,4 +1,4 @@
-# legata-to-rebeca Agent
+# legata_to_rebeca Agent
 
 Transforms maritime safety rules from Legata formal specification into verifiable Rebeca actor models.
 
@@ -24,7 +24,7 @@ The agent requires three inputs for each transformation:
 ### Transform a Single Rule
 
 ```
-@legata-to-rebeca Transform legata/Rule-22-Equipment-Range.legata to Rebeca.
+@legata_to_rebeca Transform legata/Rule-22-Equipment-Range.legata to Rebeca.
 Reference model: src/PromptingExperimentDoc/SimulationModelCode.rebeca
 Reference property: src/PromptingExperimentDoc/SimulationModelCode.property
 ```
@@ -32,7 +32,7 @@ Reference property: src/PromptingExperimentDoc/SimulationModelCode.property
 ### Transform with Fallback
 
 ```
-@legata-to-rebeca Transform Rule-23 to Rebeca. If Legata is incomplete, use COLREG text fallback.
+@legata_to_rebeca Transform Rule-23 to Rebeca. If Legata is incomplete, use COLREG text fallback.
 Reference model: src/PromptingExperimentDoc/SimulationModelCode.rebeca
 Reference property: src/PromptingExperimentDoc/SimulationModelCode.property
 ```
@@ -40,7 +40,7 @@ Reference property: src/PromptingExperimentDoc/SimulationModelCode.property
 ### Full Workflow with Verification
 
 ```
-@legata-to-rebeca
+@legata_to_rebeca
 Transform legata/Rule-22-Equipment-Range.legata to Rebeca model and property.
 Reference model: src/PromptingExperimentDoc/SimulationModelCode.rebeca
 Reference property: src/PromptingExperimentDoc/SimulationModelCode.property
@@ -51,7 +51,7 @@ Generate a report with verification outcome.
 ### Batch Transformation
 
 ```
-@legata-to-rebeca
+@legata_to_rebeca
 Transform all rules in legata/ directory to Rebeca models.
 Reference model: src/PromptingExperimentDoc/SimulationModelCode.rebeca
 Reference property: src/PromptingExperimentDoc/SimulationModelCode.property
@@ -66,7 +66,7 @@ For each rule:
 ### Triage and Classify
 
 ```
-@legata-to-rebeca
+@legata_to_rebeca
 Classify all Legata rules in legata/ directory.
 For incomplete or incorrect rules, suggest repairs.
 For not-formalized rules, attempt COLREG fallback mapping.
@@ -120,7 +120,7 @@ Total maximum: **100 points**. Scores are computed by `RubricScorer` in `scripts
 
 The agent leverages three skills:
 
-- **[legata-to-rebeca](../skills/legata-to-rebeca.md)** - Workflow guidance
+- **[legata_to_rebeca](../skills/legata_to_rebeca.md)** - Workflow guidance
 - **[rebeca-handbook](../skills/rebeca-handbook.md)** - Modeling best practices
 - **[rebeca-tooling](../skills/rebeca-tooling.md)** - Python library for automation
 

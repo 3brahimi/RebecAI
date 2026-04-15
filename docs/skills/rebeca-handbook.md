@@ -198,12 +198,12 @@ Assertion:         Rule23: !isPowerDriven || isSmall || lightsOn;
 
 ## Related Skills
 
-- **[legata-to-rebeca](legata-to-rebeca.md)** - Workflow guidance
+- **[legata_to_rebeca](legata_to_rebeca.md)** - Workflow guidance
 - **[rebeca-tooling](rebeca-tooling.md)** - Python automation library
 
 ## Related Agents
 
-- **[legata-to-rebeca](../agents/legata-to-rebeca.md)** - Uses this skill for modeling guidance
+- **[legata_to_rebeca](../agents/legata_to_rebeca.md)** - Uses this skill for modeling guidance
 
 ## External Resources
 

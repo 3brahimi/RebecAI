@@ -36,12 +36,12 @@ Currently, the following components are implemented and available for use:
 ### Active Agents
 | Agent | Description | Implementation Path |
 | :--- | :--- | :--- |
-| `legata-to-rebeca` | Transforms Legata/COLREG specifications into Rebeca models. | `agents/legata-to-rebeca.md` |
+| `legata_to_rebeca` | Transforms Legata/COLREG specifications into Rebeca models. | `agents/legata_to_rebeca.md` |
 
 ### Active Skills
 | Skill | Description | Implementation Path |
 | :--- | :--- | :--- |
-| `legata-to-rebeca` | Workflow guidance and pattern application. | `skills/legata-to-rebeca/` |
+| `legata_to_rebeca` | Workflow guidance and pattern application. | `skills/legata_to_rebeca/` |
 | `rebeca-handbook` | Best practices for actor-based modeling. | `skills/rebeca-handbook/` |
 | `rebeca-tooling` | Python library/CLI for RMC execution and reporting. | `skills/rebeca-tooling/` |
 
@@ -55,7 +55,7 @@ python3 setup.py
 python3 purge.py
 
 # Example: Transform a rule using an agent
-@legata-to-rebeca Transform legata/Rule-22-Equipment-Range.legata to Rebeca.
+@legata_to_rebeca Transform legata/Rule-22-Equipment-Range.legata to Rebeca.
 ```
 
 The `setup.py` script automatically discovers components in `agents/` and `skills/`, downloads RMC, and installs them to `~/.agents/`.
