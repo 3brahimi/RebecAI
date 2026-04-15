@@ -16,6 +16,8 @@ verify_installation = _lazy_import("verify_installation", "verify-installation")
 pre_run_rmc_check = _lazy_import("pre_run_rmc_check", "pre-run-rmc-check")
 RuleStatusClassifier = _lazy_import("RuleStatusClassifier", "classify-rule-status")
 COLREGFallbackMapper = _lazy_import("COLREGFallbackMapper", "colreg-fallback-mapper")
+extract_legata_signals = _lazy_import("extract_signals", "classify-rule-status")
+extract_colreg_signals = _lazy_import("extract_signals", "colreg-fallback-mapper")
 from .utils import safe_path, safe_open, validate_https_url, resolve_executable
 MutationEngine = _lazy_import("MutationEngine", "mutation-engine")
 Mutation = _lazy_import("Mutation", "mutation-engine")
@@ -28,7 +30,7 @@ HallucinationResult = _lazy_import("HallucinationResult", "symbol-differ")
 
 __all__ = [
     "download_rmc", "is_valid_jar", "run_rmc", "install_artifacts", "verify_installation",
-    "pre_run_rmc_check", "RuleStatusClassifier", "COLREGFallbackMapper",
+    "pre_run_rmc_check", "RuleStatusClassifier", "COLREGFallbackMapper", "extract_legata_signals", "extract_colreg_signals",
     "safe_path", "safe_open", "validate_https_url", "resolve_executable",
     "MutationEngine", "Mutation", "check_vacuity", "extract_precondition",
     "build_negated_property", "capture_snapshot", "detect_hallucinations", "HallucinationResult"
