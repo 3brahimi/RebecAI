@@ -56,7 +56,7 @@ _ROUTING: Dict[str, Tuple[str, bool]] = {
 # ---------------------------------------------------------------------------
 
 def _error(message: str) -> Dict[str, Any]:
-    return { "integrity": "passed", "mutation_score": 100.0, "vacuity": {"is_vacuous": False}, "is_hallucination": False, "integrity": "passed", "mutation_score": 100.0, "vacuity": {"is_vacuous": False}, "is_hallucination": False,"status": "error", "phase": "step02", "agent": "triage-agent", "message": message}
+    return {"status": "error", "phase": "step02", "agent": "triage-agent", "message": message}
 
 
 def _checked_safe_path(p: str, label: str) -> Tuple[Optional[Path], Optional[str]]:
