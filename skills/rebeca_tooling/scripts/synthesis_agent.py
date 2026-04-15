@@ -19,6 +19,7 @@ import argparse
 import importlib
 import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -201,10 +202,21 @@ def run_synthesis(
 
     # 6. Build contract
     contract: Dict[str, Any] = {
-        "status":                  "ok",
-        "rule_id":                 rule_id,
-        "selected_model_path":     str(out_model.resolve()),
-        "selected_property_path":  str(out_prop.resolve()),
+        "status":   "ok",
+        "rule_id":  rule_id,
+        "candidate_artifacts": [
+            {
+                "artifact_id":   f"{rule_id}_synthesis",
+                "model_path":    str(out_model.resolve()),
+                "property_path": str(out_prop.resolve()),
+                "is_candidate":  True,
+                "mapping_path":  "synthesis-agent",
+                "source_phase":  "step05",
+                "strategy":      selected_strategy,
+                "verified":      False,
+                "created_at":    datetime.now(timezone.utc).isoformat(),
+            }
+        ],
         "synthesis_summary": {
             "strategies_tried":   strategies_tried,
             "variants_generated": len(all_variants),
