@@ -7,7 +7,7 @@ description: |
   repair, COLREG-fallback, or skip. Emits a JSON contract into
   coordinator shared_state.step02.
 user-invocable: false
-implementation: skills/rebeca-tooling/scripts/triage-agent.py
+implementation: skills/rebeca-tooling/scripts/triage_agent.py
 schema: skills/rebeca-tooling/scripts/triage-agent.schema.json
 skills:
   - rebeca-tooling
@@ -54,7 +54,7 @@ If any step fails, emit the **Error Envelope** to stdout and exit 1.
 ## CLI
 
 ```bash
-python skills/rebeca-tooling/scripts/triage-agent.py \
+python skills/rebeca-tooling/scripts/triage_agent.py \
   --rule-id     Rule-22 \
   --legata-path input/Rule-22.legata \
   [--colreg-text "Every vessel shall exhibit lights..."]

@@ -6,7 +6,7 @@ description: |
   Consumes the Step03 abstraction summary and produces a pair of files —
   a .rebeca actor model and a .property assertion file — for each rule.
 user-invocable: false
-implementation: skills/rebeca-tooling/scripts/mapping-agent.py
+implementation: skills/rebeca-tooling/scripts/mapping_agent.py
 schema: skills/rebeca-tooling/scripts/mapping-agent.schema.json
 skills:
   - rebeca-tooling
@@ -104,7 +104,7 @@ extracted from the Legata section text. Operator is inferred from `>=`, `>`, `<=
 ## CLI
 
 ```bash
-python skills/rebeca-tooling/scripts/mapping-agent.py \
+python skills/rebeca-tooling/scripts/mapping_agent.py \
   --rule-id            Rule-22 \
   --legata-path        input/Rule-22.legata \
   --abstraction-json   '{"naming_contract":{...},"actor_map":[...],"variable_map":[...]}' \

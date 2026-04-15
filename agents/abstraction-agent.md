@@ -7,7 +7,7 @@ description: |
   naming conventions, discretizes to Rebeca-compatible types, and emits a
   JSON contract into coordinator shared_state.step03.
 user-invocable: false
-implementation: skills/rebeca-tooling/scripts/abstraction-agent.py
+implementation: skills/rebeca-tooling/scripts/abstraction_agent.py
 schema: skills/rebeca-tooling/scripts/abstraction-agent.schema.json
 skills:
   - rebeca-tooling
@@ -66,7 +66,7 @@ Schema: `skills/rebeca-tooling/scripts/abstraction-agent.schema.json` → `input
 ## CLI
 
 ```bash
-python skills/rebeca-tooling/scripts/abstraction-agent.py \
+python skills/rebeca-tooling/scripts/abstraction_agent.py \
   --rule-id       Rule-22 \
   --legata-path   input/Rule-22.legata \
   [--snapshot-path output/snapshots/Rule-22.snapshot.json] \

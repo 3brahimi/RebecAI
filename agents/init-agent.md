@@ -5,7 +5,7 @@ description: |
   Step01 specialist: validates inputs, provisions RMC, pins toolchain metadata,
   and captures a golden snapshot. Emits a JSON contract into coordinator shared_state.step01.
 user-invocable: false
-implementation: skills/rebeca-tooling/scripts/init-agent.py
+implementation: skills/rebeca-tooling/scripts/init_agent.py
 skills:
   - rebeca-tooling
 ---
@@ -42,7 +42,7 @@ If any step fails, emit the **Error Envelope** (see below) to stdout and exit 1 
 ## CLI
 
 ```bash
-python skills/rebeca-tooling/scripts/init-agent.py \
+python skills/rebeca-tooling/scripts/init_agent.py \
   --rule-id       Rule-22 \
   --model         output/Rule-22.rebeca \
   --property      output/Rule-22.property \
