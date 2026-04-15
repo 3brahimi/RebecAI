@@ -17,13 +17,11 @@ Execute steps following this flow. Always validate the output of a step before t
 1. **Step01 (Init)**: Call `@init-agent`
 2. **Step02 (Triage)**: Call `@triage-agent`
 3. **Step03 (Abstraction)**: Call `@abstraction-agent`
-4. **Parallel Execution**:
-   - Call `@mapping-agent`
-   - Call `@synthesis-agent`
-   - (Wait for both to complete before proceeding)
+4. **Step04 (Mapping)**: Call `@mapping-agent`
 5. **Step05 (Verification)**: Call `@verification-agent`
-6. **Step07 (Packaging)**: Call `@packaging-agent`
-7. **Step08 (Reporting)**: Call `@reporting-agent`
+6. **Step06 (Synthesis)**: Call `@synthesis-agent`
+7. **Step07 (Packaging)**: Call `@packaging-agent`
+8. **Step08 (Reporting)**: Call `@reporting-agent`
 
 ## Operational Rules
 - **Context Management**: You hold the global session state. For each sub-agent, extract only the required input schema and pass it in the prompt.
