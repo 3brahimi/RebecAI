@@ -1,14 +1,6 @@
 ---
-name: rebeca_tooling
-version: 1.0.0
+name: rebeca-tooling
 description: Cross-platform Python library for RMC operations, rule triage, scoring, and reporting
-trigger_phrases:
-  - "download rmc"
-  - "run rmc"
-  - "verify rebeca"
-  - "score rule"
-  - "triage rule"
-  - "generate report"
 ---
 
 # Rebeca Tooling Skill

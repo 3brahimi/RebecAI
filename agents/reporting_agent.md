@@ -7,6 +7,7 @@ description: |
 schema: skills/rebeca_tooling/schemas/reporting-agent.schema.json
 skills:
   - rebeca_tooling
+  - rebeca_hallucination
   - rebeca_handbook
 ---
 

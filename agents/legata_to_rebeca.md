@@ -4,6 +4,9 @@ description: |
   Coordinator for the Legata→Rebeca pipeline.
   State transitions are computed from subagent JSON output fields.
   One table is the single authoritative source for every transition.
+skills:
+  - legata_to_rebeca
+  - rebeca_tooling
 ---
 
 # Legata → Rebeca Coordinator

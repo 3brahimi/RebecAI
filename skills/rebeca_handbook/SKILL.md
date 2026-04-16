@@ -1,12 +1,6 @@
 ---
 name: rebeca-handbook
-version: 1.1.0
 description: Canonical self-contained reference for writing correct Rebeca models and properties. Covers actor model patterns, forbidden operators, Do's/Don'ts, property examples, Legata-to-assertion mapping, and RMC pitfall table.
-trigger_phrases:
-  - "rebeca syntax"
-  - "property writing"
-  - "rebeca examples"
-  - "rmc script"
 ---
 
 # Rebeca Modeling Guidelines Skill

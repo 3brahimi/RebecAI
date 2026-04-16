@@ -1,24 +1,10 @@
 ---
 name: rebeca-hallucination
-version: 1.0.0
 description: |
   State-aware hallucination detection suite for RebecaAI.
-  Captures a golden snapshot, performs symbol-diff checks, and classifies
-  dead-code vs reference hallucinations with RMC parse-error correlation.
-trigger_phrases:
-  - "hallucination detection"
-  - "capture golden state"
-  - "audit hallucinations"
-  - "symbol differ"
-  - "reference hallucination"
-  - "dead code hallucination"
-  - "rmc parse error classification"
-capabilities:
-  - capture_golden_state
-  - audit_hallucinations
-  - tier1_dead_code_detection
-  - tier2_reference_hallucination_detection
-  - hallucination_json_reporting
+  Captures a golden snapshot (Step01), performs symbol-diff checks (Step06 Phase3),
+  and classifies dead-code vs reference hallucinations with RMC parse-error correlation.
+  Provides the integrity score component (−10 penalty) fed into Step08 scoring.
 ---
 
 # rebeca-hallucination
@@ -30,7 +16,7 @@ This skill orchestrates a two-tier hallucination detection pipeline for Rebeca a
 1. **Capture Golden State** (`snapshotter.py`)
 2. **Audit Hallucinations** (`symbol_differ.py` + `run_rmc` stderr/exit-code signals)
 
-It integrates with WF-06 and scoring to distinguish:
+It integrates with Step06 Phase3 and Step08 scoring to distinguish:
 - real hallucinations (`dead_code`, `reference`)
 - non-hallucination parse issues (`syntax`)
 
