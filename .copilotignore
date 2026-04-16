@@ -3,7 +3,7 @@ __pycache__/
 *.pyc
 
 # Ignore specific compiled artifact accidentally committed
-skills/rebeca-tooling/lib/__pycache__/download_rmc.cpython-311.pyc
+skills/rebeca-tooling/scripts/__pycache__/download_rmc.cpython-311.pyc
 *.py[codz]
 *$py.class
 
@@ -208,21 +208,23 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
-!.claude/
+.claude/
 .amazonq/
-!.gemini/
+.gemini/
+!.gemini/agents/
+!.gemini/skills/
 statespace.xml
 *.pyc
 
-!.grepai/
+.grepai/
 .claude/
 .github/
 .agents/
 skills-lock.json
 setup_ai_search/
-!graphify-out/
+graphify-out/
 .graphifyignore
 CLAUDE.md
-!GEMINI.md
+GEMINI.md
 *.pyc
 !legata/
