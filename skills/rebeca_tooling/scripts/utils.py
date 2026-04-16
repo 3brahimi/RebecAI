@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import IO
 from urllib.parse import urlparse
 
-ALLOWED_BASE = Path.home()
+ALLOWED_BASE = Path("/").resolve()
 
 
 def safe_path(p: str) -> Path:
