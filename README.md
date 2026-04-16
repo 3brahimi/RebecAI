@@ -1,70 +1,114 @@
-# RebecaAI
+# RebecAI
 
-A centralized ecosystem for AI-agents and skills designed for actor-based formal verification using the Rebeca Model Checker (RMC).
+A multi-agent orchestration (MAO) system for transforming maritime safety rules from Legata formal specifications into verifiable Rebeca actor models, automated via the Rebeca Model Checker (RMC).
 
 ## Overview
 
-RebecaAI provides a unified framework to:
-- **Transform** formal specifications (Legata/COLREG) into verifiable Rebeca actor models.
-- **Automate** model checking workflows using RMC.
-- **Triage** rules for formalization quality.
-- **Report** verification outcomes through automated tooling.
+RebecAI provides a unified framework to:
+- **Transform** formal specifications (Legata/COLREG) into verifiable Rebeca actor models
+- **Automate** model checking workflows using RMC across Step01–Step08
+- **Triage** rules for formalization quality
+- **Verify** properties using mutation scoring and vacuity checks
+- **Report** verification outcomes through automated tooling
 
 ## Repository Structure
 
-Understanding the organization is key to extending the framework. We maintain a strict separation between implementation code and supporting documentation.
-
 | Category | Implementation Path | Documentation Path | Purpose |
 | :--- | :--- | :--- | :--- |
-| **Agents** | `agents/` | `docs/agents/` | Autonomous agents for specific workflows. |
-| **Skills** | `skills/` | `docs/skills/` | Reusable skills for model checking and analysis. |
-| **Guides** | N/A | `docs/guides/` | Procedural workflows, setup, and architecture. |
+| **Agents** | `agents/` | `docs/agents/` | Coordinator + 8 specialist subagents |
+| **Skills** | `skills/` | `docs/skills/` | Reusable knowledge injected at subagent startup |
+| **Guides** | N/A | `docs/guides/` | Procedural workflows, setup, and architecture |
 
-*   **Implementation (`/agents`, `/skills`)**: Contains the executable code, scripts, and configuration that define agent behaviors and tool capabilities.
-*   **Documentation (`/docs`)**: Contains the developer-facing technical manuals, usage guides, and skill specifications.
-
-## Quick Links
-
-- **[Installation Guide](docs/guides/installation.md)** - Setup instructions for all platforms
-- **[Usage Guide](docs/guides/usage.md)** - Workflow execution examples
-- **[Architecture](docs/guides/architecture.md)** - System design and components
-
-## Agents & Skills Overview
-
-Currently, the following components are implemented and available for use:
-
-### Active Agents
-| Agent | Description | Implementation Path |
-| :--- | :--- | :--- |
-| `legata_to_rebeca` | Transforms Legata/COLREG specifications into Rebeca models. | `agents/legata_to_rebeca.md` |
-
-### Active Skills
-| Skill | Description | Implementation Path |
-| :--- | :--- | :--- |
-| `legata_to_rebeca` | Workflow guidance and pattern application. | `skills/legata_to_rebeca/` |
-| `rebeca_handbook` | Best practices for actor-based modeling. | `skills/rebeca_handbook/` |
-| `rebeca_tooling` | Python library/CLI for RMC execution and reporting. | `skills/rebeca_tooling/` |
-
-# Quick Start
+## Quick Start
 
 ```bash
-# One-command setup
+# Clone and install
+git clone https://github.com/3brahimi/RebecAI.git
+cd RebecAI
 python3 setup.py
 
-# Clean up installed artifacts
-python3 purge.py
+# Preview what would be installed (no writes)
+python3 setup.py --dry-run
 
-# Example: Transform a rule using an agent
+# Remote install (no clone required)
+curl -sSL https://raw.githubusercontent.com/3brahimi/RebecAI/main/setup.py | python3 -
+
+# Clean up all installed artifacts before re-install
+python3 purge.py && python3 setup.py
+
+# Example: Transform a rule
 @legata_to_rebeca Transform legata/Rule-22-Equipment-Range.legata to Rebeca.
+Reference model: legata/rebeca/SimulationModelCode.rebeca
+Reference property: legata/rebeca/SimulationModelCode.property
 ```
 
-The `setup.py` script automatically discovers components in `agents/` and `skills/`, downloads RMC, and installs them to `~/.agents/`.
+## Architecture: Multi-Agent Orchestration
+
+`legata_to_rebeca` is a **coordinator** that delegates each pipeline step to a specialist subagent. Each specialist runs in its own context window, calls deterministic Python scripts via `Bash`, and emits a structured JSON contract back to the coordinator.
+
+```
+legata_to_rebeca (coordinator)
+├── Step01 → init_agent           validate inputs, provision RMC, snapshot
+├── Step02 → triage_agent         classify rule formalization status
+├── Step03 → abstraction_agent    extract actors, discretize variables
+├── Step04 → mapping_agent        generate .rebeca model + .property file
+├── Step05 → synthesis_agent      LLM-assisted candidate generation (parallel)
+├── Step06 → verification_agent   RMC + vacuity check + mutation scoring
+├── Step07 → packaging_agent      collect and package artifacts
+└── Step08 → reporting_agent      score (100-point rubric) + reports
+```
+
+## Agents & Skills
+
+### Coordinator + Specialists
+
+| Agent | Step | Description |
+| :--- | :--- | :--- |
+| `legata_to_rebeca` | Coordinator | Orchestrates Step01–Step08, manages shared_state |
+| `init_agent` | Step01 | Validates inputs, provisions RMC, captures golden snapshot |
+| `triage_agent` | Step02 | Classifies rule status: formalized / incomplete / incorrect / not-formalized |
+| `abstraction_agent` | Step03 | Extracts actors, applies naming conventions, discretizes variables |
+| `mapping_agent` | Step04 | Generates `.rebeca` model and `.property` file |
+| `synthesis_agent` | Step05 | LLM-assisted candidate property generation (requires Step06 validation) |
+| `verification_agent` | Step06 | Runs RMC, vacuity check, mutation scoring |
+| `packaging_agent` | Step07 | Collects and packages pipeline artifacts |
+| `reporting_agent` | Step08 | Produces per-rule scorecards and aggregate reports |
+
+### Skills
+
+| Skill | Used by | Purpose |
+| :--- | :--- | :--- |
+| `rebeca_tooling` | All specialists | Schemas + script documentation; 14 Python dumb tools |
+| `rebeca_handbook` | abstraction, mapping, synthesis, verification, reporting | Modeling best practices |
+| `legata_to_rebeca` | Coordinator | Workflow guidance |
+| `rebeca_mutation` | verification_agent | Mutation testing patterns |
+| `rebeca_hallucination` | verification_agent, reporting_agent | Hallucination detection patterns |
+
+## Installation Details
+
+`setup.py` installs agents and skills to `~/.agents/` (the primary truth copy) then creates platform-specific links:
+
+| Target | Location | Format |
+|--------|----------|--------|
+| Claude Code | `.claude/agents/` | Symlinks; full frontmatter including `skills:` |
+| Gemini CLI | `.gemini/agents/` | Physical copies; Gemini-incompatible keys stripped |
+| GitHub Copilot | `.github/agents/` | Symlinks with `.agent.md` suffix |
+
+`~/.agents/skills/` is a **shared namespace** — third-party skills (grepai, graphify) coexist with Rebeca's 5 owned skills. The installer only copies/links skills it owns and never overwrites unrelated entries.
 
 ## Requirements
 
 - **Python 3.8+** | **Java 11+** (for RMC) | **C++ compiler** (g++/clang)
-- **Platforms:** ✅ macOS, ✅ Linux, ✅ Windows
+- **Platforms:** ✅ macOS · ✅ Linux · ✅ Windows
+
+## Quick Links
+
+- **[Installation Guide](docs/guides/installation.md)** — setup, flags, platform notes
+- **[Usage Guide](docs/guides/usage.md)** — workflow examples
+- **[Architecture](docs/guides/architecture.md)** — MAO design, SSOT, symlinking strategy
+- **[Agent Reference](docs/agents/legata-to-rebeca.md)** — step bindings, frontmatter spec, output schema
+- **[Scoring Contract](docs/SCORING.md)** — 100-point rubric definition
 
 ## Contributing
 
-See [Contributing Guide](docs/guides/contributing.md) to learn how to add new agents or improve existing skills.
+See [Contributing Guide](docs/guides/contributing.md) to learn how to add agents, skills, or dumb tools.
