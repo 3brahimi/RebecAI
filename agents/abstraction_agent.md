@@ -1,14 +1,16 @@
 ---
 name: abstraction_agent
-description: 'Step03 specialist: produces stable abstraction rules before model/property
-
+version: 1.0.0
+description: |
+  Step03 specialist: produces stable abstraction rules before model/property
   generation. Extracts actors and conditions from Legata, applies deterministic
-
   naming conventions, discretizes to Rebeca-compatible types, and emits a
-
   JSON contract into coordinator shared_state.step03.
-
-  '
+user-invocable: false
+schema: skills/rebeca_tooling/schemas/abstraction-agent.schema.json
+skills:
+  - rebeca_tooling
+  - rebeca_handbook
 ---
 
 # abstraction_agent (Step03): Abstraction and Discretization Setup

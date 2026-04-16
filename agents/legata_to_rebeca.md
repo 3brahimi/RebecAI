@@ -1,8 +1,10 @@
 ---
 name: legata_to_rebeca
-description: "Coordinator for the Legata\u2192Rebeca pipeline.\nState transitions\
-  \ are computed from subagent JSON output fields.\nOne table is the single authoritative\
-  \ source for every transition.\n"
+version: 3.0.0
+description: |
+  Coordinator for the Legata→Rebeca pipeline.
+  State transitions are computed from subagent JSON output fields.
+  One table is the single authoritative source for every transition.
 ---
 
 # Legata → Rebeca Coordinator
