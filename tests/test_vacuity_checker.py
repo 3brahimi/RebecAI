@@ -145,7 +145,15 @@ class TestAssertionIdEnforcement:
             prop.write_text(PROPERTY_NON_VACUOUS, encoding="utf-8")
             jar.write_text("jar", encoding="utf-8")
 
-            monkeypatch.setattr(vacmod, "run_rmc", lambda **_: 1)
+            calls = {"n": 0}
+
+            def _run_stub(**_: object):
+                calls["n"] += 1
+                if calls["n"] == 1:  # baseline
+                    return {"rmc_exit_code": 0, "verification_outcome": "satisfied"}
+                return {"rmc_exit_code": 1, "verification_outcome": "cex"}
+
+            monkeypatch.setattr(vacmod, "run_rmc_detailed", _run_stub)
 
             result = check_vacuity(
                 jar=str(jar),
@@ -169,9 +177,9 @@ class TestAssertionIdEnforcement:
             jar.write_text("jar", encoding="utf-8")
 
             def _must_not_run(**_: object) -> int:
-                raise AssertionError("run_rmc must not be called for ambiguous assertions")
+                raise AssertionError("run_rmc_detailed must not be called for ambiguous assertions")
 
-            monkeypatch.setattr(vacmod, "run_rmc", _must_not_run)
+            monkeypatch.setattr(vacmod, "run_rmc_detailed", _must_not_run)
 
             result = check_vacuity(
                 jar=str(jar),
@@ -195,12 +203,16 @@ class TestAssertionIdEnforcement:
             jar.write_text("jar", encoding="utf-8")
 
             called = {"ran": False}
+            calls = {"n": 0}
 
-            def _run_stub(**_: object) -> int:
+            def _run_stub(**_: object):
                 called["ran"] = True
-                return 1
+                calls["n"] += 1
+                if calls["n"] == 1:  # baseline
+                    return {"rmc_exit_code": 0, "verification_outcome": "satisfied"}
+                return {"rmc_exit_code": 1, "verification_outcome": "cex"}
 
-            monkeypatch.setattr(vacmod, "run_rmc", _run_stub)
+            monkeypatch.setattr(vacmod, "run_rmc_detailed", _run_stub)
 
             result = check_vacuity(
                 jar=str(jar),

@@ -29,7 +29,7 @@ import tempfile
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from run_rmc import run_rmc
+from run_rmc import run_rmc_detailed
 from utils import safe_path
 
 
@@ -115,6 +115,10 @@ def check_vacuity(
         {
           "is_vacuous":            bool | None,
           "precondition_used":     str | None,
+                    "baseline_outcome":      str | None,
+                    "secondary_outcome":     str | None,
+                    "comparison_changed":     bool | None,
+                    "comparison_basis":       str,
           "secondary_exit_code":   int,
           "secondary_output_dir":  str | None,
           "explanation":           str
@@ -125,6 +129,10 @@ def check_vacuity(
         return {
             "is_vacuous": None,
             "precondition_used": None,
+            "baseline_outcome": None,
+            "secondary_outcome": None,
+            "comparison_changed": None,
+            "comparison_basis": "none",
             "secondary_exit_code": 1,
             "secondary_output_dir": None,
             "explanation": f"Property file not found: {property_file}",
@@ -152,6 +160,10 @@ def check_vacuity(
                 "is_vacuous": None,
                 "precondition_used": None,
                 "assertion_id_used": None,
+                "baseline_outcome": None,
+                "secondary_outcome": None,
+                "comparison_changed": None,
+                "comparison_basis": "none",
                 "secondary_exit_code": 1,
                 "secondary_output_dir": None,
                 "explanation": (
@@ -171,6 +183,10 @@ def check_vacuity(
             "is_vacuous": None,
             "precondition_used": None,
             "assertion_id_used": assertion_id,
+            "baseline_outcome": None,
+            "secondary_outcome": None,
+            "comparison_changed": None,
+            "comparison_basis": "none",
             "secondary_exit_code": 1,
             "secondary_output_dir": None,
             "explanation": f"Could not extract precondition from Assertion block{detail}",
@@ -178,6 +194,19 @@ def check_vacuity(
 
     negated_content = build_negated_property(property_content, precondition)
     secondary_output = str(safe_path(output_dir)) + "_vacuity"
+
+    # Capture baseline (original property) outcome for semantic comparison.
+    baseline_output = str(safe_path(output_dir)) + "_baseline"
+    baseline_details = run_rmc_detailed(
+        jar=jar,
+        model=model,
+        property_file=property_file,
+        output_dir=baseline_output,
+        timeout_seconds=timeout_seconds,
+        run_model_outcome=True,
+        model_out_timeout_seconds=timeout_seconds,
+    )
+    baseline_outcome = baseline_details.get("verification_outcome")
 
     # Write the negated property to a temp file inside ~ so safe_path() allows it.
     # Always clean up afterwards.
@@ -190,32 +219,61 @@ def check_vacuity(
             tmp.write(negated_content)
             tmp_path = Path(tmp.name)
 
-        exit_code = run_rmc(
+        secondary_details = run_rmc_detailed(
             jar=jar,
             model=model,
             property_file=str(tmp_path),
             output_dir=secondary_output,
             timeout_seconds=timeout_seconds,
+            run_model_outcome=True,
+            model_out_timeout_seconds=timeout_seconds,
         )
     finally:
         if tmp_path is not None:
             tmp_path.unlink(missing_ok=True)
 
-    # exit_code == 0: !Precondition verified → precondition impossible → vacuous
-    # exit_code != 0: counterexample found  → precondition reachable  → non-vacuous
-    is_vacuous = exit_code == 0
+    exit_code = int(secondary_details.get("rmc_exit_code", 1))
+    secondary_outcome = secondary_details.get("verification_outcome")
+
+    comparable = baseline_outcome in ("satisfied", "cex") and secondary_outcome in ("satisfied", "cex")
+    if comparable:
+        comparison_changed = baseline_outcome != secondary_outcome
+        # Vacuous means negated-precondition check preserves the same verdict.
+        is_vacuous = not comparison_changed
+        comparison_basis = "semantic_outcome"
+    else:
+        # Legacy fallback: preserve historical behavior when semantic outcome
+        # cannot be derived (timeouts/errors/non-comparable states).
+        comparison_changed = None
+        is_vacuous = exit_code == 0
+        comparison_basis = "legacy_secondary_exit"
+
+    if comparable:
+        explanation = (
+            "VACUOUS: baseline and negated-precondition runs produced the same semantic outcome "
+            f"({baseline_outcome})."
+            if is_vacuous
+            else "NON-VACUOUS: baseline and negated-precondition outcomes differ "
+                 f"({baseline_outcome} -> {secondary_outcome})."
+        )
+    else:
+        explanation = (
+            "VACUOUS: The property passes trivially — its precondition is never reachable."
+            if is_vacuous
+            else "NON-VACUOUS: A counterexample exists for !Precondition; the property is meaningful."
+        )
 
     return {
         "is_vacuous": is_vacuous,
         "precondition_used": precondition,
         "assertion_id_used": assertion_id,
+        "baseline_outcome": baseline_outcome,
+        "secondary_outcome": secondary_outcome,
+        "comparison_changed": comparison_changed,
+        "comparison_basis": comparison_basis,
         "secondary_exit_code": exit_code,
         "secondary_output_dir": secondary_output,
-        "explanation": (
-            "VACUOUS: The property passes trivially — its precondition is never reachable."
-            if is_vacuous
-            else "NON-VACUOUS: A counterexample exists for !Precondition; the property is meaningful."
-        ),
+        "explanation": explanation,
     }
 
 

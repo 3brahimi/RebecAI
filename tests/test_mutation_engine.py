@@ -571,14 +571,14 @@ class TestKillRunGuardrails:
 
         calls = {"count": 0}
 
-        class _Proc:
-            returncode = 1
-
         def _run_stub(*args, **kwargs):
             calls["count"] += 1
-            return _Proc()
+            # First call is baseline, subsequent calls are mutants.
+            if calls["count"] == 1:
+                return {"rmc_exit_code": 0, "verification_outcome": "satisfied"}
+            return {"rmc_exit_code": 1, "verification_outcome": "cex"}
 
-        monkeypatch.setattr(mutation_engine_module.subprocess, "run", _run_stub)
+        monkeypatch.setattr(mutation_engine_module, "run_rmc_detailed", _run_stub)
 
         with tempfile.TemporaryDirectory(dir=Path.home()) as td:
             base = Path(td)
@@ -600,7 +600,8 @@ class TestKillRunGuardrails:
                 seed=42,
             )
 
-        assert calls["count"] == 3
+        # baseline + max_mutants executions
+        assert calls["count"] == 4
         assert result["sampled"] is True
         assert result["total_generated"] == 10
         assert result["total_run"] == 3
@@ -608,14 +609,15 @@ class TestKillRunGuardrails:
     def test_sampling_is_reproducible(self, monkeypatch):
         import tempfile
 
-        class _Proc:
-            returncode = 1
+        calls = {"count": 0}
 
-        monkeypatch.setattr(
-            mutation_engine_module.subprocess,
-            "run",
-            lambda *args, **kwargs: _Proc(),
-        )
+        def _run_stub(*args, **kwargs):
+            calls["count"] += 1
+            if calls["count"] == 1:
+                return {"rmc_exit_code": 0, "verification_outcome": "satisfied"}
+            return {"rmc_exit_code": 1, "verification_outcome": "cex"}
+
+        monkeypatch.setattr(mutation_engine_module, "run_rmc_detailed", _run_stub)
 
         with tempfile.TemporaryDirectory(dir=Path.home()) as td:
             base = Path(td)
@@ -655,14 +657,16 @@ class TestKillRunGuardrails:
     def test_total_timeout_stops_loop(self, monkeypatch):
         import tempfile
 
-        class _Proc:
-            returncode = 1
+        calls = {"count": 0}
 
         def _slow_run(*args, **kwargs):
+            calls["count"] += 1
             pytime.sleep(1)
-            return _Proc()
+            if calls["count"] == 1:
+                return {"rmc_exit_code": 0, "verification_outcome": "satisfied"}
+            return {"rmc_exit_code": 1, "verification_outcome": "cex"}
 
-        monkeypatch.setattr(mutation_engine_module.subprocess, "run", _slow_run)
+        monkeypatch.setattr(mutation_engine_module, "run_rmc_detailed", _slow_run)
 
         with tempfile.TemporaryDirectory(dir=Path.home()) as td:
             base = Path(td)
@@ -690,14 +694,16 @@ class TestKillRunGuardrails:
     def test_budget_exceeded_mutants_marked(self, monkeypatch):
         import tempfile
 
-        class _Proc:
-            returncode = 1
+        calls = {"count": 0}
 
         def _slow_run(*args, **kwargs):
+            calls["count"] += 1
             pytime.sleep(1)
-            return _Proc()
+            if calls["count"] == 1:
+                return {"rmc_exit_code": 0, "verification_outcome": "satisfied"}
+            return {"rmc_exit_code": 1, "verification_outcome": "cex"}
 
-        monkeypatch.setattr(mutation_engine_module.subprocess, "run", _slow_run)
+        monkeypatch.setattr(mutation_engine_module, "run_rmc_detailed", _slow_run)
 
         with tempfile.TemporaryDirectory(dir=Path.home()) as td:
             base = Path(td)
@@ -727,14 +733,15 @@ class TestKillRunGuardrails:
     def test_sampling_message_emitted_to_stderr(self, monkeypatch, capsys):
         import tempfile
 
-        class _Proc:
-            returncode = 1
+        calls = {"count": 0}
 
-        monkeypatch.setattr(
-            mutation_engine_module.subprocess,
-            "run",
-            lambda *args, **kwargs: _Proc(),
-        )
+        def _run_stub(*args, **kwargs):
+            calls["count"] += 1
+            if calls["count"] == 1:
+                return {"rmc_exit_code": 0, "verification_outcome": "satisfied"}
+            return {"rmc_exit_code": 1, "verification_outcome": "cex"}
+
+        monkeypatch.setattr(mutation_engine_module, "run_rmc_detailed", _run_stub)
 
         with tempfile.TemporaryDirectory(dir=Path.home()) as td:
             base = Path(td)
@@ -763,14 +770,16 @@ class TestKillRunGuardrails:
     def test_total_timeout_message_emitted_to_stderr(self, monkeypatch, capsys):
         import tempfile
 
-        class _Proc:
-            returncode = 1
+        calls = {"count": 0}
 
         def _slow_run(*args, **kwargs):
+            calls["count"] += 1
             pytime.sleep(1)
-            return _Proc()
+            if calls["count"] == 1:
+                return {"rmc_exit_code": 0, "verification_outcome": "satisfied"}
+            return {"rmc_exit_code": 1, "verification_outcome": "cex"}
 
-        monkeypatch.setattr(mutation_engine_module.subprocess, "run", _slow_run)
+        monkeypatch.setattr(mutation_engine_module, "run_rmc_detailed", _slow_run)
 
         with tempfile.TemporaryDirectory(dir=Path.home()) as td:
             base = Path(td)

@@ -149,7 +149,13 @@ python3 $SCRIPTS/mutation_engine.py \
   --rule-id Rule-22 \
   --model output/Rule-22.rebeca \
   --property output/Rule-22.property \
-  --strategy all \
+  --run-with-jar $JAR \
+  --run-with-model output/Rule-22.rebeca \
+  --run-with-property output/Rule-22.property \
+  --run-timeout 60 \
+  --max-mutants 50 \
+  --total-timeout 600 \
+  --seed 42 \
   --output-json
 ```
 

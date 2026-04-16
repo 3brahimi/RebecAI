@@ -1,0 +1,43 @@
+{
+  "status": "ok",
+  "abstraction_summary": {
+    "actor_map": {
+      "OwnShip": {
+        "queue_size": 5,
+        "source": "Rule22"
+      }
+    },
+    "variable_map": {
+      "length": {
+        "type": "int",
+        "default": 60,
+        "source": "Rule22"
+      },
+      "mastheadLightRange": {
+        "type": "int",
+        "default": 6,
+        "source": "Rule22"
+      },
+      "sideLightRange": {
+        "type": "int",
+        "default": 3,
+        "source": "Rule22"
+      },
+      "sternLightRange": {
+        "type": "int",
+        "default": 3,
+        "source": "Rule22"
+      },
+      "towingLightRange": {
+        "type": "int",
+        "default": 3,
+        "source": "Rule22"
+      },
+      "signalLightRange": {
+        "type": "int",
+        "default": 3,
+        "source": "Rule22"
+      }
+    }
+  }
+}

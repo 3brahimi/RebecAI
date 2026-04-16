@@ -45,9 +45,11 @@ Phase0 — Syntax
 Phase1 — Semantics (mutation testing)
   MutationEngine.generate_all()  [8 strategies]
       │   For each mutant:
-      │     run_rmc(mutant_model_or_property, jar, output_dir_mut, timeout)
-      │       killed  if exit_code != 0
-      │       survived if exit_code == 0
+      │     run_rmc_detailed(mutant_model_or_property, jar, output_dir_mut, timeout,
+      │                      run_model_outcome=true)
+      │       killed  if semantic outcome flips vs baseline (satisfied ↔ cex)
+      │       survived if semantic outcome unchanged
+      │       error   if baseline/mutant outcome is non-comparable
       └─► mutation_score = killed / total × 100.0
           phase1_passed = mutation_score >= 80.0
 
@@ -113,8 +115,9 @@ python3 $SCRIPTS/mutation_engine.py \
 ```
 
 For each generated mutant, run RMC:
-- **Killed**: `run_rmc` exit code != 0 → property detected the mutation
-- **Survived**: `run_rmc` exit code == 0 → property failed to detect the mutation
+- **Killed**: mutant semantic outcome flips relative to baseline (`satisfied` ↔ `cex`)
+- **Survived**: mutant semantic outcome matches baseline
+- **Error**: semantic outcome unavailable (`unknown`/timeout/non-comparable)
 
 ```
 mutation_score = killed / total × 100.0
@@ -200,9 +203,7 @@ If `phase3_passed == false`, route back to the agent that produced the hallucina
   },
   "mutation_score": 45.5,
   "mutation_detail": { "total": 11, "killed": 5, "survived": 6 },
-  "open_assumptions": [
-    "NOTE: run_rmc only compiles the model — mutation_score reflects syntactic kills only, not semantic/runtime kills."
-  ]
+  "open_assumptions": []
 }
 ```
 

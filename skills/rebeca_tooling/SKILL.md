@@ -45,6 +45,7 @@ skills/rebeca_tooling/
     ├── utils.py
     ├── download_rmc.py
     ├── run_rmc.py
+    ├── rmc_result_parser.py
     ├── pre_run_rmc_check.py
     ├── rmc_resolver.py
     ├── install_artifacts.py
@@ -130,6 +131,11 @@ result = run_rmc(
 # 3: Timeout
 # 4: C++ compilation failed
 # 5: Rebeca parse failed
+
+# For semantic details, use run_rmc_detailed() from run_rmc.py directly:
+# - model_out.outcome (runtime executable outcome)
+# - result_artifact.outcome (parsed from exported result file when available)
+# - verification_outcome (resolved semantic verdict)
 ```
 
 #### Auto-Provision RMC
@@ -495,6 +501,7 @@ if status["status"] == "formalized":
 | `cli_runner.py` | CLI subprocess orchestration helpers | ✗ | ✓ | ✗ (use directly) |
 | `download_rmc.py` | Download RMC from GitHub; `is_valid_jar()` + `probe_rmc_jar()` | ✓ | ✓ | ✓ |
 | `run_rmc.py` | Execute RMC model checker | ✓ | ✓ | ✓ |
+| `rmc_result_parser.py` | Parse exported RMC/model.out result artifacts (XML/text) into normalized semantic outcomes | ✗ | ✓ | ✓ |
 | `rmc_resolver.py` | Shared `rmc.jar` resolution (`resolve_rmc_jar`, `require_rmc_jar`) | ✗ | ✓ | ✓ |
 | `pre_run_rmc_check.py` | Auto-provision RMC (magic-bytes + JVM probe); writes `rmc_path` marker | ✓ | ✓ | ✓ |
 | `install_artifacts.py` | Install agent/skills | ✓ | ✓ | ✓ |

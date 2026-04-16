@@ -7,8 +7,8 @@ This document defines the 100-point rubric used by `score_single_rule.py` to eva
 | Dimension | Points | Description | Verification Method |
 | :--- | :--- | :--- | :--- |
 | **Syntax** | 10 | Model and property parse without RMC errors | `rmc.jar` exit code |
-| **Semantic Alignment**| 55 | Fidelity of mapping (Mutation & Vacuity Score) | Mutation Score × 0.55 |
-| **Verification** | 25 | Successful property check by RMC | `rmc.jar` execution |
+| **Semantic Alignment**| 55 | Fidelity of mapping (mutation + vacuity comparison) | `0.5 × mutation_score + vacuity bonus` |
+| **Verification** | 25 | Successful property check by RMC/model.out | `rmc_exit_code` + semantic outcome |
 | **Integrity (Non-Hallucination)** | 10 | Absence of fabricated actors/variables | Symbol-diffing against source Legata rules |
 
 **Total Maximum:** 100 points.
@@ -19,8 +19,9 @@ The `RubricScorer` now performs a weighted calculation for **Semantic Alignment*
 
 - **Semantic Alignment (55 pts)**: Calculated dynamically:
   ```python
-  # (Mutation Score is 0.0 to 1.0)
-  Semantic_Alignment = (Mutation_Score * 0.50) + (Vacuity_Pass ? 5 : 0)
+    # mutation_score is in [0, 100]
+    # vacuity_comparison is one of: same | changed | unknown
+    semantic_alignment = min(55, round((mutation_score * 0.50) + (5 if vacuity_comparison == "same" else 0)))
   ```
   - **Mutation Testing (50 pts)**: A higher mutation score indicates the property is robust against semantic errors.
   - **Vacuity Check (5 pts)**: An additional bonus awarded if the property passes the vacuity test (proving it is non-trivial).

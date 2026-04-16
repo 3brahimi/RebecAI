@@ -21,7 +21,7 @@ class RubricScorer:
             "hallucination_penalty": 10,
         }
         self.total_points = sum(self.weights.values())  # 100
-    
+
     def score_rule(
         self,
         rule_id: str,
@@ -30,6 +30,10 @@ class RubricScorer:
         verify_status: str = "unknown",
         is_vacuous: Optional[bool] = None,
         assertion_id: Optional[str] = None,
+        rmc_exit_code: Optional[int] = None,
+        model_outcome: Optional[str] = None,
+        mutation_score: Optional[float] = None,
+        vacuity_comparison: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Score a single rule transformation.
@@ -42,6 +46,10 @@ class RubricScorer:
             is_vacuous: Vacuity result from vacuity_checker (True/False/None).
                         When None the vacuity field is left as "unchecked".
             assertion_id: Label of the assertion that was checked, for auditability.
+            rmc_exit_code: Raw run_rmc exit code for the baseline run.
+            model_outcome: Semantic outcome from model.out (satisfied|cex|unknown).
+            mutation_score: Mutation kill rate in [0, 100].
+            vacuity_comparison: Baseline-vs-vacuity outcome relation (same|changed|unknown).
 
         Returns:
             Scorecard dict with breakdown, status, and remediation hints
@@ -57,10 +65,24 @@ class RubricScorer:
             ),
         }
 
+        # Normalize optional semantic inputs.
+        normalized_model_outcome = (model_outcome or "unknown").strip().lower()
+        normalized_vacuity_cmp = (vacuity_comparison or "unknown").strip().lower()
+        bounded_mutation_score = max(0.0, min(100.0, float(mutation_score))) if mutation_score is not None else None
+
+        semantic_alignment_score: Optional[int] = None
+        if bounded_mutation_score is not None or normalized_vacuity_cmp in ("same", "changed"):
+            mutation_component = (bounded_mutation_score or 0.0) * 0.50  # max 50
+            vacuity_component = 5.0 if normalized_vacuity_cmp == "same" else 0.0
+            semantic_alignment_score = int(round(min(55.0, mutation_component + vacuity_component)))
+
         scorecard = {
             "integrity": "passed",
-            "mutation_score": 100.0,
+            "mutation_score": bounded_mutation_score if bounded_mutation_score is not None else 0.0,
             "vacuity": vacuity_entry,
+            "rmc_exit_code": rmc_exit_code,
+            "model_outcome": normalized_model_outcome,
+            "vacuity_comparison": normalized_vacuity_cmp,
             "is_hallucination": False,
             "rule_id": rule_id,
             "input_status": self._infer_input_status(model_artifact, property_artifact),
@@ -72,22 +94,30 @@ class RubricScorer:
             "failure_reasons": [],
             "remediation_hints": []
         }
-        
+
         # Scoring logic based on verification status
         # All breakdown field names match scoring_reporting_contract.md
-        if verify_status == "pass":
+        effective_verify_status = verify_status
+        if rmc_exit_code is not None and rmc_exit_code != 0:
+            effective_verify_status = "fail"
+        elif normalized_model_outcome == "cex":
+            effective_verify_status = "fail"
+
+        if effective_verify_status == "pass":
             scorecard["score_breakdown"]["syntax"] = 10
-            scorecard["score_breakdown"]["semantic_alignment"] = 55
+            scorecard["score_breakdown"]["semantic_alignment"] = (
+                semantic_alignment_score if semantic_alignment_score is not None else 55
+            )
             scorecard["score_breakdown"]["verification_outcome"] = 25
             scorecard["score_breakdown"]["hallucination_penalty"] = 10
-            scorecard["score_total"] = 100
+            scorecard["score_total"] = sum(scorecard["score_breakdown"].values())
             scorecard["status"] = "Pass"
             scorecard["confidence"] = 1.0
             # A vacuous pass is technically a verification pass but semantically
             # meaningless — penalise the verification_outcome sub-score.
             if is_vacuous is True:
                 scorecard["score_breakdown"]["verification_outcome"] = 10
-                scorecard["score_total"] = 85
+                scorecard["score_total"] = sum(scorecard["score_breakdown"].values())
                 scorecard["status"] = "Conditional"
                 scorecard["confidence"] = 0.6
                 scorecard["failure_reasons"].append(
@@ -97,25 +127,38 @@ class RubricScorer:
                     "Review precondition reachability; strengthen model state space"
                 )
 
-        elif verify_status == "fail":
+        elif effective_verify_status == "fail":
             scorecard["score_breakdown"]["syntax"] = 10   # Syntax likely still valid
-            scorecard["score_breakdown"]["semantic_alignment"] = 30  # Partial mapping
+            scorecard["score_breakdown"]["semantic_alignment"] = (
+                semantic_alignment_score if semantic_alignment_score is not None else 30
+            )
             scorecard["score_breakdown"]["verification_outcome"] = 0   # Verification failed
             scorecard["score_breakdown"]["hallucination_penalty"] = 0  # Likely hallucination
-            scorecard["score_total"] = 40
+            scorecard["score_total"] = sum(scorecard["score_breakdown"].values())
             scorecard["status"] = "Fail"
             scorecard["confidence"] = 0.5
-            scorecard["failure_reasons"].append("Verification failed in RMC model checker")
+            if rmc_exit_code is not None and rmc_exit_code != 0:
+                scorecard["failure_reasons"].append(
+                    f"Verification failed in RMC model checker (exit={rmc_exit_code})"
+                )
+            elif normalized_model_outcome == "cex":
+                scorecard["failure_reasons"].append(
+                    "model.out reported counterexample outcome (cex)"
+                )
+            else:
+                scorecard["failure_reasons"].append("Verification failed in RMC model checker")
             scorecard["remediation_hints"].append("Review counterexample from RMC output")
             scorecard["remediation_hints"].append("Check state variable alignment")
             scorecard["remediation_hints"].append("Verify assertion logic matches Legata condition")
 
-        elif verify_status == "timeout":
+        elif effective_verify_status == "timeout":
             scorecard["score_breakdown"]["syntax"] = 10
-            scorecard["score_breakdown"]["semantic_alignment"] = 30
+            scorecard["score_breakdown"]["semantic_alignment"] = (
+                semantic_alignment_score if semantic_alignment_score is not None else 30
+            )
             scorecard["score_breakdown"]["verification_outcome"] = 0
             scorecard["score_breakdown"]["hallucination_penalty"] = 0
-            scorecard["score_total"] = 40
+            scorecard["score_total"] = sum(scorecard["score_breakdown"].values())
             scorecard["status"] = "Conditional"
             scorecard["confidence"] = 0.3
             scorecard["failure_reasons"].append("Verification timed out (>120s)")
@@ -145,9 +188,9 @@ class RubricScorer:
             scorecard["status"] = "Unknown"
             scorecard["confidence"] = 0.0
             scorecard["failure_reasons"].append("Verification status unknown")
-        
+
         return scorecard
-    
+
     def _infer_input_status(self, model: Optional[str], prop: Optional[str]) -> str:
         """Infer input Legata status from artifacts."""
         if model is None and prop is None:
@@ -164,7 +207,7 @@ class RubricScorer:
 
 def main():
     import argparse
-    
+
     parser = argparse.ArgumentParser(description="Score a single rule transformation")
     parser.add_argument("--rule-id", required=True, help="Rule identifier (e.g., Rule-22)")
     parser.add_argument("--model", default=None, help="Path to .rebeca model artifact")
@@ -172,6 +215,30 @@ def main():
     parser.add_argument("--verify-status", default="unknown",
                         choices=["pass", "fail", "timeout", "blocked", "unknown"],
                         help="Verification status from RMC")
+    parser.add_argument(
+        "--rmc-exit-code",
+        type=int,
+        default=None,
+        help="Raw RMC exit code from run_rmc.py",
+    )
+    parser.add_argument(
+        "--model-outcome",
+        default="unknown",
+        choices=["satisfied", "cex", "unknown"],
+        help="Semantic outcome from model.out execution",
+    )
+    parser.add_argument(
+        "--mutation-score",
+        type=float,
+        default=None,
+        help="Mutation kill rate in [0,100] used for semantic alignment scoring",
+    )
+    parser.add_argument(
+        "--vacuity-comparison",
+        default="unknown",
+        choices=["same", "changed", "unknown"],
+        help="Baseline-vs-vacuity semantic outcome relation",
+    )
     parser.add_argument(
         "--is-vacuous",
         default=None,
@@ -203,8 +270,12 @@ def main():
         verify_status=args.verify_status,
         is_vacuous=is_vacuous,
         assertion_id=args.assertion_id,
+        rmc_exit_code=args.rmc_exit_code,
+        model_outcome=args.model_outcome,
+        mutation_score=args.mutation_score,
+        vacuity_comparison=args.vacuity_comparison,
     )
-    
+
     if args.output_json:
         print(json.dumps(scorecard, indent=2))
     else:

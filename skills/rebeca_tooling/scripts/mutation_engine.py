@@ -32,6 +32,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from run_rmc import run_rmc_detailed
 from utils import safe_path
 
 
@@ -403,6 +404,10 @@ _PROPERTY_STRATEGIES = (
 )
 
 
+def _is_semantic_outcome(value: Optional[str]) -> bool:
+    return value in ("satisfied", "cex")
+
+
 def run_mutants(
     mutations: List["Mutation"],
     jar: str,
@@ -414,12 +419,15 @@ def run_mutants(
     seed: int = 42,
 ) -> Dict[str, Any]:
     """
-    Execute each mutant against RMC and collect kill/survive statistics.
+    Execute each mutant and compare semantic outcomes against baseline.
 
-    A mutant is **killed** if RMC exits non-zero (counterexample found or
-    parse/compile failure) when the mutation is applied.  A mutant
-    **survives** if RMC still exits 0, indicating the property no longer
-    distinguishes the mutation — a potential semantic gap.
+        Baseline and mutant outcomes are taken from a combined signal:
+            1) RMC process phase (run_rmc_detailed)
+            2) model.out execution outcome
+
+    A mutant is **killed** iff semantic outcome flips between
+    ``satisfied`` and ``cex`` relative to baseline. If the mutant cannot
+    produce a comparable semantic outcome, it is counted as ``error``.
 
     Args:
         mutations:        List of Mutation objects to execute.
@@ -439,6 +447,7 @@ def run_mutants(
           "sample_seed":     int,
           "budget_exceeded": bool,
           "elapsed_seconds": float,
+          "baseline_outcome": str|None,
           "killed":          int,
           "survived":        int,
           "errors":          int,
@@ -466,6 +475,23 @@ def run_mutants(
             f"[mutation_engine] Sampling {max_mutants} of {total_generated} mutants (--max-mutants={max_mutants})",
             file=sys.stderr,
         )
+
+    baseline_outcome: Optional[str] = None
+    baseline_details: Optional[Dict[str, Any]] = None
+    if model_path is not None and property_path is not None:
+        baseline_dir = Path.home() / f".mutation_baseline_{int(time.time() * 1000)}"
+        baseline_details = run_rmc_detailed(
+            jar=str(jar_path),
+            model=str(model_path),
+            property_file=str(property_path),
+            output_dir=str(baseline_dir),
+            timeout_seconds=timeout_seconds,
+            run_model_outcome=True,
+            model_out_timeout_seconds=timeout_seconds,
+        )
+        outcome = baseline_details.get("verification_outcome")
+        if isinstance(outcome, str) and _is_semantic_outcome(outcome):
+            baseline_outcome = outcome
 
     start_time = time.monotonic()
     budget_exceeded = False
@@ -528,22 +554,20 @@ def run_mutants(
                 continue
 
             with tempfile.TemporaryDirectory(dir=Path.home()) as tmp_out:
-                proc = subprocess.run(
-                    [
-                        "java", "-jar", str(jar_path),
-                        "-s", rmc_model,
-                        "-p", rmc_prop,
-                        "-o", tmp_out,
-                        "-e", "TIMED_REBECA",
-                        "-x",
-                    ],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    timeout=timeout_seconds,
+                detailed = run_rmc_detailed(
+                    jar=str(jar_path),
+                    model=rmc_model,
+                    property_file=rmc_prop,
+                    output_dir=tmp_out,
+                    timeout_seconds=timeout_seconds,
+                    run_model_outcome=True,
+                    model_out_timeout_seconds=timeout_seconds,
                 )
-                exit_code = proc.returncode
+                exit_code = detailed.get("rmc_exit_code")
+                mutant_outcome = detailed.get("verification_outcome")
         except subprocess.TimeoutExpired:
             exit_code = 3  # treat timeout as survived (indeterminate)
+            mutant_outcome = "timeout"
         except Exception as exc:
             results.append({"mutation_id": mut.mutation_id, "outcome": "error",
                             "exit_code": -1, "reason": str(exc)})
@@ -555,14 +579,51 @@ def run_mutants(
             except Exception:
                 pass
 
-        # exit_code != 0 → RMC rejected the mutant → killed
-        outcome = "killed" if exit_code != 0 else "survived"
+        if baseline_outcome is None:
+            outcome = "error"
+            errors += 1
+            results.append(
+                {
+                    "mutation_id": mut.mutation_id,
+                    "outcome": outcome,
+                    "exit_code": exit_code,
+                    "baseline_outcome": baseline_outcome,
+                    "mutant_outcome": mutant_outcome,
+                    "reason": "baseline semantic outcome unavailable",
+                }
+            )
+            continue
+
+        if not _is_semantic_outcome(mutant_outcome):
+            outcome = "error"
+            errors += 1
+            results.append(
+                {
+                    "mutation_id": mut.mutation_id,
+                    "outcome": outcome,
+                    "exit_code": exit_code,
+                    "baseline_outcome": baseline_outcome,
+                    "mutant_outcome": mutant_outcome,
+                    "reason": "mutant semantic outcome unavailable",
+                }
+            )
+            continue
+
+        # Kill criterion: semantic result flips satisfied <-> cex.
+        outcome = "killed" if mutant_outcome != baseline_outcome else "survived"
         if outcome == "killed":
             killed += 1
         else:
             survived += 1
-        results.append({"mutation_id": mut.mutation_id, "outcome": outcome,
-                        "exit_code": exit_code})
+        results.append(
+            {
+                "mutation_id": mut.mutation_id,
+                "outcome": outcome,
+                "exit_code": exit_code,
+                "baseline_outcome": baseline_outcome,
+                "mutant_outcome": mutant_outcome,
+            }
+        )
 
     elapsed_seconds = time.monotonic() - start_time
     total_run = killed + survived + errors
@@ -575,6 +636,8 @@ def run_mutants(
         "sample_seed": seed,
         "budget_exceeded": budget_exceeded,
         "elapsed_seconds": round(elapsed_seconds, 3),
+        "baseline_outcome": baseline_outcome,
+        "baseline_details": baseline_details,
         "killed": killed,
         "survived": survived,
         "errors": errors,

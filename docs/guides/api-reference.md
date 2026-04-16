@@ -70,7 +70,7 @@ run_rmc(
     property_file: str,
     output_dir: str,
     timeout_seconds: int = 120
-) -> dict
+) -> int
 ```
 
 **Parameters:**
@@ -81,18 +81,11 @@ run_rmc(
 - `timeout_seconds` - Timeout in seconds (default: 120)
 
 **Returns:**
-```python
-{
-    "exit_code": int,  # 0=success, 3=timeout, 4=compile failed, 5=parse failed
-    "stdout": str,
-    "stderr": str,
-    "output_dir": str
-}
-```
+- `int` exit code (`0=success`, `1=invalid_inputs`, `3=timeout`, `4=compile_failed`, `5=parse_failed`)
 
 **Example:**
 ```python
-result = run_rmc(
+exit_code = run_rmc(
     jar="~/.agents/rmc/rmc.jar",
     model="output/Rule-22.rebeca",
     property_file="output/Rule-22.property",
@@ -100,10 +93,10 @@ result = run_rmc(
     timeout_seconds=120
 )
 
-if result["exit_code"] == 0:
+if exit_code == 0:
     print("Verification successful")
-elif result["exit_code"] == 5:
-    print("Parse error:", result["stderr"])
+elif exit_code == 5:
+    print("Parse error")
 ```
 
 ### pre_run_rmc_check
@@ -224,18 +217,24 @@ scorer = RubricScorer()
 scorecard = scorer.score_rule(
     rule_id: str,
     verify_status: str,
-    mutation_score: float = 0.0,
-    vacuity_pass: bool = False,
-    is_hallucination: bool = False
+    is_vacuous: bool | None = None,
+    assertion_id: str | None = None,
+    rmc_exit_code: int | None = None,
+    model_outcome: str | None = None,
+    mutation_score: float | None = None,
+    vacuity_comparison: str | None = None
 ) -> dict
 ```
 
 **Parameters:**
 - `rule_id` - Rule identifier
 - `verify_status` - Verification status (pass/fail/timeout/blocked/unknown)
-- `mutation_score` - Mutation score in [0.0, 1.0]
-- `vacuity_pass` - Whether vacuity check passed
-- `is_hallucination` - Hallucination integrity signal
+- `is_vacuous` - Vacuity result from vacuity checker (`True`/`False`/`None`)
+- `assertion_id` - Assertion label used for vacuity audit trail
+- `rmc_exit_code` - Baseline RMC exit code
+- `model_outcome` - Runtime semantic outcome (`satisfied`/`cex`/`unknown`)
+- `mutation_score` - Mutation score in `[0, 100]`
+- `vacuity_comparison` - Semantic relation (`same`/`changed`/`unknown`)
 
 **Returns:**
 ```python
@@ -261,9 +260,10 @@ scorer = RubricScorer()
 score = scorer.score_rule(
     rule_id="Rule-22",
     verify_status="pass",
-    mutation_score=0.90,
-    vacuity_pass=True,
-    is_hallucination=False
+    mutation_score=90.0,
+    vacuity_comparison="same",
+    model_outcome="satisfied",
+    rmc_exit_code=0,
 )
 
 print(f"Score: {score['score_total']}/100")

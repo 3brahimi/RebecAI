@@ -43,9 +43,9 @@ Eight strategies are implemented in
 Mutation Score = (Killed Mutants) / (Total Mutants) × 100
 ```
 
-- **Killed**: RMC returns non-zero exit code on the mutant (counterexample found or error).
-- **Survived**: RMC returns exit code 0 on the mutant — the property failed to detect the error.
-- **Equivalent**: Mutant produces semantically identical behaviour (manual review required; flag for human).
+- **Killed**: baseline vs mutant semantic outcome flips (`satisfied` ↔ `cex`).
+- **Survived**: baseline and mutant semantic outcomes are identical.
+- **Error**: baseline/mutant semantic outcome is unavailable (`unknown`/timeout/non-comparable).
 
 Target threshold: **≥ 80%** to pass the WF-06 quality gate.
 
@@ -185,7 +185,7 @@ python3 ~/.agents/skills/rebeca_tooling/scripts/vacuity_checker.py \
   --output-json
 ```
 
-Generate mutations and print JSON (no RMC run — dry-run):
+Generate mutations and print JSON (no RMC run — catalog mode):
 
 ```bash
 python3 ~/.agents/skills/rebeca_tooling/scripts/mutation_engine.py \
@@ -205,13 +205,30 @@ python3 ~/.agents/skills/rebeca_tooling/scripts/mutation_engine.py \
   --property  models/rule22.property \
   --strategy  transition_bypass \
   --output-json
+
+Run kill-run mode (executes sampled mutants with baseline semantic comparison):
+
+```bash
+python3 ~/.agents/skills/rebeca_tooling/scripts/mutation_engine.py \
+  --rule-id Rule22 \
+  --model models/rule22.rebeca \
+  --property models/rule22.property \
+  --run-with-jar ~/.agents/rmc/rmc.jar \
+  --run-with-model models/rule22.rebeca \
+  --run-with-property models/rule22.property \
+  --run-timeout 60 \
+  --max-mutants 50 \
+  --total-timeout 600 \
+  --seed 42 \
+  --output-json
+```
 ```
 
 ### Exit codes
 
 | Code | Meaning |
 |------|---------|
-| 0 | Mutation suite ran; JSON report on stdout |
+| 0 | Mutation engine ran; JSON report on stdout |
 | 1 | Invalid inputs (missing files, bad arguments) |
 | 2 | Vacuity check aborted the run (property is vacuous) |
 
