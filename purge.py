@@ -43,6 +43,7 @@ def discover_owned_items() -> List[str]:
     owned: Set[str] = {
         "rmc",
         "rmc_path",
+        "docs",          # primary truth copy (used as source for .github/instructions symlink)
         "instructions",  # .github/instructions link
     }
 
@@ -65,9 +66,14 @@ def discover_owned_items() -> List[str]:
 
     skills_dir = REPO_ROOT / "skills"
     if skills_dir.is_dir():
-        for skill in skills_dir.iterdir():
-            if skill.is_dir() and not skill.name.startswith("__"):
-                owned.add(f"skills/{skill.name}")
+        for entry in skills_dir.iterdir():
+            if entry.is_dir() and entry.name != "__pycache__":
+                owned.add(f"skills/{entry.name}")
+            elif entry.is_file():
+                owned.add(f"skills/{entry.name}")
+
+    # Files written by setup.py that have no source counterpart in the repo
+    owned.add("skills/rmc_path.txt")
 
     for skill_name in CORE_SKILLS:
         owned.add(f"skills/{skill_name}")

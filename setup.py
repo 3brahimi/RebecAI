@@ -55,11 +55,32 @@ def resolve_executable(name: str) -> str:
 def download_file(url: str, dest: Path) -> bool:
     print(f"  Downloading: {url}")
     try:
-        with urllib.request.urlopen(url) as response, open(dest, 'wb') as out_file:
-            shutil.copyfileobj(response, out_file)
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req) as response, open(dest, "wb") as out_file:
+            total = response.headers.get("Content-Length")
+            total_bytes = int(total) if total else None
+            downloaded = 0
+            last_pct = -1
+            chunk_size = 65536  # 64 KB
+            while True:
+                chunk = response.read(chunk_size)
+                if not chunk:
+                    break
+                out_file.write(chunk)
+                downloaded += len(chunk)
+                mb = downloaded / (1024 * 1024)
+                if total_bytes:
+                    pct = int(downloaded / total_bytes * 100)
+                    if pct != last_pct:
+                        total_mb = total_bytes / (1024 * 1024)
+                        print(f"  {mb:.1f} / {total_mb:.1f} MB ({pct}%)", end="\r", flush=True)
+                        last_pct = pct
+                else:
+                    print(f"  {mb:.1f} MB downloaded", end="\r", flush=True)
+        print(f"  {downloaded / (1024 * 1024):.1f} MB — done")
         return True
     except Exception as e:
-        print(f"  ❌ Download failed: {e}")
+        print(f"\n  ❌ Download failed: {e}")
         return False
 
 
@@ -192,7 +213,7 @@ def create_surgical_symlink(src: Path, link: Path):
         else: shutil.copy2(src, link)
         print(f"    ✓ Copied: {link.name}")
 
-def link_to_target(target_root: Path, primary_truth: Path, is_github: bool = False):
+def link_to_target(target_root: Path, primary_truth: Path, owned_skills: set[str], is_github: bool = False):
     if not target_root: return
     print(f"  Linking to {target_root}...")
 
@@ -204,9 +225,15 @@ def link_to_target(target_root: Path, primary_truth: Path, is_github: bool = Fal
         link_name = agent.name if not is_github else agent.stem + ".agent.md"
         create_surgical_symlink(agent, target_root / "agents" / link_name)
 
-    # 2. Link Skills
+    # 2. Link Skills — only skills this repo owns, never third-party skills
     for skill in (primary_truth / "skills").iterdir():
+        if skill.name == "__pycache__":
+            continue
+        if skill.name not in owned_skills:
+            continue
         if skill.is_dir():
+            create_surgical_symlink(skill, target_root / "skills" / skill.name)
+        elif skill.is_file():
             create_surgical_symlink(skill, target_root / "skills" / skill.name)
 
     # 3. Link Instructions (Copilot/Github only)
@@ -238,7 +265,83 @@ def main():
     parser.add_argument("--target-root", help="Custom installation root (overrides --mode)")
     parser.add_argument("--rmc-tag", help="Optional RMC release tag (e.g., v2.13)")
     parser.add_argument("--no-rmc", action="store_true")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="Print what would be installed without writing anything")
     args = parser.parse_args()
+
+    if args.dry_run:
+        local_src = Path(__file__).parent
+        src_root = local_src if (local_src / "agents").exists() and (local_src / "skills").exists() else None
+        src_mode = "repo-local" if src_root else "remote-bootstrap (GitHub ZIP)"
+
+        primary_target = Path(args.target_root).expanduser().resolve() if args.target_root else (
+            AGENTS_ROOT_LOCAL if args.mode == "local" else AGENTS_ROOT_GLOBAL
+        )
+
+        symlink_targets: list[tuple[Path, bool]] = []
+        if not args.target_root:
+            symlink_targets = [
+                (CLAUDE_ROOT_LOCAL if args.mode == "local" else CLAUDE_ROOT_GLOBAL, False),
+                (GEMINI_ROOT_LOCAL if args.mode == "local" else GEMINI_ROOT_GLOBAL, False),
+            ]
+            if args.mode == "local":
+                symlink_targets.append((GITHUB_ROOT, True))
+
+        rmc_jar = primary_target / "rmc" / "rmc.jar"
+
+        print("🔍 DRY RUN — no files will be written")
+        print(f"  source      : {src_mode}")
+        print(f"  mode        : {args.mode}")
+        print(f"  rmc-tag     : {args.rmc_tag or 'latest'}")
+        print(f"  no-rmc      : {args.no_rmc}")
+        print()
+
+        print(f"[1] Primary installation target: {primary_target}")
+        if src_root:
+            agents = sorted((src_root / "agents").glob("*.md"))
+            skills = sorted(p for p in (src_root / "skills").iterdir() if p.is_dir() and p.name != "__pycache__")
+            docs   = src_root / "docs"
+
+            print(f"  agents/  ({len(agents)} files)")
+            for a in agents:
+                print(f"    {primary_target / 'agents' / a.name}")
+
+            print(f"  skills/  ({len(skills)} directories)")
+            for s in skills:
+                print(f"    {primary_target / 'skills' / s.name}/")
+
+            if docs.exists():
+                print(f"  docs/")
+                print(f"    {primary_target / 'docs'}/")
+        else:
+            print("  (source not available locally — would download from GitHub)")
+        print()
+
+        if symlink_targets:
+            print(f"[2] Symlinks into AI agent roots:")
+            for t_root, is_github in symlink_targets:
+                label = t_root.name + (" (GitHub/Copilot)" if is_github else "")
+                print(f"  {label}  →  {t_root}")
+                if src_root:
+                    for a in sorted((src_root / "agents").glob("*.md")):
+                        link_name = a.stem + ".agent.md" if is_github else a.name
+                        print(f"    agents/{link_name}  →  {primary_target / 'agents' / a.name}")
+                    for s in sorted(p for p in (src_root / "skills").iterdir() if p.is_dir() and p.name != "__pycache__"):
+                        print(f"    skills/{s.name}/  →  {primary_target / 'skills' / s.name}/")
+                    if is_github and (src_root / "docs").exists():
+                        print(f"    instructions/  →  {primary_target / 'docs'}/")
+            print()
+
+        if not args.no_rmc:
+            print(f"[3] RMC Model Checker:")
+            print(f"    jar destination : {rmc_jar}")
+            print(f"    rmc_path file   : {primary_target / 'rmc_path'}")
+            print(f"    download source : GitHub releases ({args.rmc_tag or 'latest'})")
+        else:
+            print(f"[3] RMC Model Checker: skipped (--no-rmc)")
+        print()
+        print("Run without --dry-run to apply.")
+        return 0
 
     print(f"🚀 Initializing Claude Rebeca Standalone Installer ({args.mode})")
     print("---------------------------------------------------------")
@@ -275,13 +378,32 @@ def main():
     )
     primary_target.mkdir(parents=True, exist_ok=True)
 
-    # 3. Install Master Truth
+    # 3. Install Master Truth — surgical copy, never wipe unowned content
     print(f"  Installing Master Source to {primary_target}...")
-    for sub in ("agents", "skills", "docs"):
+    _ignore = shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo", ".*")
+
+    # agents/ and docs/ are fully owned — safe to replace wholesale
+    for sub in ("agents", "docs"):
         dest = primary_target / sub
         if dest.exists(): shutil.rmtree(dest)
         if (src_root / sub).exists():
-            shutil.copytree(src_root / sub, dest)
+            shutil.copytree(src_root / sub, dest, ignore=_ignore)
+
+    # skills/ is a shared namespace — only copy/replace skills we own
+    skills_dest = primary_target / "skills"
+    skills_dest.mkdir(parents=True, exist_ok=True)
+    skills_src = src_root / "skills"
+    if skills_src.exists():
+        for entry in skills_src.iterdir():
+            if entry.name == "__pycache__":
+                continue
+            dest_entry = skills_dest / entry.name
+            if entry.is_dir():
+                if dest_entry.exists() or dest_entry.is_symlink():
+                    shutil.rmtree(dest_entry) if dest_entry.is_dir() else dest_entry.unlink()
+                shutil.copytree(entry, dest_entry, ignore=_ignore)
+            elif entry.is_file():
+                shutil.copy2(entry, dest_entry)
 
     # Validate installed target as well (defensive completeness check).
     ok, coverage_msgs = validate_design_coverage(primary_target, strict=True)
@@ -293,6 +415,14 @@ def main():
 
     # 4. Surgical Symlinking to AI Agents (skip when explicit --target-root is used)
     if not args.target_root:
+        # Compute which skills this repo owns (from source, not the shared .agents/skills/ dir)
+        owned_skills: set[str] = set()
+        skills_src = src_root / "skills"
+        if skills_src.exists():
+            for entry in skills_src.iterdir():
+                if entry.name != "__pycache__":
+                    owned_skills.add(entry.name)
+
         targets = [
             (CLAUDE_ROOT_LOCAL if args.mode == "local" else CLAUDE_ROOT_GLOBAL, False),
             (GEMINI_ROOT_LOCAL if args.mode == "local" else GEMINI_ROOT_GLOBAL, False),
@@ -301,7 +431,7 @@ def main():
             targets.append((GITHUB_ROOT, True))
 
         for t_root, is_github in targets:
-            link_to_target(t_root, primary_target, is_github)
+            link_to_target(t_root, primary_target, owned_skills, is_github)
 
     # 5. Provision RMC Toolchain
     rmc_jar_path = None
