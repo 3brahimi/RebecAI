@@ -12,6 +12,7 @@ def _lazy_import(name, module_name):
 
 download_rmc = _lazy_import("download_rmc", "download-rmc")
 is_valid_jar = _lazy_import("is_valid_jar", "download-rmc")
+probe_rmc_jar = _lazy_import("probe_rmc_jar", "download-rmc")
 run_rmc = _lazy_import("run_rmc", "run-rmc")
 install_artifacts = _lazy_import("install_artifacts", "install-artifacts")
 verify_installation = _lazy_import("verify_installation", "verify-installation")
@@ -29,7 +30,7 @@ detect_hallucinations = _lazy_import("detect_hallucinations", "symbol-differ")
 HallucinationResult = _lazy_import("HallucinationResult", "symbol-differ")
 
 __all__ = [
-    "download_rmc", "is_valid_jar", "run_rmc", "install_artifacts", "verify_installation",
+    "download_rmc", "is_valid_jar", "probe_rmc_jar", "run_rmc", "install_artifacts", "verify_installation",
     "pre_run_rmc_check", "RuleStatusClassifier", "map_fallback",
     "safe_path", "safe_open", "validate_https_url", "resolve_executable",
     "MutationEngine", "Mutation", "check_vacuity", "extract_precondition",

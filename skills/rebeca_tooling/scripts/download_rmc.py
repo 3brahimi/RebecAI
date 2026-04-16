@@ -5,6 +5,7 @@ import argparse
 import hashlib
 import os
 import re
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -17,13 +18,49 @@ from utils import validate_https_url, safe_path, safe_open
 
 
 def is_valid_jar(jar_path: Path) -> bool:
-    """Check if file is a valid Java archive."""
+    """Check if file is a valid Java archive (ZIP magic-bytes check)."""
     if not jar_path.exists():
         return False
     try:
         with safe_open(str(jar_path), 'rb') as f:
             magic = f.read(4)
             return magic == b'PK\x03\x04'  # ZIP/JAR magic number
+    except Exception:
+        return False
+
+
+def probe_rmc_jar(jar_path: Path, timeout: int = 10) -> bool:
+    """
+    Probe RMC jar for JVM loadability by running it with a short timeout.
+
+    Strategy:
+      1. Run ``java -jar <jar>`` with no arguments.
+      2. If Java exits with recognisable RMC usage output the jar loaded correctly.
+      3. If stderr contains "Invalid or corrupt jarfile" return False.
+      4. On TimeoutExpired the JVM loaded (RMC just ran long) → return True.
+      5. If ``java`` is not on PATH, fall back to the magic-bytes result.
+
+    Returns True if the jar appears JVM-loadable, False otherwise.
+    """
+    if not is_valid_jar(jar_path):
+        return False
+    try:
+        result = subprocess.run(
+            ["java", "-jar", str(jar_path)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=timeout,
+        )
+        stderr_text = result.stderr.decode("utf-8", errors="replace")
+        if "Invalid or corrupt jarfile" in stderr_text or "corrupt jarfile" in stderr_text:
+            return False
+        return True
+    except subprocess.TimeoutExpired:
+        # JVM loaded; RMC just ran long without arguments
+        return True
+    except FileNotFoundError:
+        # java not on PATH — cannot probe; trust the magic-bytes check
+        return True
     except Exception:
         return False
 

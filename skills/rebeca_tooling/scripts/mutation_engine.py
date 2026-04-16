@@ -23,10 +23,12 @@ Exit codes (CLI):
 import argparse
 import json
 import re
+import subprocess
 import sys
+import tempfile
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from utils import safe_path
 
@@ -399,6 +401,132 @@ _PROPERTY_STRATEGIES = (
 )
 
 
+def run_mutants(
+    mutations: List["Mutation"],
+    jar: str,
+    model_path: Optional[Path],
+    property_path: Optional[Path],
+    timeout_seconds: int = 60,
+) -> Dict[str, Any]:
+    """
+    Execute each mutant against RMC and collect kill/survive statistics.
+
+    A mutant is **killed** if RMC exits non-zero (counterexample found or
+    parse/compile failure) when the mutation is applied.  A mutant
+    **survives** if RMC still exits 0, indicating the property no longer
+    distinguishes the mutation — a potential semantic gap.
+
+    Args:
+        mutations:        List of Mutation objects to execute.
+        jar:              Path to rmc.jar.
+        model_path:       Canonical (unmodified) .rebeca file path.
+        property_path:    Canonical (unmodified) .property file path.
+        timeout_seconds:  Per-mutant RMC timeout.
+
+    Returns:
+        {
+          "total":          int,
+          "killed":         int,
+          "survived":       int,
+          "errors":         int,
+          "mutation_score": float  (killed / total * 100, or 0.0),
+          "mutant_results": [{"mutation_id": str, "outcome": "killed"|"survived"|"error",
+                               "exit_code": int}]
+        }
+    """
+    jar_path = safe_path(jar)
+    results: List[Dict[str, Any]] = []
+    killed = 0
+    errors = 0
+
+    for mut in mutations:
+        # Write the mutant to a temp file in the same directory as the original
+        # so safe_path() constraints are satisfied (within home).
+        if mut.artifact == "model" and model_path is not None:
+            orig_path = model_path
+            suffix = ".rebeca"
+        elif mut.artifact == "property" and property_path is not None:
+            orig_path = property_path
+            suffix = ".property"
+        else:
+            results.append({"mutation_id": mut.mutation_id, "outcome": "error",
+                            "exit_code": -1, "reason": "no matching original path"})
+            errors += 1
+            continue
+
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                suffix=suffix,
+                delete=False,
+                encoding="utf-8",
+                dir=Path.home(),
+            ) as tmp:
+                tmp.write(mut.mutated_content)
+                tmp_path = Path(tmp.name)
+
+            # Build RMC command
+            if mut.artifact == "model":
+                rmc_model = str(tmp_path)
+                rmc_prop = str(property_path) if property_path else None
+            else:
+                rmc_model = str(model_path) if model_path else None
+                rmc_prop = str(tmp_path)
+
+            if rmc_model is None or rmc_prop is None:
+                results.append({"mutation_id": mut.mutation_id, "outcome": "error",
+                                "exit_code": -1, "reason": "missing counterpart file"})
+                errors += 1
+                continue
+
+            with tempfile.TemporaryDirectory(dir=Path.home()) as tmp_out:
+                proc = subprocess.run(
+                    [
+                        "java", "-jar", str(jar_path),
+                        "-s", rmc_model,
+                        "-p", rmc_prop,
+                        "-o", tmp_out,
+                        "-e", "TIMED_REBECA",
+                        "-x",
+                    ],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    timeout=timeout_seconds,
+                )
+                exit_code = proc.returncode
+        except subprocess.TimeoutExpired:
+            exit_code = 3  # treat timeout as survived (indeterminate)
+        except Exception as exc:
+            results.append({"mutation_id": mut.mutation_id, "outcome": "error",
+                            "exit_code": -1, "reason": str(exc)})
+            errors += 1
+            continue
+        finally:
+            try:
+                tmp_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+
+        # exit_code != 0 → RMC rejected the mutant → killed
+        outcome = "killed" if exit_code != 0 else "survived"
+        if outcome == "killed":
+            killed += 1
+        results.append({"mutation_id": mut.mutation_id, "outcome": outcome,
+                        "exit_code": exit_code})
+
+    total = len(mutations)
+    mutation_score = round(killed / total * 100, 2) if total > 0 else 0.0
+
+    return {
+        "total": total,
+        "killed": killed,
+        "survived": total - killed - errors,
+        "errors": errors,
+        "mutation_score": mutation_score,
+        "mutant_results": results,
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Generate mutation variants of .rebeca/.property files for semantic validation"
@@ -415,6 +543,19 @@ def main() -> None:
     parser.add_argument(
         "--output-json", action="store_true", help="Output results as JSON"
     )
+    # ── optional kill-run mode ──────────────────────────────────────────────
+    run_group = parser.add_argument_group(
+        "kill-run mode",
+        "Pass all three flags to execute mutants with RMC and report kill score.",
+    )
+    run_group.add_argument("--run-with-jar", default=None,
+                           help="Path to rmc.jar for executing mutants")
+    run_group.add_argument("--run-with-model", default=None,
+                           help="Path to canonical .rebeca model (used when mutating property)")
+    run_group.add_argument("--run-with-property", default=None,
+                           help="Path to canonical .property file (used when mutating model)")
+    run_group.add_argument("--run-timeout", type=int, default=60,
+                           help="Per-mutant RMC timeout in seconds (default: 60)")
     args = parser.parse_args()
 
     if args.model is None and args.property is None:
@@ -444,21 +585,49 @@ def main() -> None:
             if args.strategy in ("all", strategy):
                 mutations += getattr(engine, strategy)(prop_content, args.rule_id)
 
+    mutant_summary = [
+        {k: v for k, v in asdict(m).items()
+         if k not in ("original_content", "mutated_content")}
+        for m in mutations
+    ]
+
+    # ── kill-run mode ───────────────────────────────────────────────────────
+    kill_stats: Optional[Dict[str, Any]] = None
+    if args.run_with_jar:
+        if not mutations:
+            print("Warning: no mutants generated — skipping kill-run", file=sys.stderr)
+        else:
+            kill_stats = run_mutants(
+                mutations=mutations,
+                jar=args.run_with_jar,
+                model_path=safe_path(args.run_with_model) if args.run_with_model else None,
+                property_path=(
+                    safe_path(args.run_with_property) if args.run_with_property else None
+                ),
+                timeout_seconds=args.run_timeout,
+            )
+
     if args.output_json:
-        summary = [
-            {k: v for k, v in asdict(m).items()
-             if k not in ("original_content", "mutated_content")}
-            for m in mutations
-        ]
-        print(json.dumps(
-            {"rule_id": args.rule_id, "total_mutants": len(mutations), "mutants": summary},
-            indent=2,
-        ))
+        output: Dict[str, Any] = {
+            "rule_id": args.rule_id,
+            "total_mutants": len(mutations),
+            "mutants": mutant_summary,
+        }
+        if kill_stats is not None:
+            output["kill_stats"] = kill_stats
+        print(json.dumps(output, indent=2))
     else:
         print(f"Rule:            {args.rule_id}")
         print(f"Total mutants:   {len(mutations)}")
         for m in mutations:
             print(f"  [{m.mutation_id}] {m.strategy} ({m.artifact}): {m.description}")
+        if kill_stats is not None:
+            print()
+            print(f"Kill-run results:")
+            print(f"  Killed:         {kill_stats['killed']}/{kill_stats['total']}")
+            print(f"  Survived:       {kill_stats['survived']}")
+            print(f"  Errors:         {kill_stats['errors']}")
+            print(f"  Mutation score: {kill_stats['mutation_score']:.1f}%")
 
     sys.exit(0)
 

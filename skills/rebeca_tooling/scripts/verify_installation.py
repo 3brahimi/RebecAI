@@ -54,7 +54,12 @@ def verify_installation(target_root: str) -> int:
 def main():
     parser = argparse.ArgumentParser(description="Verify installed artifacts")
     parser.add_argument("target_root", nargs="?", default=".", help="Target installation directory")
-    
+    # --rmc-jar accepted for backward-compatibility with earlier skill docs that
+    # suggested passing the jar path here; the value is recorded but not used
+    # by the artifact-presence checks (jar validation is in pre_run_rmc_check.py).
+    parser.add_argument("--rmc-jar", default=None,
+                        help="(Ignored) Path to rmc.jar — accepted for CLI compatibility")
+
     args = parser.parse_args()
     sys.exit(verify_installation(args.target_root))
 

@@ -33,9 +33,18 @@ from run_rmc import run_rmc
 from utils import safe_path
 
 
-def extract_precondition(property_content: str) -> Optional[str]:
+def extract_precondition(
+    property_content: str,
+    assertion_id: Optional[str] = None,
+) -> Optional[str]:
     """
-    Extract the first assertion expression from the Assertion block.
+    Extract an assertion expression from the Assertion block.
+
+    Args:
+        property_content: Full text of the .property file.
+        assertion_id: If given, select the assertion whose label matches this
+                      identifier (e.g. ``"Rule22"``).  If ``None`` (default)
+                      the first assertion in the block is used.
 
     Example:
       Assertion { Rule22: !hasLight || (lightRange >= 6); }
@@ -43,11 +52,21 @@ def extract_precondition(property_content: str) -> Optional[str]:
 
     Returns the expression string, or None if the block cannot be parsed.
     """
-    m = re.search(
-        r'\bAssertion\s*\{[^}]*?\w+\s*:\s*(!?)(.+?);',
-        property_content,
-        re.DOTALL,
-    )
+    if assertion_id is not None:
+        # Targeted match: label must equal assertion_id exactly
+        pattern = (
+            r'\bAssertion\s*\{[^}]*?\b'
+            + re.escape(assertion_id)
+            + r'\s*:\s*(!?)(.+?);'
+        )
+        m = re.search(pattern, property_content, re.DOTALL)
+    else:
+        # Default: first assertion in the block
+        m = re.search(
+            r'\bAssertion\s*\{[^}]*?\w+\s*:\s*(!?)(.+?);',
+            property_content,
+            re.DOTALL,
+        )
     if m is None:
         return None
     return (m.group(1) + m.group(2)).strip()
@@ -84,6 +103,7 @@ def check_vacuity(
     property_file: str,
     output_dir: str,
     timeout_seconds: int = 120,
+    assertion_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Perform a vacuity check on a verified Rebeca property.
@@ -111,15 +131,19 @@ def check_vacuity(
         }
 
     property_content = prop_path.read_text(encoding="utf-8")
-    precondition = extract_precondition(property_content)
+    precondition = extract_precondition(property_content, assertion_id=assertion_id)
 
     if precondition is None:
+        detail = (
+            f" (assertion_id={assertion_id!r})" if assertion_id else " (first assertion)"
+        )
         return {
             "is_vacuous": None,
             "precondition_used": None,
+            "assertion_id_used": assertion_id,
             "secondary_exit_code": 1,
             "secondary_output_dir": None,
-            "explanation": "Could not extract precondition from Assertion block",
+            "explanation": f"Could not extract precondition from Assertion block{detail}",
         }
 
     negated_content = build_negated_property(property_content, precondition)
@@ -154,6 +178,7 @@ def check_vacuity(
     return {
         "is_vacuous": is_vacuous,
         "precondition_used": precondition,
+        "assertion_id_used": assertion_id,
         "secondary_exit_code": exit_code,
         "secondary_output_dir": secondary_output,
         "explanation": (
@@ -177,6 +202,13 @@ def main() -> None:
     parser.add_argument(
         "--timeout-seconds", type=int, default=120, help="RMC timeout in seconds"
     )
+    parser.add_argument(
+        "--assertion-id",
+        default=None,
+        help="Label of the assertion to analyse (e.g. 'Rule22'). "
+             "Defaults to the first assertion in the Assertion block. "
+             "Required when multiple assertions exist to avoid ambiguity.",
+    )
     parser.add_argument("--output-json", action="store_true", help="Output result as JSON")
     args = parser.parse_args()
 
@@ -186,6 +218,7 @@ def main() -> None:
         property_file=args.property,
         output_dir=args.output_dir,
         timeout_seconds=args.timeout_seconds,
+        assertion_id=args.assertion_id,
     )
 
     if args.output_json:

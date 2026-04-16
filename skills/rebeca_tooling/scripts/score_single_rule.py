@@ -22,23 +22,46 @@ class RubricScorer:
         }
         self.total_points = sum(self.weights.values())  # 100
     
-    def score_rule(self, rule_id: str, model_artifact: Optional[str] = None, 
-                   property_artifact: Optional[str] = None, 
-                   verify_status: str = "unknown") -> Dict[str, Any]:
+    def score_rule(
+        self,
+        rule_id: str,
+        model_artifact: Optional[str] = None,
+        property_artifact: Optional[str] = None,
+        verify_status: str = "unknown",
+        is_vacuous: Optional[bool] = None,
+        assertion_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """
         Score a single rule transformation.
-        
+
         Args:
             rule_id: Rule identifier (e.g., "Rule-22")
             model_artifact: Path to .rebeca file or None/"no_model_change"
             property_artifact: Path to .property file or None
             verify_status: Verification status (pass|fail|timeout|blocked|unknown)
-        
+            is_vacuous: Vacuity result from vacuity_checker (True/False/None).
+                        When None the vacuity field is left as "unchecked".
+            assertion_id: Label of the assertion that was checked, for auditability.
+
         Returns:
             Scorecard dict with breakdown, status, and remediation hints
         """
-        
-        scorecard = { "integrity": "passed", "mutation_score": 100.0, "vacuity": {"is_vacuous": False}, "is_hallucination": False, 
+        # Resolve vacuity — do NOT hardcode False when the caller didn't provide it
+        vacuity_entry: Dict[str, Any] = {
+            "is_vacuous": is_vacuous,
+            "assertion_id": assertion_id,
+            "status": (
+                "vacuous" if is_vacuous is True
+                else "non_vacuous" if is_vacuous is False
+                else "unchecked"
+            ),
+        }
+
+        scorecard = {
+            "integrity": "passed",
+            "mutation_score": 100.0,
+            "vacuity": vacuity_entry,
+            "is_hallucination": False,
             "rule_id": rule_id,
             "input_status": self._infer_input_status(model_artifact, property_artifact),
             "score_breakdown": {},
@@ -60,6 +83,19 @@ class RubricScorer:
             scorecard["score_total"] = 100
             scorecard["status"] = "Pass"
             scorecard["confidence"] = 1.0
+            # A vacuous pass is technically a verification pass but semantically
+            # meaningless — penalise the verification_outcome sub-score.
+            if is_vacuous is True:
+                scorecard["score_breakdown"]["verification_outcome"] = 10
+                scorecard["score_total"] = 85
+                scorecard["status"] = "Conditional"
+                scorecard["confidence"] = 0.6
+                scorecard["failure_reasons"].append(
+                    "Property verified but vacuously — precondition is never reachable"
+                )
+                scorecard["remediation_hints"].append(
+                    "Review precondition reachability; strengthen model state space"
+                )
 
         elif verify_status == "fail":
             scorecard["score_breakdown"]["syntax"] = 10   # Syntax likely still valid
@@ -133,19 +169,40 @@ def main():
     parser.add_argument("--rule-id", required=True, help="Rule identifier (e.g., Rule-22)")
     parser.add_argument("--model", default=None, help="Path to .rebeca model artifact")
     parser.add_argument("--property", default=None, help="Path to .property artifact")
-    parser.add_argument("--verify-status", default="unknown", 
-                       choices=["pass", "fail", "timeout", "blocked", "unknown"],
-                       help="Verification status from RMC")
+    parser.add_argument("--verify-status", default="unknown",
+                        choices=["pass", "fail", "timeout", "blocked", "unknown"],
+                        help="Verification status from RMC")
+    parser.add_argument(
+        "--is-vacuous",
+        default=None,
+        choices=["true", "false"],
+        help="Vacuity result from vacuity_checker (true/false). "
+             "Omit if vacuity check was not performed.",
+    )
+    parser.add_argument(
+        "--assertion-id",
+        default=None,
+        help="Label of the assertion that was checked (for audit trail)",
+    )
     parser.add_argument("--output-json", action="store_true", help="Output as JSON")
-    
+
     args = parser.parse_args()
-    
+
+    # Parse --is-vacuous string → Optional[bool]
+    is_vacuous: Optional[bool] = None
+    if args.is_vacuous == "true":
+        is_vacuous = True
+    elif args.is_vacuous == "false":
+        is_vacuous = False
+
     scorer = RubricScorer()
     scorecard = scorer.score_rule(
         rule_id=args.rule_id,
         model_artifact=args.model,
         property_artifact=args.property,
-        verify_status=args.verify_status
+        verify_status=args.verify_status,
+        is_vacuous=is_vacuous,
+        assertion_id=args.assertion_id,
     )
     
     if args.output_json:
