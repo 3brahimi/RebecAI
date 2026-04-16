@@ -215,7 +215,6 @@ statespace.xml
 *.pyc
 
 !.grepai/
-.gemini/
 .claude/
 .github/
 .agents/

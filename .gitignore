@@ -211,11 +211,15 @@ __marimo__/
 legata/
 .claude/
 .amazonq/
+!.gemini/agents/
+!.gemini/skills/
 .gemini/
 statespace.xml
 *.pyc
 
 .grepai/
+!.gemini/agents/
+!.gemini/skills/
 .gemini/
 .claude/
 .github/
