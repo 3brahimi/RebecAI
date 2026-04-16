@@ -79,7 +79,7 @@ For each rule:
 - `output/aggregate_report.json` - Summary report
 - `output/aggregate_report.md` - Markdown report
 
-### Triage and Classify
+### Triage and Classify (Step02 only)
 
 ```
 @legata_to_rebeca

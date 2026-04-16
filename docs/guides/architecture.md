@@ -4,144 +4,175 @@ System design and component overview for RebecAI.
 
 ## Overview
 
-RebecAI follows a modular architecture with three main layers:
+RebecAI follows a **Multi-Agent Orchestration (MAO)** architecture with three main layers:
 
-1. **Agent Layer** - Claude Code agents orchestrating workflows
-2. **Skills Layer** - Reusable knowledge and tooling
-3. **Tooling Layer** - Cross-platform Python library
+1. **Agent Layer** — one coordinator + eight specialist subagents
+2. **Skills Layer** — reusable knowledge injected into subagent system prompts
+3. **Tooling Layer** — deterministic Python scripts ("dumb tools") invoked via `Bash`
 
 ## Component Diagram
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    Agent Layer                          │
-│  ┌───────────────────────────────────────────────────┐  │
-│  │         legata_to_rebeca Agent                    │  │
-│  │  - Orchestrates 8-phase workflow                  │  │
-│  │  - Invokes skills for guidance                    │  │
-│  │  - Calls tooling for automation                   │  │
-│  └───────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────┘
-                          │
+┌─────────────────────────────────────────────────────────────┐
+│                       Agent Layer                           │
+│                                                             │
+│   legata_to_rebeca (coordinator)                            │
+│   ┌──────────┬──────────┬──────────┬──────────────────┐    │
+│   │Step01    │Step02    │Step03    │ Step04 ║ Step05   │    │
+│   │init      │triage    │abstract  │ mapping║synthesis │    │
+│   │_agent    │_agent    │_agent    │ _agent ║ _agent   │    │
+│   └──────────┴──────────┴──────────┴──────────────────┘    │
+│   ┌──────────────────────────────────────────────────┐      │
+│   │Step06             │Step07          │Step08        │      │
+│   │verification_agent │packaging_agent │reporting_    │      │
+│   │                   │                │agent         │      │
+│   └──────────────────────────────────────────────────┘      │
+└─────────────────────────────────────────────────────────────┘
+                          │ skills: injects SKILL.md at startup
                           ▼
-┌─────────────────────────────────────────────────────────┐
-│                    Skills Layer                         │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐   │
-│  │ legata-to-   │  │   rebeca-    │  │   rebeca-    │   │
-│  │   rebeca     │  │  handbook    │  │   tooling    │   │
-│  │              │  │              │  │              │   │
-│  │ Workflow     │  │ Modeling     │  │ Python       │   │
-│  │ guidance     │  │ best         │  │ library      │   │
-│  │              │  │ practices    │  │              │   │
-│  └──────────────┘  └──────────────┘  └──────────────┘   │
-└─────────────────────────────────────────────────────────┘
-                          │
+┌─────────────────────────────────────────────────────────────┐
+│                      Skills Layer                           │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
+│  │ legata_to_   │  │   rebeca_    │  │   rebeca_    │      │
+│  │   rebeca     │  │  handbook    │  │   tooling    │      │
+│  │              │  │              │  │              │      │
+│  │ Workflow     │  │ Modeling     │  │ Schemas +    │      │
+│  │ guidance     │  │ best         │  │ script docs  │      │
+│  │              │  │ practices    │  │              │      │
+│  └──────────────┘  └──────────────┘  └──────────────┘      │
+└─────────────────────────────────────────────────────────────┘
+                          │ Bash tool calls
                           ▼
-┌─────────────────────────────────────────────────────────┐
-│                   Tooling Layer                         │
-│  ┌───────────────────────────────────────────────────┐  │
-│  │       skills/rebeca_tooling/scripts/              │  │
-│  │  - utils.py              (security guards)        │  │
-│  │  - download_rmc.py                                │  │
-│  │  - run_rmc.py                                     │  │
-│  │  - pre_run_rmc_check.py                           │  │
-│  │  - classify_rule_status.py                        │  │
-│  │  - colreg_fallback_mapper.py                      │  │
-│  │  - score_single_rule.py                           │  │
-│  │  - generate_report.py                             │  │
-│  │  - install_artifacts.py                           │  │
-│  │  - verify_installation.py                         │  │
-│  │  - __init__.py                                    │  │
-│  └───────────────────────────────────────────────────┘  │
-│                                                         │
-│  Root Utilities (project root, not installed):          │
-│  - setup.py     (one-command install)                   │
-│  - purge.py     (surgical cleanup of installed files)   │
-└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                     Tooling Layer                           │
+│  skills/rebeca_tooling/scripts/  (dumb deterministic tools) │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │  pre_run_rmc_check.py    verify_installation.py     │    │
+│  │  snapshotter.py          classify_rule_status.py    │    │
+│  │  colreg_fallback_mapper.py  run_rmc.py              │    │
+│  │  vacuity_checker.py      mutation_engine.py         │    │
+│  │  install_artifacts.py    score_single_rule.py       │    │
+│  │  generate_report.py      symbol_differ.py           │    │
+│  │  utils.py (security guards)                         │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                                                             │
+│  Root utilities (not installed):                            │
+│  - setup.py   (one-command installer, --dry-run supported)  │
+│  - purge.py   (surgical cleanup of owned artifacts only)    │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ## Design Principles
 
-### 1. Modularity
-- **Agents** orchestrate workflows but don't implement logic
-- **Skills** provide reusable knowledge and patterns
-- **Tooling** implements cross-platform automation
+### 1. Multi-Agent Orchestration (MAO)
+- The coordinator (`legata_to_rebeca`) drives the workflow and manages `shared_state`
+- Each step is delegated to a **specialist subagent** running in its own context window
+- Specialists call **dumb deterministic Python scripts** via the `Bash` tool — no LLM logic inside the scripts
+- Each specialist emits a **structured JSON contract** that the coordinator validates before advancing
 
-### 2. Separation of Concerns
-- **Workflow logic** - In agent definitions
-- **Domain knowledge** - In skills
-- **Automation** - In Python library
+### 2. Single Source of Truth (SSOT)
+- All agent and skill definitions live in the repo's `agents/` and `skills/` directories
+- `setup.py` installs them to `~/.agents/` (the primary truth copy)
+- From `~/.agents/`, `setup.py` creates target-specific links to `.claude/`, `.gemini/`, `.github/`
+- Never edit files directly in target directories — always edit the source and re-run `setup.py`
 
-### 3. Cross-Platform Support
-- All tooling written in Python 3.8+
-- Platform-specific logic abstracted
-- Supports Windows, macOS, Linux
+### 3. Shared Skills Namespace
+- `~/.agents/skills/` is a **shared namespace** across all projects and tools
+- Third-party skills (grepai, graphify, etc.) coexist alongside Rebeca's 5 owned skills
+- `setup.py` performs surgical per-skill copies — it never wipes the whole `skills/` directory
+- `purge.py` only removes skills this repo owns (derived from `skills/` in the repo root)
 
-### 4. Claude Code Compliance
-- Follows `~/.agents/agents/` and `~/.agents/skills/` conventions
-- Tooling embedded in `skills/rebeca_tooling/scripts/`
-- Root `setup.py` and `purge.py` are project-level utilities, not installed artifacts
+### 4. Cross-Platform Symlinking
+- **`.claude/agents/`** — symlinks to `~/.agents/agents/`; full frontmatter including `skills:` (valid Claude Code key)
+- **`.gemini/agents/`** — **physical copies** with Gemini-incompatible keys stripped (`schema`, `skills`, `version`, `user-invocable`); Gemini CLI may not follow symlinks
+- **`.github/agents/`** — symlinks with `.agent.md` extension suffix for Copilot discovery
+
+### 5. Separation of Concerns
+- **Coordinator** — state machine, routing, error handling, budget tracking
+- **Specialists** — focused context windows, call tools, return JSON
+- **Dumb tools** — deterministic Python scripts, no LLM involvement
+- **Skills** — knowledge injected as system prompt content at startup
 
 ## Workflow Execution
 
-### Phase 1: Agent Invocation
 ```
-User → @legata_to_rebeca → Agent reads definition
-```
-
-### Phase 2: Skill Consultation
-```
-Agent → legata_to_rebeca skill → Workflow guidance
-Agent → rebeca_handbook skill → Modeling patterns
-```
-
-### Phase 3: Tooling Execution
-```
-Agent → rebeca_tooling skill → Python library
-Python library → RMC → Verification result
-```
-
-### Phase 4: Result Processing
-```
-Python library → Scoring → Report generation
-Agent → User → Results and recommendations
+User → @legata_to_rebeca
+         │
+         ▼
+  Coordinator reads shared_state
+         │
+   ┌─────▼─────┐
+   │  Step01   │ → init_agent → JSON → shared_state.step01
+   └─────┬─────┘
+   ┌─────▼─────┐
+   │  Step02   │ → triage_agent → JSON → shared_state.step02
+   └─────┬─────┘
+   ┌─────▼─────┐
+   │  Step03   │ → abstraction_agent → JSON → shared_state.step03
+   └─────┬─────┘
+   ┌────────────────────────────────────┐
+   │  Step04 ║ Step05 (parallel)       │
+   │  mapping_agent ║ synthesis_agent  │
+   └────────────────────────────────────┘
+         │
+   ┌─────▼─────┐
+   │  Step06   │ → verification_agent → JSON → shared_state.step06
+   └─────┬─────┘
+   ┌─────▼─────┐
+   │  Step07   │ → packaging_agent → JSON → shared_state.step07
+   └─────┬─────┘
+   ┌─────▼─────┐
+   │  Step08   │ → reporting_agent → scorecard.json + report.md
+   └───────────┘
 ```
 
 ## Data Flow
 
 ### Input
-1. **Legata rule file** - Formal specification
-2. **Reference model** - Base `.rebeca` file
-3. **Reference property** - Base `.property` file
+1. **Legata rule file** — formal specification
+2. **Reference model** — base `.rebeca` file
+3. **Reference property** — base `.property` file
 
-### Processing
-1. **Triage** - Classify rule status
-2. **Transform** - Generate Rebeca model and property
-3. **Verify** - Run RMC model checker
-4. **Score** - Apply 100-point rubric
-5. **Report** - Generate JSON and Markdown
+### Processing (Step01–Step08)
+1. **Step01** — validate inputs, provision RMC, snapshot golden state
+2. **Step02** — classify rule status, attach defect evidence
+3. **Step03** — extract actors, discretize variables
+4. **Step04/05** — generate `.rebeca` model and `.property` file (Step05 in parallel, produces candidates only)
+5. **Step06** — run RMC, vacuity check, mutation scoring
+6. **Step07** — collect and package artifacts
+7. **Step08** — score and generate reports
 
 ### Output
-1. **Model files** - `.rebeca` and `.property`
-2. **Verification logs** - RMC stdout/stderr
-3. **Scorecards** - JSON scoring results
-4. **Reports** - Aggregate summaries
+1. **Model files** — `.rebeca` and `.property`
+2. **Verification logs** — RMC stdout/stderr
+3. **Scorecards** — JSON per-rule scoring
+4. **Reports** — aggregate JSON and Markdown
+
+## Agent Frontmatter Spec
+
+Agent files use YAML frontmatter. The recognized keys differ by platform:
+
+| Key | Claude Code | Gemini CLI | Used in source |
+|-----|------------|------------|----------------|
+| `name` | Required | Required | ✓ |
+| `description` | Required | Required | ✓ |
+| `skills` | Valid — injects SKILL.md at startup | Not standard | ✓ (Claude only) |
+| `schema` | Tolerated (unknown key) | Stripped | ✓ internal pointer |
+| `tools` | Valid — allowlist | Valid | Omitted (inherits all) |
+| `model` | Valid | Valid | Omitted (inherits) |
+| `version` | Not standard | Not standard | Removed |
+| `user-invocable` | Not standard | Not standard | Removed |
+
+The `_write_gemini_agent` function in `setup.py` strips `schema`, `skills`, `version`, and `user-invocable` when writing physical copies to `.gemini/agents/`.
 
 ## RMC Workflow
 
 ### Critical Phases
 
-1. **Parse** - RMC parses `.rebeca` and `.property`
-   - Exit code 5 if syntax error
-
-2. **Generate** - RMC generates C++ source files
-   - Uses `-x` flag for C++ generation
-
-3. **Compile** - g++ compiles C++ to executable
-   - Exit code 4 if compilation fails
-
-4. **Execute** - Run executable for verification
-   - Counterexample if property violated
+1. **Parse** — RMC parses `.rebeca` and `.property` (exit code 5 on syntax error)
+2. **Generate** — RMC generates C++ source files (`-x` flag)
+3. **Compile** — g++ compiles C++ to executable (exit code 4 on failure)
+4. **Execute** — run executable for verification (counterexample if property violated)
 
 ### Exit Codes
 
@@ -156,124 +187,88 @@ Agent → User → Results and recommendations
 
 ```
 # Repository (source of truth)
-rebecai/
-├── agents/
-│   └── legata_to_rebeca.md          # Agent definition
-├── skills/
-│   ├── legata_to_rebeca/
-│   │   └── SKILL.md                 # Workflow guidance
-│   ├── rebeca_handbook/
-│   │   └── SKILL.md                 # Modeling best practices
-│   └── rebeca_tooling/
-│       ├── SKILL.md                 # Tooling documentation
-│       └── scripts/                 # Python library (10 modules)
-├── docs/                            # Developer documentation
-├── setup.py                         # One-command installer
-└── purge.py                         # Surgical cleanup utility
+claude-rebeca/
+├── agents/                              # 9 agent definitions (source)
+│   ├── legata_to_rebeca.md             # Coordinator
+│   ├── init_agent.md
+│   ├── triage_agent.md
+│   ├── abstraction_agent.md
+│   ├── mapping_agent.md
+│   ├── synthesis_agent.md
+│   ├── verification_agent.md
+│   ├── packaging_agent.md
+│   └── reporting_agent.md
+├── skills/                              # 5 owned skills (source)
+│   ├── legata_to_rebeca/SKILL.md
+│   ├── rebeca_handbook/SKILL.md
+│   ├── rebeca_tooling/
+│   │   ├── SKILL.md
+│   │   ├── schemas/                     # JSON output schemas per agent
+│   │   └── scripts/                     # Dumb tools (14 Python modules)
+│   ├── rebeca_mutation/
+│   └── rebeca_hallucination/
+├── docs/                                # Developer documentation
+├── tests/                               # pytest suite (incl. E2E DAG tests)
+├── setup.py                             # One-command installer (--dry-run)
+└── purge.py                             # Surgical cleanup (owned artifacts only)
 
-# Installed (after running setup.py)
+# Primary truth copy (after setup.py)
 ~/.agents/
-├── agents/
-│   └── legata_to_rebeca.md
-├── skills/
-│   ├── legata_to_rebeca/
+├── agents/          # All 9 .md files (physical copies from source)
+├── skills/          # Shared namespace: 5 Rebeca skills + third-party
+│   ├── rebeca_tooling/
 │   ├── rebeca_handbook/
-│   └── rebeca_tooling/
-│       └── scripts/                 # Python library (10 modules)
-└── rmc/
-    └── rmc.jar                      # RMC model checker
+│   ├── legata_to_rebeca/
+│   ├── rebeca_mutation/
+│   ├── rebeca_hallucination/
+│   └── grepai-*/   # Third-party (installed by setup_ai_search, not touched)
+├── docs/            # Docs copy (symlink target for .github/instructions)
+└── rmc/rmc.jar      # RMC model checker
+
+# Target links
+~/.claude/agents/    # Symlinks → ~/.agents/agents/
+~/.claude/skills/    # Symlinks → ~/.agents/skills/ (owned skills only)
+~/.gemini/agents/    # Physical copies with Gemini-compatible frontmatter
+~/.gemini/skills/    # Symlinks → ~/.agents/skills/ (owned skills only)
+~/.github/agents/    # Symlinks with .agent.md suffix
+~/.github/skills/    # Symlinks → ~/.agents/skills/ (owned skills only)
+~/.github/instructions/ → ~/.agents/docs/
 ```
 
 ## Installed Paths
 
-After running `python3 setup.py` from the project root, artifacts are placed at:
+After running `python3 setup.py --mode global`:
 
 | Artifact | Installed Path |
 |----------|---------------|
-| Agent definition | `~/.agents/agents/legata_to_rebeca.md` |
-| Workflow guidance skill | `~/.agents/skills/legata_to_rebeca/SKILL.md` |
-| Modeling handbook skill | `~/.agents/skills/rebeca_handbook/SKILL.md` |
-| Tooling skill + scripts | `~/.agents/skills/rebeca_tooling/scripts/` |
+| Coordinator | `~/.agents/agents/legata_to_rebeca.md` |
+| Specialist agents (×8) | `~/.agents/agents/<agent>.md` |
+| Workflow guidance skill | `~/.agents/skills/legata_to_rebeca/` |
+| Modeling handbook skill | `~/.agents/skills/rebeca_handbook/` |
+| Tooling skill + scripts | `~/.agents/skills/rebeca_tooling/` |
+| Mutation skill | `~/.agents/skills/rebeca_mutation/` |
+| Hallucination skill | `~/.agents/skills/rebeca_hallucination/` |
 | RMC model checker | `~/.agents/rmc/rmc.jar` |
-
-To clean up all installed artifacts before a re-install: `python3 purge.py && python3 setup.py`
-
-## Extension Points
-
-### Adding New Agents
-
-1. Create agent definition in `agents/`
-2. Reference existing skills
-3. Document in `docs/agents/`
-4. Add usage examples
-
-### Adding New Skills
-
-1. Create skill directory in `skills/`
-2. Add `SKILL.md` with knowledge/patterns
-3. Document in `docs/skills/`
-4. Update agent references
-
-### Adding New Tooling
-
-1. Create module in `skills/rebeca_tooling/scripts/`
-2. Add CLI interface with argparse
-3. Export from `__init__.py`
-4. Update skill documentation
-5. Add tests
 
 ## Testing Strategy
 
-### Acceptance Tests
-- End-to-end workflow validation
-- Real Legata rules → Rebeca models
-- RMC verification execution
+### E2E Integration Tests (`tests/test_coordinator_e2e.py`)
+- CLI-based DAG integration test — each step invokes the Python scripts via `subprocess.run`
+- Pre-computed fixtures for LLM-dependent steps (Step03, Step05)
+- `@pytest.mark.requires_rmc` skips RMC-dependent tests when `~/.rebeca/rmc.jar` is absent
+- Module-scoped `pipeline` fixture accumulates state across step classes
 
-### Functional Tests
-- Per-module unit tests
-- Mock RMC execution
-- Edge case handling
-
-### Leakage Scan
-- Detect hardcoded paths
-- Ensure cross-platform compatibility
-- Validate configuration handling
-
-## Performance Considerations
-
-### RMC Execution
-- Default timeout: 120 seconds
-- Configurable per-rule
-- Parallel execution for batch processing
-
-### C++ Compilation
-- Uses `-w` flag to suppress warnings
-- Compilation typically < 5 seconds
-- Failure indicates RMC code generation issue
-
-### Scoring and Reporting
-- Lightweight JSON processing
-- Markdown generation from templates
-- Minimal overhead
+### Unit Tests
+- Per-script tests for classify, score, mutate, vacuity
+- Mock RMC execution for speed
 
 ## Security Considerations
 
-### Input Validation
-- Validate file paths before execution
-- Sanitize user-provided rule IDs
-- Check file permissions
-
-### Subprocess Execution
-- Use subprocess.run with timeout
-- Capture stdout/stderr separately
-- Handle exit codes explicitly
-
-### Credential Management
-- No credentials stored in code
-- No network calls except RMC download
-- Local-only execution
+- Input validation via `utils.py` security guards before any subprocess execution
+- No credentials in code; no network calls except RMC download
+- `purge.py` performs surgical removal — never blindly wipes directories it doesn't own
 
 ## Next Steps
 
-- [API Reference](api-reference.md) - Complete function signatures
-- [Contributing Guide](contributing.md) - How to extend the system
+- [API Reference](api-reference.md) — complete function signatures
+- [Contributing Guide](contributing.md) — how to extend the system

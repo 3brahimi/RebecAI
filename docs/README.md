@@ -10,14 +10,15 @@ Complete documentation for RebecAI agents and skills.
 
 ## Agents
 
-- **[legata_to_rebeca](agents/legata_to_rebeca.md)** - Transform Legata/COLREG rules to Rebeca models
-  - Capabilities, workflow phases, scoring rubric
+- **[legata_to_rebeca](agents/legata_to_rebeca.md)** — Coordinator + 8 specialist subagents (MAO architecture)
+  - Step01–Step08 workflow, MAO step bindings, scoring rubric
   - Usage examples and expected output
+  - Specialists: `init_agent` · `triage_agent` · `abstraction_agent` · `mapping_agent` · `synthesis_agent` · `verification_agent` · `packaging_agent` · `reporting_agent`
 
 ## Skills
 
-- **[legata_to_rebeca](skills/legata_to_rebeca.md)** - Workflow guidance skill
-  - 8-phase transformation process
+- **[legata_to_rebeca](skills/legata_to_rebeca.md)** — Workflow guidance skill
+  - Step01–Step08 transformation process
   - Practical examples and best practices
 
 - **[rebeca_handbook](skills/rebeca_handbook.md)** - Modeling best practices skill

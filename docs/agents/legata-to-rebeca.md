@@ -1,23 +1,54 @@
 # legata_to_rebeca Agent
 
-Transforms maritime safety rules from Legata formal specification into verifiable Rebeca actor models.
+Coordinator for the Legata→Rebeca pipeline. Orchestrates eight specialist subagents through a prescribed Step01–Step08 workflow.
+
+## Architecture: Multi-Agent Orchestration (MAO)
+
+`legata_to_rebeca` is a **coordinator**, not a monolithic agent. It delegates each step to a dedicated specialist subagent. Each specialist runs in its own context window, calls deterministic Python scripts via `Bash`, and emits a structured JSON contract back to the coordinator.
+
+```
+legata_to_rebeca (coordinator)
+├── Step01 → init_agent
+├── Step02 → triage_agent
+├── Step03 → abstraction_agent
+├── Step04 → mapping_agent
+├── Step05 → synthesis_agent          (parallel with Step04)
+├── Step06 → verification_agent
+├── Step07 → packaging_agent
+└── Step08 → reporting_agent
+```
+
+### Step Bindings
+
+| Step | Agent | Dumb tools (Python scripts) |
+|------|-------|----------------------------|
+| Step01 | `init_agent` | `pre_run_rmc_check.py` · `verify_installation.py` · `snapshotter.py` |
+| Step02 | `triage_agent` | `classify_rule_status.py` · `colreg_fallback_mapper.py` |
+| Step03 | `abstraction_agent` | `classify_rule_status.py` |
+| Step04 | `mapping_agent` | `run_rmc.py` |
+| Step05 | `synthesis_agent` | `run_rmc.py` |
+| Step06 | `verification_agent` | `run_rmc.py` · `vacuity_checker.py` · `mutation_engine.py` |
+| Step07 | `packaging_agent` | `install_artifacts.py` |
+| Step08 | `reporting_agent` | `score_single_rule.py` · `generate_report.py` |
+
+Each specialist's output schema is defined in `skills/rebeca_tooling/schemas/<agent-name>.schema.json`.
 
 ## Capabilities
 
-- **8-phase prescribed workflow** (WF-01 through WF-08)
-- **Rule quality triage** - Classify formalization status
-- **COLREG fallback mapping** - Handle incomplete specifications
-- **RMC model checking** - Automated verification with C++ compilation
-- **100-point scoring rubric** - Assess transformation quality
-- **Aggregate reporting** - JSON and Markdown reports
+- **8-step prescribed workflow** (Step01 through Step08)
+- **Rule quality triage** — classify formalization status
+- **COLREG fallback mapping** — handle incomplete specifications
+- **RMC model checking** — automated verification with C++ compilation
+- **100-point scoring rubric** — assess transformation quality
+- **Aggregate reporting** — JSON and Markdown reports
 
 ## Required Inputs
 
-The agent requires three inputs for each transformation:
+The coordinator requires three inputs for each transformation:
 
-1. **Legata or COLREG rule file** - The formal specification to transform
-2. **Reference Rebeca model** (`system.rebeca`) - Base model subject to refinement/append
-3. **Reference property file** (`system.property`) - Base properties subject to refinement/append
+1. **Legata or COLREG rule file** — the formal specification to transform
+2. **Reference Rebeca model** (`system.rebeca`) — base model subject to refinement/append
+3. **Reference property file** (`system.property`) — base properties subject to refinement/append
 
 ## Usage Examples
 
@@ -63,31 +94,22 @@ For each rule:
 5. Generate aggregate report
 ```
 
-### Triage and Classify
+## Workflow Steps
 
-```
-@legata_to_rebeca
-Classify all Legata rules in legata/ directory.
-For incomplete or incorrect rules, suggest repairs.
-For not-formalized rules, attempt COLREG fallback mapping.
-```
-
-## Workflow Phases
-
-| Phase | Name | Description | Output |
-|-------|------|-------------|--------|
-| WF-01 | Toolchain and Inputs Initialization | Validate required sources, pin RMC version, fail fast on missing inputs | Validated inputs + RMC version |
-| WF-02 | Clause Eligibility and Triage | Classify rules: formalized/incomplete/incorrect/not-formalized/todo-placeholder | Classification + defect list |
-| WF-03 | Abstraction and Discretization Setup | Define bounded representations, map COLREG units to discrete variables | Naming conventions + variable map |
-| WF-04 | Manual Mapping Core | Extract Legata clause context, align state variables, encode assertions `(!condition \|\| exclude \|\| assure)` | `.rebeca` model + `.property` file |
-| WF-05 | Verification and Counterexample Iteration | Run RMC model checking, classify failure root cause, iterate until success or explicit block | Verification result (pass/fail/timeout/error) |
-| WF-06 | Optional LLM-Assisted Lane | Generate candidate properties, always validate via WF-05, apply 100-point rubric | Candidate property (requires WF-05 validation) |
-| WF-07 | Packaging and Automation | Generate agent/skill/scripts, ensure runtime isolation, embed constraints inline | Packaged artifacts |
-| WF-08 | Scoring and Reporting | Per-rule scorecards (100-point rubric), aggregate reporting, no-silent-skip enforcement | `scorecard.json` + `report.json` / `report.md` |
+| Step | Agent | Name | Description | Primary output |
+|------|-------|------|-------------|----------------|
+| Step01 | `init_agent` | Toolchain and Inputs Initialization | Validate required sources, provision RMC, pin toolchain metadata, capture golden snapshot | `status`, RMC version |
+| Step02 | `triage_agent` | Clause Eligibility and Triage | Classify rules: `formalized` / `incomplete` / `incorrect` / `not-formalized` / `todo-placeholder`; attach evidence and defects | Classification + defect list |
+| Step03 | `abstraction_agent` | Abstraction and Discretization Setup | Extract actors and conditions from Legata, apply deterministic naming conventions, discretize to Rebeca-compatible types | Naming conventions + variable map |
+| Step04 | `mapping_agent` | Manual Mapping Core | Extract Legata clause context, align state variables, encode assertions `(!condition \|\| exclude \|\| assure)` | `.rebeca` model + `.property` file |
+| Step05 | `synthesis_agent` | LLM-Assisted Candidate Generation | Generate candidate properties in parallel with Step04; all outputs tagged `is_candidate=true`, must be routed to Step06 | Candidate property |
+| Step06 | `verification_agent` | Verification and Counterexample Iteration | Run RMC model checking, vacuity check, mutation scoring; iterate until pass or explicit block | Verification result + mutation score |
+| Step07 | `packaging_agent` | Packaging and Automation | Collect pipeline artifacts, build finalized manifest, emit per-artifact installation report | Packaged artifacts |
+| Step08 | `reporting_agent` | Scoring and Reporting | Per-rule scorecards (100-point rubric), aggregate reporting, no-silent-skip enforcement | `scorecard.json` + `report.json` / `report.md` |
 
 ## Expected Output
 
-The agent refines/appends to reference files and produces:
+The coordinator refines/appends to reference files and produces:
 
 ```
 output/
@@ -105,24 +127,41 @@ output/
 
 ## Scoring Rubric
 
-The agent applies a 100-point scoring rubric:
-
 | Dimension | Points | Criterion |
 |-----------|--------|-----------|
 | **Syntax correctness** | 10 | Model and property parse without RMC errors |
-| **Semantic alignment** | 55 | Transformation faithfully preserves Legata/COLREG rule intent |
+| **Semantic alignment** | 55 | Mutation Score × 0.50 + vacuity pass bonus (5 pts) |
 | **Verification outcome** | 25 | RMC verification passes (no counterexample) |
 | **Hallucination penalty** | −10 | Deducted for fabricated actors, variables, or rule references |
 
-Total maximum: **100 points**. Scores are computed by `RubricScorer` in `scripts/score_single_rule.py`.
+Total maximum: **100 points**. See [SCORING.md](../SCORING.md) for the full rubric specification.
+
+## Agent Frontmatter
+
+All subagents follow the standard Claude Code / Gemini CLI sub-agent format:
+
+```yaml
+---
+name: triage_agent
+description: |
+  Step02 specialist: ...
+schema: skills/rebeca_tooling/schemas/triage-agent.schema.json
+skills:
+  - rebeca_tooling
+---
+```
+
+- `schema` — internal contract pointer used by the coordinator for output validation (Claude Code tolerates unknown keys; stripped for Gemini CLI)
+- `skills` — valid Claude Code key; injects the skill's `SKILL.md` content into the subagent's system prompt at startup
+- `tools` — omitted on all agents; subagents inherit all tools from the coordinator session (including `Bash` needed to call Python scripts)
 
 ## Skills Used
 
-The agent leverages three skills:
-
-- **[legata_to_rebeca](../skills/legata_to_rebeca.md)** - Workflow guidance
-- **[rebeca_handbook](../skills/rebeca_handbook.md)** - Modeling best practices
-- **[rebeca_tooling](../skills/rebeca_tooling.md)** - Python library for automation
+| Skill | Used by agents |
+|-------|---------------|
+| `rebeca_tooling` | All specialists |
+| `rebeca_handbook` | `abstraction_agent`, `mapping_agent`, `synthesis_agent`, `verification_agent`, `reporting_agent` |
+| `legata_to_rebeca` | Coordinator only |
 
 ## Installation
 
