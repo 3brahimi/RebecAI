@@ -57,7 +57,7 @@ python3 $SCRIPTS/verify_installation.py --rmc-jar $JAR
 python3 $SCRIPTS/snapshotter.py \
   --model path/to/SimulationModelCode.rebeca \
   --property path/to/SimulationModelCode.property \
-  --output-dir output/snapshots \
+  --output output/snapshots/Rule22.snapshot.json \
   --output-json
 ```
 

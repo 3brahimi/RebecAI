@@ -9,8 +9,12 @@ description: Cross-platform Python library for RMC operations, rule triage, scor
 
 This skill provides a cross-platform Python library for all Rebeca model checking operations, including:
 - RMC download and execution
+- Shared RMC jar path resolution (`rmc_resolver`)
 - Rule status classification and triage
 - COLREG fallback mapping
+- Vacuity analysis (`vacuity_checker`)
+- Mutation generation and kill-run scoring (`mutation_engine`)
+- Snapshot capture and symbol-level hallucination checks
 - Single-rule scoring and aggregate reporting
 - Installation and verification utilities
 
@@ -18,8 +22,12 @@ This skill provides a cross-platform Python library for all Rebeca model checkin
 
 Use this skill when you need to:
 - Download or execute the RMC model checker
+- Resolve/probe `rmc.jar` deterministically across local/global installs
 - Classify Legata rule formalization status
 - Generate provisional properties from COLREG text
+- Run vacuity checks and feed vacuity outcomes into scoring
+- Generate mutants and compute kill-rate mutation score with budget guardrails
+- Compare model/property symbols against source artifacts for drift checks
 - Score verification results
 - Generate aggregate reports
 - Install or verify toolchain artifacts
@@ -32,16 +40,25 @@ skills/rebeca_tooling/
 ├── SKILL.md (this file)
 └── scripts/
     ├── __init__.py
+    ├── agent_utils.py
+    ├── cli_runner.py
     ├── utils.py
     ├── download_rmc.py
     ├── run_rmc.py
     ├── pre_run_rmc_check.py
+    ├── rmc_resolver.py
     ├── install_artifacts.py
     ├── verify_installation.py
     ├── classify_rule_status.py
     ├── colreg_fallback_mapper.py
+    ├── vacuity_checker.py
+    ├── mutation_engine.py
+    ├── snapshotter.py
+    ├── symbol_differ.py
     ├── score_single_rule.py
-    └── generate_report.py
+    ├── generate_report.py
+    ├── step_schemas.py
+    └── transformation_utils.py
 ```
 
 ## Python Library Usage
@@ -60,6 +77,8 @@ from scripts import (
     download_rmc,
     run_rmc,
     pre_run_rmc_check,
+    resolve_rmc_jar,
+    require_rmc_jar,
     RuleStatusClassifier,
     map_fallback
 )
@@ -119,7 +138,11 @@ result = run_rmc(
 from scripts import pre_run_rmc_check
 
 # Ensures RMC is available, downloads if needed.
-# Resolves jar path from: RMC_DESTINATION env var → .agents/rmc_path marker → ~/.agents/rmc
+# Resolver precedence:
+#   1) RMC_JAR
+#   2) RMC_DESTINATION/rmc.jar
+#   3) ./.claude/{rmc_path,rmc_path.txt}, then ~/.claude/{rmc_path,rmc_path.txt}
+#   4) ~/.claude/rmc/rmc.jar
 result = pre_run_rmc_check()
 
 # Exit codes:
@@ -371,7 +394,15 @@ python3 ~/.agents/skills/rebeca_tooling/scripts/mutation_engine.py \
   --run-with-model model.rebeca \
   --run-with-property property.property \
   --run-timeout 60 \
+  --max-mutants 50 \
+  --total-timeout 600 \
+  --seed 42 \
   --output-json
+
+# kill_stats includes:
+# total_generated, total_run, sampled, sample_seed,
+# budget_exceeded, elapsed_seconds,
+# killed, survived, errors, mutation_score, mutant_results
 ```
 
 ### Installation
@@ -460,8 +491,11 @@ if status["status"] == "formalized":
 | Module | Purpose | CLI | Library | Exported |
 |--------|---------|-----|---------|----------|
 | `utils.py` | `safe_path`, `safe_open`, `validate_https_url`, `resolve_executable` — shared security guards | ✗ | ✓ | ✓ |
+| `agent_utils.py` | Shared agent-facing helper functions | ✗ | ✓ | ✗ (use directly) |
+| `cli_runner.py` | CLI subprocess orchestration helpers | ✗ | ✓ | ✗ (use directly) |
 | `download_rmc.py` | Download RMC from GitHub; `is_valid_jar()` + `probe_rmc_jar()` | ✓ | ✓ | ✓ |
 | `run_rmc.py` | Execute RMC model checker | ✓ | ✓ | ✓ |
+| `rmc_resolver.py` | Shared `rmc.jar` resolution (`resolve_rmc_jar`, `require_rmc_jar`) | ✗ | ✓ | ✓ |
 | `pre_run_rmc_check.py` | Auto-provision RMC (magic-bytes + JVM probe); writes `rmc_path` marker | ✓ | ✓ | ✓ |
 | `install_artifacts.py` | Install agent/skills | ✓ | ✓ | ✓ |
 | `verify_installation.py` | Verify installation; `--rmc-jar` accepted for compat | ✓ | ✓ | ✓ |
@@ -469,8 +503,37 @@ if status["status"] == "formalized":
 | `colreg_fallback_mapper.py` | COLREG fallback mapping | ✓ | ✓ | ✓ |
 | `vacuity_checker.py` | Vacuity check via negated-property RMC run; `--assertion-id` | ✓ | ✓ | ✓ |
 | `mutation_engine.py` | Mutation generation + optional kill-run (`--run-with-jar/model/property`) | ✓ | ✓ | ✓ |
+| `snapshotter.py` | Capture model/property snapshots and metadata | ✓ | ✓ | ✓ |
+| `symbol_differ.py` | Detect symbol drift/hallucinations in generated artifacts | ✓ | ✓ | ✓ |
 | `score_single_rule.py` | 100-point scoring rubric; `--is-vacuous`, `--assertion-id` | ✓ | ✓ | ✗ (use directly) |
 | `generate_report.py` | Aggregate reporting; `--input-scores` (JSON array/NDJSON/file); `finalize()` computes all metrics | ✓ | ✓ | ✗ (use directly) |
+| `step_schemas.py` | Structured step output schema validation | ✗ | ✓ | ✓ |
+| `transformation_utils.py` | Rule/property transformation utilities | ✗ | ✓ | ✗ (use directly) |
+
+## JSON Output Purity Contract
+
+For every script supporting `--output-json`:
+- **stdout** must contain JSON only (no logs/progress text)
+- human-readable diagnostics/progress belong on **stderr**
+- this contract is regression-tested in `tests/test_json_purity_cli.py`
+
+When chaining scripts in pipelines, prefer JSON-mode everywhere:
+
+```bash
+python3 ~/.agents/skills/rebeca_tooling/scripts/classify_rule_status.py \
+  --legata-path legata/Rule-22.legata \
+  --output-json
+```
+
+## Docs/CLI Drift Guardrail
+
+Use the sync validator before releasing doc changes:
+
+```bash
+python3 scripts/validate-cli-help-sync.py
+```
+
+CI also runs this automatically via `.github/workflows/cli-help-doc-sync.yml`.
 
 ## Best Practices
 
@@ -485,7 +548,7 @@ if status["status"] == "formalized":
 9. **Feed vacuity result into score_single_rule** using `--is-vacuous` — a vacuous pass silently scores 100 otherwise
 10. **Pipe scorecards as JSON array or NDJSON** to generate_report.py; do not rely on stdin line-by-line when cards span multiple lines
 
-## Troubleshooting
+### Additional troubleshooting notes
 
 | Symptom | Likely Cause | Fix |
 |---------|-------------|-----|

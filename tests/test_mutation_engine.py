@@ -723,3 +723,75 @@ class TestKillRunGuardrails:
         assert "budget_exceeded" in outcomes
         expected_budget_count = result["total_generated"] - result["total_run"]
         assert outcomes.count("budget_exceeded") == expected_budget_count
+
+    def test_sampling_message_emitted_to_stderr(self, monkeypatch, capsys):
+        import tempfile
+
+        class _Proc:
+            returncode = 1
+
+        monkeypatch.setattr(
+            mutation_engine_module.subprocess,
+            "run",
+            lambda *args, **kwargs: _Proc(),
+        )
+
+        with tempfile.TemporaryDirectory(dir=Path.home()) as td:
+            base = Path(td)
+            jar = base / "rmc.jar"
+            model = base / "model.rebeca"
+            prop = base / "model.property"
+            jar.write_text("jar", encoding="utf-8")
+            model.write_text(SAMPLE_MODEL, encoding="utf-8")
+            prop.write_text(SAMPLE_PROPERTY, encoding="utf-8")
+
+            run_mutants(
+                mutations=self._mk_mutations(8, artifact="model"),
+                jar=str(jar),
+                model_path=model,
+                property_path=prop,
+                timeout_seconds=5,
+                max_mutants=3,
+                total_timeout=600,
+                seed=42,
+            )
+
+        out, err = capsys.readouterr()
+        assert out == ""
+        assert "[mutation_engine] Sampling 3 of 8 mutants (--max-mutants=3)" in err
+
+    def test_total_timeout_message_emitted_to_stderr(self, monkeypatch, capsys):
+        import tempfile
+
+        class _Proc:
+            returncode = 1
+
+        def _slow_run(*args, **kwargs):
+            pytime.sleep(1)
+            return _Proc()
+
+        monkeypatch.setattr(mutation_engine_module.subprocess, "run", _slow_run)
+
+        with tempfile.TemporaryDirectory(dir=Path.home()) as td:
+            base = Path(td)
+            jar = base / "rmc.jar"
+            model = base / "model.rebeca"
+            prop = base / "model.property"
+            jar.write_text("jar", encoding="utf-8")
+            model.write_text(SAMPLE_MODEL, encoding="utf-8")
+            prop.write_text(SAMPLE_PROPERTY, encoding="utf-8")
+
+            run_mutants(
+                mutations=self._mk_mutations(5, artifact="model"),
+                jar=str(jar),
+                model_path=model,
+                property_path=prop,
+                timeout_seconds=5,
+                max_mutants=50,
+                total_timeout=2,
+                seed=42,
+            )
+
+        out, err = capsys.readouterr()
+        assert out == ""
+        assert "[mutation_engine] Total timeout reached after" in err

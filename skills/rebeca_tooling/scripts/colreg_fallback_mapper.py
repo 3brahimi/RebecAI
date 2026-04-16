@@ -15,5 +15,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--rule-id", default="Test-99")
     parser.add_argument("--colreg-text", default="None")
+    parser.add_argument("--output-json", action="store_true")
     args = parser.parse_args()
-    print(json.dumps(map_fallback(args.rule_id, args.colreg_text)))
+    payload = map_fallback(args.rule_id, args.colreg_text)
+    if args.output_json:
+        print(json.dumps(payload, indent=2))
+    else:
+        # Backward-compatible default: still emit JSON for existing callers.
+        print(json.dumps(payload))
