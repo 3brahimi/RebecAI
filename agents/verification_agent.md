@@ -1,14 +1,8 @@
 ---
 name: verification_agent
-version: 1.0.0
-description: |
-  Step06 specialist for RMC verification, vacuity checking, and mutation scoring.
-  Orchestrates run_rmc → vacuity_checker → mutation_engine for a single rule.
-user-invocable: false
-schema: skills/rebeca_tooling/schemas/verification-agent.schema.json
-skills:
-  - rebeca_tooling
-  - rebeca_handbook
+description: "Step06 specialist for RMC verification, vacuity checking, and mutation\
+  \ scoring.\nOrchestrates run_rmc \u2192 vacuity_checker \u2192 mutation_engine for\
+  \ a single rule.\n"
 ---
 
 # Step06 Subagent: Verification and Mutation Scoring

@@ -1,13 +1,10 @@
 ---
 name: packaging_agent
-version: 1.0.0
-description: |
-  Step07 specialist for collecting pipeline artifacts, building a finalized
+description: 'Step07 specialist for collecting pipeline artifacts, building a finalized
+
   manifest, and emitting a per-artifact installation report.
-user-invocable: false
-schema: skills/rebeca_tooling/schemas/packaging-agent.schema.json
-skills:
-  - rebeca_tooling
+
+  '
 ---
 
 # Step07 Subagent: Packaging and Artifact Manifest
