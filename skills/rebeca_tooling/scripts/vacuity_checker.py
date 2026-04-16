@@ -131,6 +131,23 @@ def check_vacuity(
         }
 
     property_content = prop_path.read_text(encoding="utf-8")
+
+    # Warn when multiple assertions exist and no assertion_id was specified —
+    # silently defaulting to the first assertion is a common source of vacuity
+    # result mismatches between this tool and score_single_rule.py.
+    if assertion_id is None:
+        # Extract the full Assertion block, then collect all label: entries inside it.
+        _block = re.search(r'\bAssertion\s*\{([^}]*)\}', property_content, re.DOTALL)
+        all_labels = re.findall(r'(\w+)\s*:', _block.group(1)) if _block else []
+        if len(all_labels) > 1:
+            print(
+                f"[vacuity_checker] WARNING: {len(all_labels)} assertions found "
+                f"({', '.join(all_labels[:5])}{'...' if len(all_labels) > 5 else ''}). "
+                "Defaulting to the first assertion. "
+                "Pass --assertion-id to select a specific one and avoid ambiguity.",
+                file=sys.stderr,
+            )
+
     precondition = extract_precondition(property_content, assertion_id=assertion_id)
 
     if precondition is None:

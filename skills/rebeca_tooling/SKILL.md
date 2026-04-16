@@ -173,16 +173,20 @@ from scripts.score_single_rule import RubricScorer
 scorer = RubricScorer()
 scorecard = scorer.score_rule(
     rule_id="Rule-22",
-    verify_status="pass",  # pass|fail|timeout|blocked|unknown
+    verify_status="pass",       # pass|fail|timeout|blocked|unknown
     model_artifact="model.rebeca",
-    property_artifact="property.property"
+    property_artifact="property.property",
+    is_vacuous=False,           # from vacuity_checker result; None = unchecked
+    assertion_id="Rule22",      # assertion label used in vacuity check
 )
 
 # Returns dict with:
 # - score_total: 0-100
 # - score_breakdown: {syntax:10, semantic_alignment:55, verification_outcome:25, hallucination_penalty:10}
 # - status: Pass|Fail|Conditional|Blocked|Unknown
+#   NOTE: a vacuous pass (is_vacuous=True) yields status=Conditional and score=85
 # - confidence: 0.0-1.0
+# - vacuity: {is_vacuous: bool|None, assertion_id: str|None, status: "non_vacuous"|"vacuous"|"unchecked"}
 # - mapping_path: legata|colreg-fallback|synthesis-agent
 # - failure_reasons: list
 # - remediation_hints: list
@@ -315,17 +319,59 @@ python3 ~/.agents/skills/rebeca_tooling/scripts/colreg_fallback_mapper.py \
 ### Scoring and Reporting
 
 ```bash
-# Score single rule
+# Score single rule — basic
 python3 ~/.agents/skills/rebeca_tooling/scripts/score_single_rule.py \
   --rule-id Rule-22 \
   --verify-status pass \
   --output-json
 
-# Generate report
+# Score with vacuity result (from vacuity_checker.py output):
+#   --is-vacuous true|false        feed the is_vacuous field from check_vacuity()
+#   --assertion-id Rule22          audit trail: which assertion was checked
+# A vacuous pass downgrades status to Conditional (85/100).
+python3 ~/.agents/skills/rebeca_tooling/scripts/score_single_rule.py \
+  --rule-id Rule-22 \
+  --verify-status pass \
+  --is-vacuous false \
+  --assertion-id Rule22 \
+  --output-json
+
+# Vacuity check — use --assertion-id when multiple assertions exist
+python3 ~/.agents/skills/rebeca_tooling/scripts/vacuity_checker.py \
+  --jar ~/.claude/rmc/rmc.jar \
+  --model model.rebeca \
+  --property property.property \
+  --output-dir output/Rule-22 \
+  --assertion-id Rule22 \
+  --output-json
+
+# Generate report — accepts JSON array, NDJSON, or file path
+# (a) from file
 python3 ~/.agents/skills/rebeca_tooling/scripts/generate_report.py \
-  --input-scores results.json \
+  --input-scores scorecards.json \
   --output-dir reports/ \
   --format both
+
+# (b) from single scorecard on stdin (NDJSON or JSON object)
+python3 score_single_rule.py --rule-id Rule-22 --verify-status pass --output-json \
+  | python3 ~/.agents/skills/rebeca_tooling/scripts/generate_report.py
+
+# Mutation generation only
+python3 ~/.agents/skills/rebeca_tooling/scripts/mutation_engine.py \
+  --rule-id Rule-22 \
+  --property property.property \
+  --output-json
+
+# Mutation + kill-run (executes mutants with RMC, reports killed/survived/score)
+python3 ~/.agents/skills/rebeca_tooling/scripts/mutation_engine.py \
+  --rule-id Rule-22 \
+  --model model.rebeca \
+  --property property.property \
+  --run-with-jar ~/.claude/rmc/rmc.jar \
+  --run-with-model model.rebeca \
+  --run-with-property property.property \
+  --run-timeout 60 \
+  --output-json
 ```
 
 ### Installation
@@ -340,6 +386,8 @@ python3 ~/.agents/skills/rebeca_tooling/scripts/install_artifacts.py \
 
 # Verify installation
 python3 ~/.agents/skills/rebeca_tooling/scripts/verify_installation.py .claude
+# --rmc-jar is accepted for backward compatibility (ignored; use pre_run_rmc_check.py for jar checks)
+python3 ~/.agents/skills/rebeca_tooling/scripts/verify_installation.py .claude --rmc-jar ~/.claude/rmc/rmc.jar
 ```
 
 ## Platform Support
@@ -412,15 +460,17 @@ if status["status"] == "formalized":
 | Module | Purpose | CLI | Library | Exported |
 |--------|---------|-----|---------|----------|
 | `utils.py` | `safe_path`, `safe_open`, `validate_https_url`, `resolve_executable` — shared security guards | ✗ | ✓ | ✓ |
-| `download_rmc.py` | Download RMC from GitHub | ✓ | ✓ | ✓ |
+| `download_rmc.py` | Download RMC from GitHub; `is_valid_jar()` + `probe_rmc_jar()` | ✓ | ✓ | ✓ |
 | `run_rmc.py` | Execute RMC model checker | ✓ | ✓ | ✓ |
-| `pre_run_rmc_check.py` | Auto-provision RMC | ✓ | ✓ | ✓ |
+| `pre_run_rmc_check.py` | Auto-provision RMC (magic-bytes + JVM probe); writes `rmc_path` marker | ✓ | ✓ | ✓ |
 | `install_artifacts.py` | Install agent/skills | ✓ | ✓ | ✓ |
-| `verify_installation.py` | Verify installation | ✓ | ✓ | ✓ |
+| `verify_installation.py` | Verify installation; `--rmc-jar` accepted for compat | ✓ | ✓ | ✓ |
 | `classify_rule_status.py` | Rule status classification | ✓ | ✓ | ✓ |
 | `colreg_fallback_mapper.py` | COLREG fallback mapping | ✓ | ✓ | ✓ |
-| `score_single_rule.py` | 100-point scoring rubric | ✓ | ✓ | ✗ (use directly) |
-| `generate_report.py` | Aggregate reporting | ✓ | ✓ | ✗ (use directly) |
+| `vacuity_checker.py` | Vacuity check via negated-property RMC run; `--assertion-id` | ✓ | ✓ | ✓ |
+| `mutation_engine.py` | Mutation generation + optional kill-run (`--run-with-jar/model/property`) | ✓ | ✓ | ✓ |
+| `score_single_rule.py` | 100-point scoring rubric; `--is-vacuous`, `--assertion-id` | ✓ | ✓ | ✗ (use directly) |
+| `generate_report.py` | Aggregate reporting; `--input-scores` (JSON array/NDJSON/file); `finalize()` computes all metrics | ✓ | ✓ | ✗ (use directly) |
 
 ## Best Practices
 
@@ -431,6 +481,21 @@ if status["status"] == "formalized":
 5. **Handle C++ compilation failures** - Exit code 4 means g++ failed, not RMC
 6. **Distinguish parse vs compile errors** - Exit code 5 (parse) vs 4 (compile)
 7. **Review fallback mappings** - COLREG fallback always requires manual review
+8. **Always pass `--assertion-id` to vacuity_checker** when the property has more than one assertion — without it, the first assertion is used silently
+9. **Feed vacuity result into score_single_rule** using `--is-vacuous` — a vacuous pass silently scores 100 otherwise
+10. **Pipe scorecards as JSON array or NDJSON** to generate_report.py; do not rely on stdin line-by-line when cards span multiple lines
+
+## Troubleshooting
+
+| Symptom | Likely Cause | Fix |
+|---------|-------------|-----|
+| `Invalid or corrupt jarfile` at JVM startup | Downloaded jar passes magic-bytes check but is corrupt | `pre_run_rmc_check.py` now auto-detects and re-downloads; delete stale jar and re-run |
+| `verify_installation.py --rmc-jar ...` → unrecognized arg | Old doc pattern; `--rmc-jar` wasn't a flag | Flag now accepted (ignored); jar checks are `pre_run_rmc_check.py`'s responsibility |
+| `rmc_path.txt` not found | Path marker written with `.txt` extension by third-party tooling | Resolver now probes both `rmc_path` and `rmc_path.txt` |
+| `JSONDecodeError` piping pretty JSON to `generate_report.py` | Old main() was line-by-line only | Use `--input-scores file.json` or pipe a JSON array / NDJSON; both now accepted |
+| Report shows `rules_passed: 0` despite per-rule data | `finalize()` was a no-op | Fixed — `finalize()` now recomputes all aggregate fields from `per_rule_scorecards` |
+| Vacuity result disagrees with scorecard | Each tool used a different assertion or different defaults | Pass `--assertion-id` to both `vacuity_checker.py` and `score_single_rule.py` |
+| Mutation engine shows `mutation_score: 0` | Generation-only mode; mutants not executed | Add `--run-with-jar/model/property` flags to enable kill-run |
 
 ## Troubleshooting
 
