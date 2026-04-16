@@ -213,19 +213,63 @@ def create_surgical_symlink(src: Path, link: Path):
         else: shutil.copy2(src, link)
         print(f"    ✓ Copied: {link.name}")
 
+# Keys that Gemini CLI's local sub-agent loader does not recognise and will
+# reject with a "Validation failed: Unrecognized key(s)" error.
+_GEMINI_UNSUPPORTED_KEYS = {"version", "user-invocable", "schema", "skills"}
+
+def _write_gemini_agent(src: Path, dest: Path) -> None:
+    """Copy an agent .md file to dest, stripping Gemini-incompatible frontmatter keys."""
+    import re as _re
+    text = src.read_text()
+    # Split on the closing --- of the frontmatter block
+    fm_match = _re.match(r'^---\n(.*?\n)---\n(.*)', text, _re.DOTALL)
+    if not fm_match:
+        dest.write_text(text)
+        return
+    fm_body, rest = fm_match.group(1), fm_match.group(2)
+    # Strip lines whose key is in the unsupported set
+    # Handles simple scalar ("key: value") and block scalars ("key: |\n  ...")
+    filtered_lines: list[str] = []
+    skip_indent = False
+    for line in fm_body.splitlines(keepends=True):
+        key_match = _re.match(r'^([a-zA-Z][a-zA-Z0-9_-]*):', line)
+        if key_match:
+            skip_indent = key_match.group(1) in _GEMINI_UNSUPPORTED_KEYS
+        elif line[:1] in (' ', '\t'):
+            pass  # continuation of previous key — honour skip_indent
+        else:
+            skip_indent = False
+        if not skip_indent:
+            filtered_lines.append(line)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text(f"---\n{''.join(filtered_lines)}---\n{rest}")
+    print(f"  ✓ Copied (gemini-clean): {dest}")
+
+
 def link_to_target(target_root: Path, primary_truth: Path, owned_skills: set[str], is_github: bool = False):
     if not target_root: return
+    is_gemini = target_root.name == ".gemini" or target_root.parent.name == ".gemini"
     print(f"  Linking to {target_root}...")
 
     if target_root.is_symlink(): target_root.unlink()
     target_root.mkdir(parents=True, exist_ok=True)
 
-    # 1. Link Agents
+    # 1. Agents
+    agents_dest = target_root / "agents"
+    agents_dest.mkdir(parents=True, exist_ok=True)
     for agent in (primary_truth / "agents").glob("*.md"):
         link_name = agent.name if not is_github else agent.stem + ".agent.md"
-        create_surgical_symlink(agent, target_root / "agents" / link_name)
+        dest = agents_dest / link_name
+        if is_gemini:
+            # Gemini CLI may not follow symlinks and rejects unknown frontmatter keys —
+            # write a physical copy with incompatible keys stripped.
+            if dest.is_symlink() or dest.exists():
+                dest.unlink() if dest.is_symlink() else dest.unlink()
+            _write_gemini_agent(agent, dest)
+        else:
+            create_surgical_symlink(agent, dest)
 
-    # 2. Link Skills — only skills this repo owns, never third-party skills
+    # 2. Skills — only skills this repo owns, never third-party skills
     for skill in (primary_truth / "skills").iterdir():
         if skill.name == "__pycache__":
             continue
