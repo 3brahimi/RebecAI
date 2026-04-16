@@ -8,21 +8,10 @@ from pathlib import Path
 # Import from scripts directory
 sys.path.insert(0, str(Path(__file__).parent))
 from download_rmc import download_rmc, is_valid_jar, probe_rmc_jar
+from rmc_resolver import resolve_rmc_jar
 from utils import safe_path
 
-# Canonical path-marker filename written after a successful provision.
-# Both the no-extension form and the .txt form are accepted on read so that
-# files written by third-party tooling (e.g. Copilot) are still discovered.
-_MARKER_NAMES = ("rmc_path", "rmc_path.txt")
 _WRITE_MARKER_NAME = "rmc_path"  # always written without extension
-
-
-def _read_marker(marker: Path) -> str | None:
-    """Return the jar path recorded in *marker*, or None if unreadable."""
-    try:
-        return marker.read_text(encoding="utf-8").strip()
-    except Exception:
-        return None
 
 
 def resolve_rmc_destination() -> str:
@@ -36,18 +25,9 @@ def resolve_rmc_destination() -> str:
     Both ``rmc_path`` and ``rmc_path.txt`` are probed so files written by
     third-party tooling are discovered regardless of the extension used.
     """
-    if os.environ.get("RMC_DESTINATION"):
-        return os.environ["RMC_DESTINATION"]
-
-    search_bases = [Path.cwd() / ".claude", Path.home() / ".claude"]
-    for base in search_bases:
-        for name in _MARKER_NAMES:
-            marker = base / name
-            if marker.exists():
-                jar_str = _read_marker(marker)
-                if jar_str:
-                    return str(Path(jar_str).parent)
-
+    preferred_jar = resolve_rmc_jar(must_exist=False)
+    if preferred_jar:
+        return str(Path(preferred_jar).parent)
     return str(Path.home() / ".claude" / "rmc")
 
 

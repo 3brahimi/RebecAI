@@ -28,7 +28,7 @@ Operates on one `source_file_path` per invocation.
 | `snapshot_path` | string | no       | Step01 snapshot JSON; seeds variable_map when present     |
 | `colreg_text`   | string | no       | Supplementary COLREG text for actor/condition extraction |
 
-Schema: `skills/rebeca_tooling/scripts/abstraction_agent.schema.json` → `input` block.
+Schema: `skills/rebeca_tooling/schemas/abstraction-agent.schema.json` → `input` block.
 
 ## Tasks (in order)
 

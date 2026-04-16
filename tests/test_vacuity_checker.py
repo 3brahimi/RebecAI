@@ -14,6 +14,7 @@ import tempfile
 from pathlib import Path
 
 import pytest
+import vacuity_checker as vacmod
 from vacuity_checker import build_negated_property, check_vacuity, extract_precondition
 
 
@@ -54,6 +55,20 @@ property {
   define {
     x = (s1.length > 1);
   }
+}
+"""
+
+
+PROPERTY_MULTI_ASSERTION = """\
+property {
+    define {
+        isLong = (s1.x > 5);
+        lightOn = (s1.hasLight == true);
+    }
+    Assertion {
+        Rule22: !isLong || lightOn;
+        Rule23: isLong || lightOn;
+    }
 }
 """
 
@@ -117,6 +132,88 @@ class TestBuildNegatedProperty:
         result = build_negated_property(PROPERTY_VACUOUS, "!(x > 5)")
         assert "VacuityCheck" in result
         assert "!!" not in result
+
+
+class TestAssertionIdEnforcement:
+    def test_single_assertion_no_id_allowed(self, monkeypatch):
+        with tempfile.TemporaryDirectory(dir="/tmp") as td:
+            base = Path(td)
+            model = base / "model.rebeca"
+            prop = base / "single.property"
+            jar = base / "rmc.jar"
+            model.write_text("reactiveclass A(1) {} main { A a():(); }", encoding="utf-8")
+            prop.write_text(PROPERTY_NON_VACUOUS, encoding="utf-8")
+            jar.write_text("jar", encoding="utf-8")
+
+            monkeypatch.setattr(vacmod, "run_rmc", lambda **_: 1)
+
+            result = check_vacuity(
+                jar=str(jar),
+                model=str(model),
+                property_file=str(prop),
+                output_dir=str(base / "out"),
+                timeout_seconds=10,
+                assertion_id=None,
+            )
+            assert result["is_vacuous"] is False
+            assert "Ambiguous" not in result["explanation"]
+
+    def test_multi_assertion_no_id_fails(self, monkeypatch):
+        with tempfile.TemporaryDirectory(dir="/tmp") as td:
+            base = Path(td)
+            model = base / "model.rebeca"
+            prop = base / "multi.property"
+            jar = base / "rmc.jar"
+            model.write_text("reactiveclass A(1) {} main { A a():(); }", encoding="utf-8")
+            prop.write_text(PROPERTY_MULTI_ASSERTION, encoding="utf-8")
+            jar.write_text("jar", encoding="utf-8")
+
+            def _must_not_run(**_: object) -> int:
+                raise AssertionError("run_rmc must not be called for ambiguous assertions")
+
+            monkeypatch.setattr(vacmod, "run_rmc", _must_not_run)
+
+            result = check_vacuity(
+                jar=str(jar),
+                model=str(model),
+                property_file=str(prop),
+                output_dir=str(base / "out"),
+                timeout_seconds=10,
+                assertion_id=None,
+            )
+            assert result["is_vacuous"] is None
+            assert "Ambiguous" in result["explanation"]
+
+    def test_multi_assertion_with_id_succeeds(self, monkeypatch):
+        with tempfile.TemporaryDirectory(dir="/tmp") as td:
+            base = Path(td)
+            model = base / "model.rebeca"
+            prop = base / "multi_with_id.property"
+            jar = base / "rmc.jar"
+            model.write_text("reactiveclass A(1) {} main { A a():(); }", encoding="utf-8")
+            prop.write_text(PROPERTY_MULTI_ASSERTION, encoding="utf-8")
+            jar.write_text("jar", encoding="utf-8")
+
+            called = {"ran": False}
+
+            def _run_stub(**_: object) -> int:
+                called["ran"] = True
+                return 1
+
+            monkeypatch.setattr(vacmod, "run_rmc", _run_stub)
+
+            result = check_vacuity(
+                jar=str(jar),
+                model=str(model),
+                property_file=str(prop),
+                output_dir=str(base / "out"),
+                timeout_seconds=10,
+                assertion_id="Rule23",
+            )
+            assert called["ran"] is True
+            assert result["is_vacuous"] is False
+            assert result["assertion_id_used"] == "Rule23"
+            assert "Ambiguous" not in result["explanation"]
 
 
 # ===========================================================================

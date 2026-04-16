@@ -3,12 +3,16 @@ Unit tests for MutationEngine — all 8 mutation strategies.
 
 Tests are pure string transformation tests: no file I/O, no RMC required.
 """
+import json
 import sys
+import time as pytime
 from pathlib import Path
 
 
 import pytest
+import mutation_engine as mutation_engine_module
 from mutation_engine import Mutation, MutationEngine
+from mutation_engine import run_mutants
 
 from fixtures import (
     RULE_ID,
@@ -429,6 +433,112 @@ class TestCLI:
         )
         assert result.returncode == 1
 
+
+class TestCLIOutputMode:
+    def test_catalog_only_json_has_mode_field(self, monkeypatch, capsys):
+        import tempfile
+
+        home = Path.home()
+        with tempfile.TemporaryDirectory(dir=home) as td:
+            model = Path(td) / "model.rebeca"
+            model.write_text(SAMPLE_MODEL, encoding="utf-8")
+
+            monkeypatch.setattr(
+                sys,
+                "argv",
+                [
+                    "mutation_engine.py",
+                    "--rule-id",
+                    "Rule-22",
+                    "--model",
+                    str(model),
+                    "--output-json",
+                ],
+            )
+
+            with pytest.raises(SystemExit) as exc:
+                mutation_engine_module.main()
+
+        assert exc.value.code == 0
+        out, _ = capsys.readouterr()
+        payload = json.loads(out)
+        assert payload["mode"] == "catalog_only"
+
+    def test_kill_run_json_has_mode_field(self, monkeypatch, capsys):
+        import tempfile
+
+        home = Path.home()
+        with tempfile.TemporaryDirectory(dir=home) as td:
+            model = Path(td) / "model.rebeca"
+            model.write_text(SAMPLE_MODEL, encoding="utf-8")
+
+            monkeypatch.setattr(
+                mutation_engine_module,
+                "run_mutants",
+                lambda **_: {
+                    "total": 1,
+                    "killed": 1,
+                    "survived": 0,
+                    "errors": 0,
+                    "mutation_score": 100.0,
+                    "mutant_results": [],
+                },
+            )
+
+            monkeypatch.setattr(
+                sys,
+                "argv",
+                [
+                    "mutation_engine.py",
+                    "--rule-id",
+                    "Rule-22",
+                    "--model",
+                    str(model),
+                    "--output-json",
+                    "--run-with-jar",
+                    str(model),
+                    "--run-with-model",
+                    str(model),
+                    "--run-with-property",
+                    str(model),
+                ],
+            )
+
+            with pytest.raises(SystemExit) as exc:
+                mutation_engine_module.main()
+
+        assert exc.value.code == 0
+        out, _ = capsys.readouterr()
+        payload = json.loads(out)
+        assert payload["mode"] == "kill_run"
+
+    def test_catalog_only_stderr_hint(self, monkeypatch, capsys):
+        import tempfile
+
+        home = Path.home()
+        with tempfile.TemporaryDirectory(dir=home) as td:
+            model = Path(td) / "model.rebeca"
+            model.write_text(SAMPLE_MODEL, encoding="utf-8")
+
+            monkeypatch.setattr(
+                sys,
+                "argv",
+                [
+                    "mutation_engine.py",
+                    "--rule-id",
+                    "Rule-22",
+                    "--model",
+                    str(model),
+                ],
+            )
+
+            with pytest.raises(SystemExit) as exc:
+                mutation_engine_module.main()
+
+        assert exc.value.code == 0
+        _, err = capsys.readouterr()
+        assert "[mutation_engine]" in err
+
     def test_exit_1_missing_model_file(self, tmp_path):
         import subprocess
         scripts_dir = str(Path(__file__).parent.parent / "skills" / "rebeca_tooling" / "scripts")
@@ -440,3 +550,176 @@ class TestCLI:
             capture_output=True, text=True,
         )
         assert result.returncode == 1
+
+
+class TestKillRunGuardrails:
+    def _mk_mutations(self, n: int, artifact: str = "model"):
+        return [
+            Mutation(
+                mutation_id=f"Rule-22_m_x_{i:02d}",
+                strategy="dummy",
+                artifact=artifact,
+                original_content="x",
+                mutated_content="y",
+                description="d",
+            )
+            for i in range(n)
+        ]
+
+    def test_max_mutants_caps_execution(self, monkeypatch):
+        import tempfile
+
+        calls = {"count": 0}
+
+        class _Proc:
+            returncode = 1
+
+        def _run_stub(*args, **kwargs):
+            calls["count"] += 1
+            return _Proc()
+
+        monkeypatch.setattr(mutation_engine_module.subprocess, "run", _run_stub)
+
+        with tempfile.TemporaryDirectory(dir=Path.home()) as td:
+            base = Path(td)
+            jar = base / "rmc.jar"
+            model = base / "model.rebeca"
+            prop = base / "model.property"
+            jar.write_text("jar", encoding="utf-8")
+            model.write_text(SAMPLE_MODEL, encoding="utf-8")
+            prop.write_text(SAMPLE_PROPERTY, encoding="utf-8")
+
+            result = run_mutants(
+                mutations=self._mk_mutations(10, artifact="model"),
+                jar=str(jar),
+                model_path=model,
+                property_path=prop,
+                timeout_seconds=5,
+                max_mutants=3,
+                total_timeout=600,
+                seed=42,
+            )
+
+        assert calls["count"] == 3
+        assert result["sampled"] is True
+        assert result["total_generated"] == 10
+        assert result["total_run"] == 3
+
+    def test_sampling_is_reproducible(self, monkeypatch):
+        import tempfile
+
+        class _Proc:
+            returncode = 1
+
+        monkeypatch.setattr(
+            mutation_engine_module.subprocess,
+            "run",
+            lambda *args, **kwargs: _Proc(),
+        )
+
+        with tempfile.TemporaryDirectory(dir=Path.home()) as td:
+            base = Path(td)
+            jar = base / "rmc.jar"
+            model = base / "model.rebeca"
+            prop = base / "model.property"
+            jar.write_text("jar", encoding="utf-8")
+            model.write_text(SAMPLE_MODEL, encoding="utf-8")
+            prop.write_text(SAMPLE_PROPERTY, encoding="utf-8")
+
+            mutations = self._mk_mutations(10, artifact="model")
+            r1 = run_mutants(
+                mutations=mutations,
+                jar=str(jar),
+                model_path=model,
+                property_path=prop,
+                timeout_seconds=5,
+                max_mutants=4,
+                total_timeout=600,
+                seed=99,
+            )
+            r2 = run_mutants(
+                mutations=mutations,
+                jar=str(jar),
+                model_path=model,
+                property_path=prop,
+                timeout_seconds=5,
+                max_mutants=4,
+                total_timeout=600,
+                seed=99,
+            )
+
+        ids1 = [row["mutation_id"] for row in r1["mutant_results"]]
+        ids2 = [row["mutation_id"] for row in r2["mutant_results"]]
+        assert ids1 == ids2
+
+    def test_total_timeout_stops_loop(self, monkeypatch):
+        import tempfile
+
+        class _Proc:
+            returncode = 1
+
+        def _slow_run(*args, **kwargs):
+            pytime.sleep(1)
+            return _Proc()
+
+        monkeypatch.setattr(mutation_engine_module.subprocess, "run", _slow_run)
+
+        with tempfile.TemporaryDirectory(dir=Path.home()) as td:
+            base = Path(td)
+            jar = base / "rmc.jar"
+            model = base / "model.rebeca"
+            prop = base / "model.property"
+            jar.write_text("jar", encoding="utf-8")
+            model.write_text(SAMPLE_MODEL, encoding="utf-8")
+            prop.write_text(SAMPLE_PROPERTY, encoding="utf-8")
+
+            result = run_mutants(
+                mutations=self._mk_mutations(6, artifact="model"),
+                jar=str(jar),
+                model_path=model,
+                property_path=prop,
+                timeout_seconds=5,
+                max_mutants=50,
+                total_timeout=2,
+                seed=42,
+            )
+
+        assert result["budget_exceeded"] is True
+        assert result["total_run"] < result["total_generated"]
+
+    def test_budget_exceeded_mutants_marked(self, monkeypatch):
+        import tempfile
+
+        class _Proc:
+            returncode = 1
+
+        def _slow_run(*args, **kwargs):
+            pytime.sleep(1)
+            return _Proc()
+
+        monkeypatch.setattr(mutation_engine_module.subprocess, "run", _slow_run)
+
+        with tempfile.TemporaryDirectory(dir=Path.home()) as td:
+            base = Path(td)
+            jar = base / "rmc.jar"
+            model = base / "model.rebeca"
+            prop = base / "model.property"
+            jar.write_text("jar", encoding="utf-8")
+            model.write_text(SAMPLE_MODEL, encoding="utf-8")
+            prop.write_text(SAMPLE_PROPERTY, encoding="utf-8")
+
+            result = run_mutants(
+                mutations=self._mk_mutations(5, artifact="model"),
+                jar=str(jar),
+                model_path=model,
+                property_path=prop,
+                timeout_seconds=5,
+                max_mutants=50,
+                total_timeout=2,
+                seed=42,
+            )
+
+        outcomes = [row["outcome"] for row in result["mutant_results"]]
+        assert "budget_exceeded" in outcomes
+        expected_budget_count = result["total_generated"] - result["total_run"]
+        assert outcomes.count("budget_exceeded") == expected_budget_count

@@ -26,7 +26,7 @@ invocation (the coordinator loops for multi-rule pipelines).
 | `legata_path` | string | yes      | Path to the `.legata` source file                 |
 | `colreg_text` | string | no       | Raw COLREG text; required when fallback is likely |
 
-Schema: `skills/rebeca_tooling/scripts/triage_agent.schema.json` → `input` block.
+Schema: `skills/rebeca_tooling/schemas/triage-agent.schema.json` → `input` block.
 
 ## Tasks (in order)
 

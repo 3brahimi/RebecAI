@@ -22,10 +22,12 @@ Exit codes (CLI):
 
 import argparse
 import json
+import random
 import re
 import subprocess
 import sys
 import tempfile
+import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -407,6 +409,9 @@ def run_mutants(
     model_path: Optional[Path],
     property_path: Optional[Path],
     timeout_seconds: int = 60,
+    max_mutants: int = 50,
+    total_timeout: int = 600,
+    seed: int = 42,
 ) -> Dict[str, Any]:
     """
     Execute each mutant against RMC and collect kill/survive statistics.
@@ -422,31 +427,73 @@ def run_mutants(
         model_path:       Canonical (unmodified) .rebeca file path.
         property_path:    Canonical (unmodified) .property file path.
         timeout_seconds:  Per-mutant RMC timeout.
+        max_mutants:      Cap on number of mutants to execute after sampling.
+        total_timeout:    Wall-clock budget (seconds) for all mutant runs.
+        seed:             Random seed for reproducible sampling.
 
     Returns:
         {
-          "total":          int,
-          "killed":         int,
-          "survived":       int,
-          "errors":         int,
-          "mutation_score": float  (killed / total * 100, or 0.0),
-          "mutant_results": [{"mutation_id": str, "outcome": "killed"|"survived"|"error",
-                               "exit_code": int}]
+          "total_generated": int,
+          "total_run":       int,
+          "sampled":         bool,
+          "sample_seed":     int,
+          "budget_exceeded": bool,
+          "elapsed_seconds": float,
+          "killed":          int,
+          "survived":        int,
+          "errors":          int,
+          "mutation_score":  float,
+          "mutant_results":  [{"mutation_id": str,
+                                 "outcome": "killed"|"survived"|"error"|"budget_exceeded",
+                                 "exit_code": int|None}]
         }
     """
     jar_path = safe_path(jar)
     results: List[Dict[str, Any]] = []
     killed = 0
+    survived = 0
     errors = 0
+    total_generated = len(mutations)
+    sampled = False
 
-    for mut in mutations:
+    selected_mutations = list(mutations)
+    if max_mutants < 0:
+        max_mutants = 0
+    if len(selected_mutations) > max_mutants:
+        sampled = True
+        selected_mutations = random.Random(seed).sample(selected_mutations, max_mutants)
+        print(
+            f"[mutation_engine] Sampling {max_mutants} of {total_generated} mutants (--max-mutants={max_mutants})",
+            file=sys.stderr,
+        )
+
+    start_time = time.monotonic()
+    budget_exceeded = False
+    elapsed_seconds = 0.0
+
+    for idx, mut in enumerate(selected_mutations):
+        elapsed_seconds = time.monotonic() - start_time
+        if elapsed_seconds >= total_timeout:
+            budget_exceeded = True
+            print(
+                f"[mutation_engine] Total timeout reached after {elapsed_seconds:.0f}s",
+                file=sys.stderr,
+            )
+            for pending in selected_mutations[idx:]:
+                results.append(
+                    {
+                        "mutation_id": pending.mutation_id,
+                        "outcome": "budget_exceeded",
+                        "exit_code": None,
+                    }
+                )
+            break
+
         # Write the mutant to a temp file in the same directory as the original
         # so safe_path() constraints are satisfied (within home).
         if mut.artifact == "model" and model_path is not None:
-            orig_path = model_path
             suffix = ".rebeca"
         elif mut.artifact == "property" and property_path is not None:
-            orig_path = property_path
             suffix = ".property"
         else:
             results.append({"mutation_id": mut.mutation_id, "outcome": "error",
@@ -454,6 +501,7 @@ def run_mutants(
             errors += 1
             continue
 
+        tmp_path: Optional[Path] = None
         try:
             with tempfile.NamedTemporaryFile(
                 mode="w",
@@ -511,19 +559,29 @@ def run_mutants(
         outcome = "killed" if exit_code != 0 else "survived"
         if outcome == "killed":
             killed += 1
+        else:
+            survived += 1
         results.append({"mutation_id": mut.mutation_id, "outcome": outcome,
                         "exit_code": exit_code})
 
-    total = len(mutations)
-    mutation_score = round(killed / total * 100, 2) if total > 0 else 0.0
+    elapsed_seconds = time.monotonic() - start_time
+    total_run = killed + survived + errors
+    mutation_score = round(killed / total_run * 100, 2) if total_run > 0 else 0.0
 
     return {
-        "total": total,
+        "total_generated": total_generated,
+        "total_run": total_run,
+        "sampled": sampled,
+        "sample_seed": seed,
+        "budget_exceeded": budget_exceeded,
+        "elapsed_seconds": round(elapsed_seconds, 3),
         "killed": killed,
-        "survived": total - killed - errors,
+        "survived": survived,
         "errors": errors,
         "mutation_score": mutation_score,
         "mutant_results": results,
+        # Backward-compatible alias
+        "total": total_run,
     }
 
 
@@ -556,6 +614,12 @@ def main() -> None:
                            help="Path to canonical .property file (used when mutating model)")
     run_group.add_argument("--run-timeout", type=int, default=60,
                            help="Per-mutant RMC timeout in seconds (default: 60)")
+    run_group.add_argument("--max-mutants", type=int, default=50,
+                           help="Cap on number of mutants to execute (default: 50)")
+    run_group.add_argument("--total-timeout", type=int, default=600,
+                           help="Total wall-clock budget for kill-run in seconds (default: 600)")
+    run_group.add_argument("--seed", type=int, default=42,
+                           help="Random seed for reproducible mutant sampling (default: 42)")
     args = parser.parse_args()
 
     if args.model is None and args.property is None:
@@ -593,7 +657,8 @@ def main() -> None:
 
     # ── kill-run mode ───────────────────────────────────────────────────────
     kill_stats: Optional[Dict[str, Any]] = None
-    if args.run_with_jar:
+    is_kill_run_mode = bool(args.run_with_jar)
+    if is_kill_run_mode:
         if not mutations:
             print("Warning: no mutants generated — skipping kill-run", file=sys.stderr)
         else:
@@ -605,10 +670,25 @@ def main() -> None:
                     safe_path(args.run_with_property) if args.run_with_property else None
                 ),
                 timeout_seconds=args.run_timeout,
+                max_mutants=args.max_mutants,
+                total_timeout=args.total_timeout,
+                seed=args.seed,
             )
+
+    mode = "kill_run" if is_kill_run_mode else "catalog_only"
+
+    if kill_stats is None and not is_kill_run_mode:
+        print(
+            "[mutation_engine] Catalog-only mode: "
+            f"{len(mutations)} mutants generated.\n"
+            "To score mutants, add: --run-with-jar <jar> --run-with-model <model>\n"
+            "                          --run-with-property <property>",
+            file=sys.stderr,
+        )
 
     if args.output_json:
         output: Dict[str, Any] = {
+            "mode": mode,
             "rule_id": args.rule_id,
             "total_mutants": len(mutations),
             "mutants": mutant_summary,
@@ -624,10 +704,12 @@ def main() -> None:
         if kill_stats is not None:
             print()
             print(f"Kill-run results:")
-            print(f"  Killed:         {kill_stats['killed']}/{kill_stats['total']}")
+            print(f"  Killed:         {kill_stats['killed']}/{kill_stats['total_run']}")
             print(f"  Survived:       {kill_stats['survived']}")
             print(f"  Errors:         {kill_stats['errors']}")
             print(f"  Mutation score: {kill_stats['mutation_score']:.1f}%")
+        if kill_stats is None:
+            print("Tip: re-run with --run-with-jar/model/property to score mutant kill rate.")
 
     sys.exit(0)
 

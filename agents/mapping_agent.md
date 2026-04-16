@@ -27,7 +27,7 @@ RMC can verify: a Timed Rebeca model file and a property file. Operates on one
 | `abstraction_summary`| object | yes      | Step03 output (`actor_map`, `variable_map`, `naming_contract`) |
 | `output_dir`         | string | yes      | Directory where `.rebeca` and `.property` are written |
 
-Schema: `skills/rebeca_tooling/scripts/mapping_agent.schema.json` → `input` block.
+Schema: `skills/rebeca_tooling/schemas/mapping-agent.schema.json` → `input` block.
 
 ## Tasks (in order)
 
@@ -57,7 +57,7 @@ Formal derivation: `condition ∧ ¬exclusion → assurance`
 | `assurance`       | obligation (positive, ANDed)| `(a1 && a2)` |
 | `inferred`        | `define` only, not asserted | —        |
 
-Multiple conditions are ORed as negations: `!c1 || !c2 || ...`  
+Multiple conditions are ORed as negations: `!c1 || !c2 || ...`
 Multiple assurances are ANDed: `(a1 && a2 && ...)`
 
 ## Model Template

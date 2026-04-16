@@ -147,6 +147,19 @@ def check_vacuity(
                 "Pass --assertion-id to select a specific one and avoid ambiguity.",
                 file=sys.stderr,
             )
+            labels = ", ".join(all_labels)
+            return {
+                "is_vacuous": None,
+                "precondition_used": None,
+                "assertion_id_used": None,
+                "secondary_exit_code": 1,
+                "secondary_output_dir": None,
+                "explanation": (
+                    f"Ambiguous: {len(all_labels)} assertions found ({labels}). "
+                    "Pass --assertion-id to select one. "
+                    f"Available: {labels}"
+                ),
+            }
 
     precondition = extract_precondition(property_content, assertion_id=assertion_id)
 
@@ -237,6 +250,27 @@ def main() -> None:
         timeout_seconds=args.timeout_seconds,
         assertion_id=args.assertion_id,
     )
+
+    is_ambiguous = (
+        result["is_vacuous"] is None
+        and "Ambiguous" in str(result.get("explanation", ""))
+    )
+
+    if is_ambiguous:
+        if args.output_json:
+            print(json.dumps(result, indent=2))
+        else:
+            print(f"Precondition:            {result['precondition_used']}")
+            print(f"Is Vacuous:              {result['is_vacuous']}")
+            print(f"Secondary RMC exit code: {result['secondary_exit_code']}")
+            print(f"Explanation:             {result['explanation']}")
+            if result["secondary_output_dir"]:
+                print(f"Secondary output dir:    {result['secondary_output_dir']}")
+        print(
+            "ERROR: Ambiguous assertion selection. Pass --assertion-id with one of the available labels.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     if args.output_json:
         print(json.dumps(result, indent=2))
