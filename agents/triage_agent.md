@@ -1,12 +1,10 @@
 ---
 name: triage_agent
-version: 1.0.0
 description: |
   Step02 specialist: classifies each Legata rule's formalization status,
   attaches structured evidence and defects, and routes to normal mapping,
   repair, COLREG-fallback, or skip. Emits a JSON contract into
   coordinator shared_state.step02.
-user-invocable: false
 schema: skills/rebeca_tooling/schemas/triage-agent.schema.json
 skills:
   - rebeca_tooling

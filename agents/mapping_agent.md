@@ -1,11 +1,9 @@
 ---
 name: mapping_agent
-version: 1.0.0
 description: |
   Step04 specialist: generates canonical Legata→Rebeca transformation artifacts.
   Consumes the Step03 abstraction summary and produces a pair of files —
   a .rebeca actor model and a .property assertion file — for each rule.
-user-invocable: false
 schema: skills/rebeca_tooling/schemas/mapping-agent.schema.json
 skills:
   - rebeca_tooling

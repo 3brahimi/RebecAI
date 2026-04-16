@@ -1,10 +1,8 @@
 ---
 name: init_agent
-version: 1.0.0
 description: |
   Step01 specialist: validates inputs, provisions RMC, pins toolchain metadata,
   and captures a golden snapshot. Emits a JSON contract into coordinator shared_state.step01.
-user-invocable: false
 skills:
   - rebeca_tooling
 ---

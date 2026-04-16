@@ -1,12 +1,10 @@
 ---
 name: synthesis_agent
-version: 1.0.0
 description: |
   Step05 specialist for LLM-assisted candidate property generation.
   Runs in parallel with Step04 (mapping_agent) after Step03 completes.
   ALL outputs are tagged is_candidate=true, mapping_path=synthesis-agent, and
   MUST be routed to Step06 (verification_agent) before any downstream use.
-user-invocable: false
 schema: skills/rebeca_tooling/schemas/synthesis-agent.schema.json
 skills:
   - rebeca_tooling

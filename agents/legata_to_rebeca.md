@@ -1,6 +1,5 @@
 ---
 name: legata_to_rebeca
-version: 3.0.0
 description: |
   Coordinator for the Legata→Rebeca pipeline.
   State transitions are computed from subagent JSON output fields.
