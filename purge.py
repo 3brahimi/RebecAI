@@ -11,10 +11,17 @@ import argparse
 import os
 import shutil
 import sys
+import urllib.error
+import urllib.request
+import zipfile
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from typing import List, Set
 
 REPO_ROOT = Path(__file__).parent
+DEFAULT_REMOTE_OWNER = "3brahimi"
+DEFAULT_REMOTE_REPO = "RebecAI"
+DEFAULT_REMOTE_REF = "main"
 
 # 1. Required core skills for fallback coverage
 CORE_SKILLS = {
@@ -29,7 +36,7 @@ def lexists(path: Path) -> bool:
     return os.path.lexists(str(path))
 
 
-def discover_owned_items() -> List[str]:
+def discover_owned_items_local() -> List[str]:
     """
     Discover removable project artifacts from repo truth.
 
@@ -79,6 +86,96 @@ def discover_owned_items() -> List[str]:
         owned.add(f"skills/{skill_name}")
 
     return sorted(owned)
+
+
+def _build_owned_from_file_list(file_paths: List[str]) -> List[str]:
+    """Build owned manifest entries from normalized repository-relative file paths."""
+    owned: Set[str] = {
+        "rmc",
+        "rmc_path",
+        "docs",
+        "instructions",
+    }
+
+    agent_files = [p for p in file_paths if p.startswith("agents/") and p.endswith(".md")]
+    for rel in agent_files:
+        name = rel.split("/", 1)[1]
+        if "/" in name:
+            continue
+        owned.add(f"agents/{name}")
+        stem = Path(name).stem
+        owned.add(f"agents/{stem}.agent.md")
+
+        if "_" in stem:
+            alt = stem.replace("_", "-")
+            owned.add(f"agents/{alt}.md")
+            owned.add(f"agents/{alt}.agent.md")
+        if "-" in stem:
+            alt = stem.replace("-", "_")
+            owned.add(f"agents/{alt}.md")
+            owned.add(f"agents/{alt}.agent.md")
+
+    skill_entries: Set[str] = set()
+    for rel in file_paths:
+        if not rel.startswith("skills/"):
+            continue
+        rest = rel.split("/", 1)[1]
+        if not rest:
+            continue
+        top = rest.split("/", 1)[0]
+        if top and top != "__pycache__":
+            skill_entries.add(top)
+
+    for entry in skill_entries:
+        owned.add(f"skills/{entry}")
+
+    owned.add("skills/rmc_path.txt")
+    for skill_name in CORE_SKILLS:
+        owned.add(f"skills/{skill_name}")
+
+    return sorted(owned)
+
+
+def discover_owned_items_remote(owner: str, repo: str, ref: str, timeout: int = 8) -> List[str]:
+    """Discover removable artifacts from a GitHub source zip snapshot."""
+    archive_url = f"https://github.com/{owner}/{repo}/archive/{ref}.zip"
+
+    try:
+        with urllib.request.urlopen(archive_url, timeout=timeout) as response:
+            with NamedTemporaryFile(delete=False, suffix=".zip") as tmp:
+                tmp.write(response.read())
+                zip_path = Path(tmp.name)
+    except (urllib.error.URLError, TimeoutError) as exc:
+        raise RuntimeError(f"remote-unavailable: {exc}") from exc
+
+    try:
+        file_paths: List[str] = []
+        with zipfile.ZipFile(zip_path, "r") as zf:
+            names = zf.namelist()
+            if not names:
+                raise RuntimeError("remote-empty-archive")
+
+            prefix = names[0].split("/", 1)[0] + "/"
+            for name in names:
+                if not name.startswith(prefix):
+                    continue
+                rel = name[len(prefix):]
+                if not rel or rel.endswith("/"):
+                    continue
+                file_paths.append(rel)
+
+        return _build_owned_from_file_list(file_paths)
+    except zipfile.BadZipFile as exc:
+        raise RuntimeError("remote-invalid-zip") from exc
+    finally:
+        try:
+            zip_path.unlink(missing_ok=True)
+        except Exception:
+            pass
+
+
+def has_local_source_tree() -> bool:
+    return (REPO_ROOT / "agents").is_dir() and (REPO_ROOT / "skills").is_dir()
 
 def is_empty(path: Path) -> bool:
     """Check if a directory is empty (not counting .DS_Store)."""
@@ -134,13 +231,50 @@ def remove_and_cleanup(path: Path, dry_run: bool):
 def main():
     parser = argparse.ArgumentParser(description="Surgically purge project artifacts")
     parser.add_argument("--mode", choices=["local", "global", "both"], default="local")
+    parser.add_argument("--source", choices=["auto", "local", "remote"], default="auto")
+    parser.add_argument("--offline", action="store_true", help="Disable remote discovery and use local manifest building only")
+    parser.add_argument("--owner", default=DEFAULT_REMOTE_OWNER, help="GitHub owner for remote manifest discovery")
+    parser.add_argument("--repo", default=DEFAULT_REMOTE_REPO, help="GitHub repo for remote manifest discovery")
+    parser.add_argument("--ref", default=DEFAULT_REMOTE_REF, help="GitHub ref (branch/tag/sha) for remote manifest discovery")
+    parser.add_argument("--remote-timeout", type=int, default=8, help="Remote archive fetch timeout in seconds")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
     print(f"🚀 Initializing Surgical Purge (mode: {args.mode})")
     print("-----------------------------------------------")
 
-    owned_items = discover_owned_items()
+    local_tree = has_local_source_tree()
+    discovery_source = "local"
+
+    if args.source == "local":
+        owned_items = discover_owned_items_local()
+        discovery_source = "local"
+    elif args.source == "remote":
+        if args.offline:
+            print("  ! Remote discovery requested but --offline is set; falling back to local discovery")
+            owned_items = discover_owned_items_local()
+            discovery_source = "local-fallback"
+        else:
+            owned_items = discover_owned_items_remote(args.owner, args.repo, args.ref, timeout=args.remote_timeout)
+            discovery_source = "remote"
+    else:
+        # auto mode: prefer local source tree when present; otherwise try remote; if remote unavailable, fallback local.
+        if local_tree:
+            owned_items = discover_owned_items_local()
+            discovery_source = "local"
+        elif args.offline:
+            owned_items = discover_owned_items_local()
+            discovery_source = "local-offline"
+        else:
+            try:
+                owned_items = discover_owned_items_remote(args.owner, args.repo, args.ref, timeout=args.remote_timeout)
+                discovery_source = "remote-auto"
+            except RuntimeError as exc:
+                print(f"  ! Remote discovery unavailable ({exc}); falling back to local discovery")
+                owned_items = discover_owned_items_local()
+                discovery_source = "local-fallback"
+
+    print(f"  Discovery source: {discovery_source}")
     print(f"  Discovered {len(owned_items)} owned artifact pattern(s)")
 
     # Define all potential roots to check
