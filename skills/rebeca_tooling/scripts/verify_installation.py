@@ -4,45 +4,58 @@
 import argparse
 import sys
 from pathlib import Path
+from typing import Iterable
 
 from utils import safe_path
+
+
+REQUIRED_SKILLS = (
+    "legata_to_rebeca",
+    "rebeca_tooling",
+    "rebeca_handbook",
+    "rebeca_mutation",
+    "rebeca_hallucination",
+)
+
+
+def _exists_any(paths: Iterable[Path]) -> bool:
+    return any(p.exists() for p in paths)
 
 
 def verify_installation(target_root: str) -> int:
     """
     Verify installed artifacts exist.
-    
+
     Returns:
         0: All artifacts present
         1: Missing artifacts
     """
     target_path = safe_path(target_root)
     missing = 0
-    
-    # Check agent
-    agent_path = target_path / "agents" / "legata-formalization.agent.md"
-    if not agent_path.exists():
-        print("✗ Agent not found")
+
+    # Check coordinator agent (support current + legacy naming variants)
+    coordinator_candidates = (
+        target_path / "agents" / "legata_to_rebeca.md",
+        target_path / "agents" / "legata-to-rebeca.md",
+        target_path / "agents" / "legata-formalization.agent.md",
+        target_path / "agents" / "legata_to_rebeca.agent.md",
+        target_path / "agents" / "legata-to-rebeca.agent.md",
+    )
+    if not _exists_any(coordinator_candidates):
+        print("✗ Coordinator agent not found")
         missing += 1
     else:
-        print("✓ Agent found")
-    
-    # Check workflow skill
-    workflow_path = target_path / "skills" / "legata-formalization-workflow"
-    if not workflow_path.is_dir():
-        print("✗ Workflow skill not found")
-        missing += 1
+        print("✓ Coordinator agent found")
+
+    # Check required skills for current coordinator contract.
+    missing_skills = [name for name in REQUIRED_SKILLS if not (target_path / "skills" / name).is_dir()]
+    if missing_skills:
+        for name in missing_skills:
+            print(f"✗ Skill not found: {name}")
+        missing += len(missing_skills)
     else:
-        print("✓ Workflow skill found")
-    
-    # Check modeling guidelines skill
-    modeling_path = target_path / "skills" / "rebeca-modeling-guidelines"
-    if not modeling_path.is_dir():
-        print("✗ Modeling guidelines skill not found")
-        missing += 1
-    else:
-        print("✓ Modeling guidelines skill found")
-    
+        print("✓ Required skills found")
+
     if missing == 0:
         print("✓ All artifacts verified")
         return 0
