@@ -16,6 +16,8 @@ This skill provides a cross-platform Python library for all Rebeca model checkin
 - Mutation generation and kill-run scoring (`mutation_engine`)
 - Snapshot capture and symbol-level hallucination checks
 - Single-rule scoring and aggregate reporting
+- Per-rule comprehensive reporting (`generate_rule_report`)
+- Multi-rule consolidation with publication-ready plots (`consolidate_reports`)
 - Installation and verification utilities
 
 ## When to Use
@@ -30,6 +32,8 @@ Use this skill when you need to:
 - Compare model/property symbols against source artifacts for drift checks
 - Score verification results
 - Generate aggregate reports
+- Generate comprehensive JSON/Markdown reports for an individual rule folder
+- Consolidate many rule folders into one report with tables and bar/cactus plots (SVG+PNG)
 - Install or verify toolchain artifacts
 
 ## Library Location
@@ -56,8 +60,11 @@ skills/rebeca_tooling/
     ├── mutation_engine.py
     ├── snapshotter.py
     ├── symbol_differ.py
+    ├── reporting_metrics.py
     ├── score_single_rule.py
     ├── generate_report.py
+    ├── generate_rule_report.py
+    ├── consolidate_reports.py
     ├── step_schemas.py
     └── transformation_utils.py
 ```
@@ -264,6 +271,48 @@ with open("reports/report.md", "w") as f:
 # Outputs: reports/report.json and reports/report.md
 ```
 
+#### Generate Per-Rule Comprehensive Report
+
+```python
+from pathlib import Path
+from scripts.reporting_metrics import build_rule_report_bundle
+from scripts.generate_rule_report import _build_report_payload, _render_markdown
+
+rule_dir = Path("output/rules/Rule-22")
+bundle = build_rule_report_bundle(rule_dir)
+payload = _build_report_payload(bundle)
+
+out_dir = rule_dir / "reports"
+out_dir.mkdir(parents=True, exist_ok=True)
+(out_dir / "comprehensive_report.json").write_text(
+  __import__("json").dumps(payload, indent=2),
+  encoding="utf-8",
+)
+(out_dir / "comprehensive_report.md").write_text(
+  _render_markdown(payload),
+  encoding="utf-8",
+)
+```
+
+#### Consolidate Multiple Rule Folders
+
+```python
+from pathlib import Path
+from scripts.reporting_metrics import build_rule_report_bundle
+
+root = Path("output/rules")
+bundles = []
+for child in root.iterdir():
+  if child.is_dir():
+    try:
+      bundles.append(build_rule_report_bundle(child))
+    except FileNotFoundError:
+      # skip folders that are not completed rule artifacts
+      pass
+
+print(f"Loaded {len(bundles)} rule bundles for consolidation")
+```
+
 ### Installation Utilities
 
 #### Install Artifacts
@@ -409,6 +458,22 @@ python3 ~/.agents/skills/rebeca_tooling/scripts/mutation_engine.py \
 # total_generated, total_run, sampled, sample_seed,
 # budget_exceeded, elapsed_seconds,
 # killed, survived, errors, mutation_score, mutant_results
+
+# Generate comprehensive per-rule report from a rule output folder
+python3 ~/.agents/skills/rebeca_tooling/scripts/generate_rule_report.py \
+  --rule-dir output/rules/Rule-22 \
+  --output-dir output/rules/Rule-22/reports
+
+# Consolidate all rule folders and emit aggregate markdown/json + plots
+python3 ~/.agents/skills/rebeca_tooling/scripts/consolidate_reports.py \
+  --root-dir output/rules \
+  --output-dir output/reports
+
+# Headless/CI mode if plot rendering is unavailable
+python3 ~/.agents/skills/rebeca_tooling/scripts/consolidate_reports.py \
+  --root-dir output/rules \
+  --output-dir output/reports \
+  --skip-plots
 ```
 
 ### Installation
@@ -512,8 +577,11 @@ if status["status"] == "formalized":
 | `mutation_engine.py` | Mutation generation + optional kill-run (`--run-with-jar/model/property`) | ✓ | ✓ | ✓ |
 | `snapshotter.py` | Capture model/property snapshots and metadata | ✓ | ✓ | ✓ |
 | `symbol_differ.py` | Detect symbol drift/hallucinations in generated artifacts | ✓ | ✓ | ✓ |
+| `reporting_metrics.py` | Shared per-rule metrics extraction (score/mutation/vacuity/model/property/mapping deltas) | ✗ | ✓ | ✗ (use directly) |
 | `score_single_rule.py` | 100-point scoring rubric; `--is-vacuous`, `--assertion-id` | ✓ | ✓ | ✗ (use directly) |
 | `generate_report.py` | Aggregate reporting; `--input-scores` (JSON array/NDJSON/file); `finalize()` computes all metrics | ✓ | ✓ | ✗ (use directly) |
+| `generate_rule_report.py` | Per-rule comprehensive report (`comprehensive_report.json/.md`) from a rule artifact directory | ✓ | ✓ | ✗ (use directly) |
+| `consolidate_reports.py` | Multi-rule consolidation + tables + status/score/mutation/cactus plots (SVG+PNG) | ✓ | ✓ | ✗ (use directly) |
 | `step_schemas.py` | Structured step output schema validation | ✗ | ✓ | ✓ |
 | `transformation_utils.py` | Rule/property transformation utilities | ✗ | ✓ | ✗ (use directly) |
 
@@ -554,6 +622,8 @@ CI also runs this automatically via `.github/workflows/cli-help-doc-sync.yml`.
 8. **Always pass `--assertion-id` to vacuity_checker** when the property has more than one assertion — without it, the first assertion is used silently
 9. **Feed vacuity result into score_single_rule** using `--is-vacuous` — a vacuous pass silently scores 100 otherwise
 10. **Pipe scorecards as JSON array or NDJSON** to generate_report.py; do not rely on stdin line-by-line when cards span multiple lines
+11. **Use generate_rule_report.py for artifact-rich per-rule outputs** instead of scorecard-only summaries when mutation/vacuity/model stats are required
+12. **Use consolidate_reports.py for portfolio-level review** and include SVG plots for papers/decks, PNG for slides/CI artifacts
 
 ### Additional troubleshooting notes
 
