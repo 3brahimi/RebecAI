@@ -273,3 +273,65 @@ def test_run_rmc_detailed_uses_result_artifact_when_model_out_unknown(monkeypatc
     assert details["verification_outcome"] == "cex"
     assert details["result_artifact"]["parsed"] is True
     assert details["result_artifact"]["outcome"] == "cex"
+
+
+def test_run_rmc_detailed_prefers_result_artifact_over_model_out_exit_outcome(monkeypatch) -> None:
+    class _Proc:
+        def __init__(self, returncode: int):
+            self.returncode = returncode
+
+    def _subprocess_stub(cmd, **kwargs):
+        if cmd and cmd[0] == "java":
+            cwd = Path(kwargs["cwd"])
+            (cwd / "generated.cpp").write_text("int main(){return 0;}\n", encoding="utf-8")
+            return _Proc(0)
+        if cmd and cmd[0] == "g++":
+            exe_path = Path(cmd[-1])
+            exe_path.write_text("binary", encoding="utf-8")
+            return _Proc(0)
+        return _Proc(0)
+
+    def _model_out_stub(executable, timeout_seconds=30, args=None, **kwargs):
+        return {
+            "executed": True,
+            "exit_code": 0,
+            "outcome": "satisfied",
+            "error": None,
+        }
+
+    def _parse_stub(result_path):
+        return {
+            "path": result_path,
+            "exists": True,
+            "parsed": True,
+            "format": "xml",
+            "outcome": "cex",
+            "error": None,
+        }
+
+    monkeypatch.setattr(run_rmc_module.subprocess, "run", _subprocess_stub)
+    monkeypatch.setattr(run_rmc_module, "run_model_out", _model_out_stub)
+    monkeypatch.setattr(run_rmc_module, "parse_rmc_result_file", _parse_stub)
+
+    with tempfile.TemporaryDirectory(dir=Path.home()) as td:
+        base = Path(td)
+        jar = base / "rmc.jar"
+        model = base / "m.rebeca"
+        prop = base / "p.property"
+        out = base / "out"
+
+        jar.write_text("jar", encoding="utf-8")
+        model.write_text("reactiveclass A(1) {} main { A a():(); }\n", encoding="utf-8")
+        prop.write_text("property { Assertion { R: true; } }\n", encoding="utf-8")
+
+        details = run_rmc_module.run_rmc_detailed(
+            jar=str(jar),
+            model=str(model),
+            property_file=str(prop),
+            output_dir=str(out),
+            run_model_outcome=True,
+            model_out_export_result="result.xml",
+        )
+
+    assert details["rmc_exit_code"] == 0
+    assert details["verification_outcome"] == "cex"

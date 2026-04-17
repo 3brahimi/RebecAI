@@ -29,7 +29,7 @@ def run_model_out(
 ) -> Dict[str, Any]:
     """Execute compiled `model.out` and capture semantic outcome details."""
     try:
-        exe = safe_path(executable)
+        exe = safe_path(str(executable))
     except SystemExit:
         return {
             "executed": False,
@@ -61,7 +61,7 @@ def run_model_out(
             out_file = Path(export_result)
             if not out_file.is_absolute():
                 out_file = exe.parent / out_file
-            out_file = safe_path(out_file)
+            out_file = safe_path(str(out_file))
             cmd.extend(["-o", str(out_file)])
 
         if hashmap_size is not None:
@@ -71,7 +71,7 @@ def run_model_out(
             statespace_file = Path(export_statespace)
             if not statespace_file.is_absolute():
                 statespace_file = exe.parent / statespace_file
-            statespace_file = safe_path(statespace_file)
+            statespace_file = safe_path(str(statespace_file))
             cmd.extend(["-x", str(statespace_file)])
 
         cmd.extend(list(args or []))
@@ -309,10 +309,10 @@ def run_rmc_detailed(
 
         model_outcome = model_out_result.get("outcome")
         artifact_outcome = parsed_result.get("outcome")
-        if model_outcome in ("satisfied", "cex"):
-            details["verification_outcome"] = model_outcome
-        elif artifact_outcome in ("satisfied", "cex"):
+        if artifact_outcome in ("satisfied", "cex"):
             details["verification_outcome"] = artifact_outcome
+        elif model_outcome in ("satisfied", "cex"):
+            details["verification_outcome"] = model_outcome
         else:
             details["verification_outcome"] = "unknown"
     else:

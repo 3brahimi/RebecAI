@@ -30,6 +30,31 @@ _POSITIVE_PATTERNS = (
 )
 
 
+def _local_name(tag: Any) -> str:
+    """Return lowercase local XML tag name (namespace-agnostic)."""
+    if not isinstance(tag, str):
+        return ""
+    if "}" in tag:
+        tag = tag.split("}", 1)[1]
+    return tag.strip().lower()
+
+
+def _trace_has_content(trace_elem: ET.Element) -> bool:
+    """Determine whether a counter-example trace element is semantically non-empty."""
+    if (trace_elem.text or "").strip():
+        return True
+    if trace_elem.attrib:
+        return True
+    if len(trace_elem) > 0:
+        return True
+    for child in trace_elem.iter():
+        if child is trace_elem:
+            continue
+        if (child.text or "").strip() or child.attrib or len(child) > 0:
+            return True
+    return False
+
+
 def _normalise_status(text: str) -> str:
     """Map free-text verdict content to semantic outcome labels."""
     normalized = re.sub(r"\s+", " ", text.strip().lower())
@@ -45,29 +70,54 @@ def _normalise_status(text: str) -> str:
 
 def _extract_xml_signal(root: ET.Element) -> str:
     """Extract semantic signal from XML tags/attributes/text."""
+    trace_tags = {
+        "counter-example-trace",
+        "counterexampletrace",
+        "counter_example_trace",
+    }
+    status_tags = {"result", "verification", "status", "verdict", "outcome", "property"}
+
+    trace_seen = False
     candidates = []
 
     for elem in root.iter():
-        tag = elem.tag.lower() if isinstance(elem.tag, str) else ""
-        if elem.text:
-            candidates.append(f"{tag}:{elem.text}")
+        local_tag = _local_name(elem.tag)
+        if local_tag in trace_tags:
+            trace_seen = True
+            if _trace_has_content(elem):
+                return "cex"
 
         for key, value in elem.attrib.items():
-            key_lower = key.lower()
-            value_lower = str(value).lower()
+            key_lower = str(key).strip().lower()
+            value_lower = str(value).strip().lower()
 
             if key_lower in {"status", "result", "verdict", "outcome"}:
                 candidates.append(value_lower)
             elif key_lower in {"satisfied", "is_satisfied", "holds"}:
                 if value_lower in {"true", "1", "yes"}:
-                    return "satisfied"
-                if value_lower in {"false", "0", "no"}:
-                    return "cex"
-            else:
-                candidates.append(f"{key_lower}:{value_lower}")
+                    candidates.append("satisfied")
+                elif value_lower in {"false", "0", "no"}:
+                    candidates.append("cex")
 
-    combined = "\n".join(candidates)
-    return _normalise_status(combined)
+        if local_tag in status_tags and elem.text and elem.text.strip():
+            candidates.append(elem.text.strip())
+
+    normalized_candidates = {
+        candidate.strip().lower() for candidate in candidates if candidate and candidate.strip()
+    }
+    if "cex" in normalized_candidates:
+        return "cex"
+    if "satisfied" in normalized_candidates:
+        return "satisfied"
+
+    status = _normalise_status("\n".join(candidates))
+    if status in {"satisfied", "cex"}:
+        return status
+
+    if trace_seen:
+        return "unknown"
+
+    return "unknown"
 
 
 def parse_rmc_result_file(result_path: str) -> Dict[str, Any]:
