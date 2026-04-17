@@ -275,7 +275,15 @@ class TestCheckVacuityReal:
             property_file=str(prop), output_dir=out,
             timeout_seconds=60,
         )
-        assert result["secondary_output_dir"] == out + "_vacuity"
+        # secondary_output_dir is now a canonical subdir, not a sibling suffix.
+        # It must be a child of out (or its parent), never out + "_vacuity".
+        secondary = result["secondary_output_dir"]
+        assert secondary is not None
+        assert not secondary.endswith("_vacuity"), (
+            "secondary_output_dir must not use the legacy sibling-suffix pattern"
+        )
+        # Must contain the word "vacuity" (the canonical subdir name)
+        assert "vacuity" in secondary
 
     def test_missing_property_file_returns_error(self, rmc_jar, model_file, home_tmp):
         result = check_vacuity(

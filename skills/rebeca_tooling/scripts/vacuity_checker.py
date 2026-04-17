@@ -29,6 +29,7 @@ import tempfile
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+from output_policy import vacuity_work_dirs
 from run_rmc import run_rmc_detailed
 from utils import safe_path
 
@@ -104,21 +105,38 @@ def check_vacuity(
     output_dir: str,
     timeout_seconds: int = 120,
     assertion_id: Optional[str] = None,
+    rule_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Perform a vacuity check on a verified Rebeca property.
 
     Wraps run_rmc() — does not modify existing verification artifacts.
-    Secondary RMC output is written to output_dir + "_vacuity/".
+    Secondary and baseline RMC output is written to canonical subdirectories
+    under the work tree (via :func:`output_policy.vacuity_work_dirs`) rather
+    than sibling ``_vacuity``/``_baseline`` suffix directories.
+
+    Args:
+        jar:             Path to rmc.jar.
+        model:           Path to .rebeca model file.
+        property_file:   Path to .property file.
+        output_dir:      Base output directory for this vacuity run.
+        timeout_seconds: Per-run RMC timeout.
+        assertion_id:    Label of the assertion to analyse.  Required when
+                         multiple assertions exist.
+        rule_id:         Optional rule identifier used to place scratch dirs
+                         under the canonical work tree.  When omitted, dirs are
+                         placed as ``<output_dir>/vacuity/`` and
+                         ``<output_dir>/baseline/``.
 
     Returns:
         {
           "is_vacuous":            bool | None,
           "precondition_used":     str | None,
-                    "baseline_outcome":      str | None,
-                    "secondary_outcome":     str | None,
-                    "comparison_changed":     bool | None,
-                    "comparison_basis":       str,
+          "assertion_id_used":     str | None,
+          "baseline_outcome":      str | None,
+          "secondary_outcome":     str | None,
+          "comparison_changed":    bool | None,
+          "comparison_basis":      str,
           "secondary_exit_code":   int,
           "secondary_output_dir":  str | None,
           "explanation":           str
@@ -193,10 +211,11 @@ def check_vacuity(
         }
 
     negated_content = build_negated_property(property_content, precondition)
-    secondary_output = str(safe_path(output_dir)) + "_vacuity"
 
-    # Capture baseline (original property) outcome for semantic comparison.
-    baseline_output = str(safe_path(output_dir)) + "_baseline"
+    # Use canonical policy paths — never string-suffix sibling directories.
+    secondary_output, baseline_output = vacuity_work_dirs(
+        output_dir, rule_id=rule_id
+    )
     baseline_details = run_rmc_detailed(
         jar=jar,
         model=model,
@@ -297,6 +316,13 @@ def main() -> None:
              "Defaults to the first assertion in the Assertion block. "
              "Required when multiple assertions exist to avoid ambiguity.",
     )
+    parser.add_argument(
+        "--rule-id",
+        default=None,
+        help="Rule identifier used to place vacuity scratch dirs under the "
+             "canonical work tree (output/work/<rule-id>/runs/vacuity/). "
+             "When omitted, dirs are placed inside --output-dir.",
+    )
     parser.add_argument("--output-json", action="store_true", help="Output result as JSON")
     args = parser.parse_args()
 
@@ -307,6 +333,7 @@ def main() -> None:
         output_dir=args.output_dir,
         timeout_seconds=args.timeout_seconds,
         assertion_id=args.assertion_id,
+        rule_id=args.rule_id,
     )
 
     is_ambiguous = (
