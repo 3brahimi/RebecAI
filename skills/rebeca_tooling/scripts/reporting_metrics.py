@@ -34,11 +34,30 @@ class RuleReportBundle:
 
 
 def _load_json(path: Path) -> Optional[Dict[str, Any]]:
+    decoder = json.JSONDecoder()
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
+        raw = path.read_text(encoding="utf-8")
+        data = json.loads(raw)
         return data if isinstance(data, dict) else None
     except Exception:
+        pass
+
+    # Recovery path for polluted files where log lines were prefixed before JSON.
+    # We decode from the first "{" / "[" token and keep the first dict payload.
+    try:
+        raw = path.read_text(encoding="utf-8")
+        for idx, ch in enumerate(raw):
+            if ch not in "[{":
+                continue
+            try:
+                data, _ = decoder.raw_decode(raw[idx:])
+            except Exception:
+                continue
+            if isinstance(data, dict):
+                return data
+    except Exception:
         return None
+    return None
 
 
 def _find_first_json(rule_dir: Path, pattern: str) -> Optional[Path]:
@@ -65,6 +84,7 @@ def _extract_mutation_metrics(
         generated_total = int(candidates_json.get("total_mutants", 0) or 0)
 
     sampled_total = None
+    population_total = 0
     executed_total = 0
     killed_total = 0
     survived_total = 0
@@ -73,17 +93,24 @@ def _extract_mutation_metrics(
 
     if killrun_json:
         kill_stats = killrun_json.get("kill_stats")
+        if not isinstance(kill_stats, dict):
+            kill_stats = killrun_json
         if isinstance(kill_stats, dict):
-            sampled_total = int(kill_stats.get("total_generated", 0) or 0)
+            population_total = int(kill_stats.get("total_generated", 0) or 0)
             executed_total = int(kill_stats.get("total_run", 0) or 0)
             killed_total = int(kill_stats.get("killed", 0) or 0)
             survived_total = int(kill_stats.get("survived", 0) or 0)
             errors_total = int(kill_stats.get("errors", 0) or 0)
+            sampled_flag = bool(kill_stats.get("sampled", False))
+            sampled_total = executed_total if sampled_flag else (population_total if population_total > 0 else None)
             raw_score = kill_stats.get("mutation_score")
             try:
                 mutation_score = float(raw_score) if raw_score is not None else None
             except (TypeError, ValueError):
                 mutation_score = None
+
+    if generated_total == 0 and population_total > 0:
+        generated_total = population_total
 
     return {
         "mutants_generated_total": generated_total,
@@ -133,6 +160,56 @@ def _extract_vacuity_metrics(vacuity_jsons: List[Tuple[Path, Dict[str, Any]]]) -
     return {
         "checks": checks,
         "checks_total": len(checks),
+        "checks_vacuous": vacuous_count,
+        "checks_non_vacuous": non_vacuous_count,
+        "checks_unknown": unknown_count,
+        "overall": overall,
+    }
+
+
+def _extract_vacuity_from_scorecard(scorecard: Dict[str, Any]) -> Dict[str, Any]:
+    vacuity = scorecard.get("vacuity")
+    if not isinstance(vacuity, dict):
+        return {
+            "checks": [],
+            "checks_total": 0,
+            "checks_vacuous": 0,
+            "checks_non_vacuous": 0,
+            "checks_unknown": 0,
+            "overall": "unknown",
+        }
+
+    is_vacuous = vacuity.get("is_vacuous")
+    if is_vacuous is True:
+        overall = "vacuous"
+        vacuous_count = 1
+        non_vacuous_count = 0
+        unknown_count = 0
+    elif is_vacuous is False:
+        overall = "non_vacuous"
+        vacuous_count = 0
+        non_vacuous_count = 1
+        unknown_count = 0
+    else:
+        overall = "unknown"
+        vacuous_count = 0
+        non_vacuous_count = 0
+        unknown_count = 1
+
+    return {
+        "checks": [
+            {
+                "file": "scorecard.vacuity",
+                "assertion_id": vacuity.get("assertion_id"),
+                "is_vacuous": is_vacuous,
+                "comparison_basis": "scorecard",
+                "baseline_outcome": None,
+                "secondary_outcome": None,
+                "secondary_exit_code": None,
+                "explanation": vacuity.get("status"),
+            }
+        ],
+        "checks_total": 1,
         "checks_vacuous": vacuous_count,
         "checks_non_vacuous": non_vacuous_count,
         "checks_unknown": unknown_count,
@@ -258,6 +335,10 @@ def build_rule_report_bundle(rule_dir: Path) -> Optional[RuleReportBundle]:
             except (TypeError, ValueError):
                 score_breakdown[str(k)] = 0.0
 
+    vacuity_metrics = _extract_vacuity_metrics(vacuity_jsons)
+    if vacuity_metrics.get("checks_total", 0) == 0:
+        vacuity_metrics = _extract_vacuity_from_scorecard(scorecard)
+
     return RuleReportBundle(
         rule_id=_extract_rule_id(scorecard, rule_dir.name),
         folder=str(rule_dir),
@@ -267,7 +348,7 @@ def build_rule_report_bundle(rule_dir: Path) -> Optional[RuleReportBundle]:
         failure_reasons=[str(x) for x in scorecard.get("failure_reasons", [])],
         remediation_hints=[str(x) for x in scorecard.get("remediation_hints", [])],
         mutation=_extract_mutation_metrics(candidates_json, killrun_json),
-        vacuity=_extract_vacuity_metrics(vacuity_jsons),
+        vacuity=vacuity_metrics,
         model_property_stats=_extract_model_property_stats(model_file, property_file),
         mapping_delta=_extract_mapping_delta(rule_dir),
         artifacts={

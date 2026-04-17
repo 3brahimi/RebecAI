@@ -68,4 +68,8 @@ def test_generate_rule_report_creates_md_and_json() -> None:
         assert payload["rule_id"] == "Rule-23"
         assert payload["status"] == "Conditional"
         assert payload["metrics"]["model_property"]["statevars_count"] == 1
-        assert "Mutation Testing" in report_md.read_text(encoding="utf-8")
+        md_text = report_md.read_text(encoding="utf-8")
+        assert "Mutation Testing" in md_text
+        assert "How to Interpret This Report" in md_text
+        assert "Mutation Interpretation" in md_text
+        assert "Vacuity Interpretation" in md_text

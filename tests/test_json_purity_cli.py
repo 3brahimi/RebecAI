@@ -165,3 +165,37 @@ def test_vacuity_checker_output_json_stdout_is_pure_json_on_error() -> None:
     payload = json.loads(result.stdout)
     assert payload["is_vacuous"] is None
     assert "not found" in payload["explanation"]
+
+
+def test_mutation_engine_output_json_stdout_is_pure_json() -> None:
+    with tempfile.TemporaryDirectory(dir=Path.home()) as td:
+        base = Path(td)
+        model = base / "model.rebeca"
+        prop = base / "model.property"
+
+        model.write_text(
+            "reactiveclass A(1) { statevars { int x; } msgsrv m() { x = x + 1; } } main { A a():(); }",
+            encoding="utf-8",
+        )
+        prop.write_text(
+            "property { define { isGood = (a.x > 0); } Assertion { Rule22: isGood; } }",
+            encoding="utf-8",
+        )
+
+        result = _run_script(
+            [
+                "mutation_engine.py",
+                "--rule-id",
+                "Rule-22",
+                "--model",
+                str(model),
+                "--property",
+                str(prop),
+                "--output-json",
+            ]
+        )
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["rule_id"] == "Rule-22"
+    assert "mutants" in payload

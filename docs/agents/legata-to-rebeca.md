@@ -29,7 +29,7 @@ legata_to_rebeca (coordinator)
 | Step05 | `synthesis_agent` | `run_rmc.py` |
 | Step06 | `verification_agent` | `run_rmc.py` · `vacuity_checker.py` · `mutation_engine.py` |
 | Step07 | `packaging_agent` | `install_artifacts.py` |
-| Step08 | `reporting_agent` | `score_single_rule.py` · `generate_report.py` |
+| Step08 | `reporting_agent` | `score_single_rule.py` · `generate_report.py` · `generate_rule_report.py` |
 
 Each specialist's output schema is defined in `skills/rebeca_tooling/schemas/<agent-name>.schema.json`.
 
@@ -40,7 +40,7 @@ Each specialist's output schema is defined in `skills/rebeca_tooling/schemas/<ag
 - **COLREG fallback mapping** — handle incomplete specifications
 - **RMC model checking** — automated verification with C++ compilation
 - **100-point scoring rubric** — assess transformation quality
-- **Aggregate reporting** — JSON and Markdown reports
+- **Aggregate + comprehensive reporting** — JSON and Markdown reports (portfolio and per-rule)
 
 ## Required Inputs
 
@@ -105,7 +105,7 @@ For each rule:
 | Step05 | `synthesis_agent` | LLM-Assisted Candidate Generation | Generate candidate properties in parallel with Step04; all outputs tagged `is_candidate=true`, must be routed to Step06 | Candidate property |
 | Step06 | `verification_agent` | Verification and Counterexample Iteration | Run RMC model checking, vacuity check, mutation scoring; iterate until pass or explicit block | Verification result + mutation score |
 | Step07 | `packaging_agent` | Packaging and Automation | Collect pipeline artifacts, build finalized manifest, emit per-artifact installation report | Packaged artifacts |
-| Step08 | `reporting_agent` | Scoring and Reporting | Per-rule scorecards (100-point rubric), aggregate reporting, no-silent-skip enforcement | `scorecard.json` + `report.json` / `report.md` |
+| Step08 | `reporting_agent` | Scoring and Reporting | Per-rule scorecards (100-point rubric), aggregate reporting, comprehensive per-rule reporting, no-silent-skip enforcement | `scorecard.json` + `report.json` / `report.md` + `comprehensive_report.json` / `comprehensive_report.md` |
 
 ## Expected Output
 
@@ -122,7 +122,8 @@ output/
 │   ├── rmc_stdout.log                  # RMC output
 │   └── rmc_stderr.log                  # Error logs
 ├── scorecard.json                      # Per-rule scoring
-└── aggregate_report.json               # Summary report
+├── aggregate_report.json               # Summary report
+└── comprehensive_report.json           # Detailed per-rule report
 ```
 
 ## Scoring Rubric

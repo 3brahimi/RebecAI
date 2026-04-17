@@ -26,7 +26,7 @@ An unmatched guard is a specification violation and MUST transition to `error` w
 | Step05 | `synthesis_agent` | `mutation_engine.py` property-side strategies | `candidate_artifacts[]`, `is_candidate`, `mapping_path` |
 | Step06 | `verification_agent` | `run_rmc.py` → `vacuity_checker.py` → `mutation_engine.py` | `verified`, `rmc_exit_code`, `rmc_outcome`, `vacuity_status`, `mutation_score` |
 | Step07 | `packaging_agent` | *(filesystem I/O — copy artifacts to dest_dir)* | `generated_files[]`, `installation_report[]` |
-| Step08 | `reporting_agent` | `generate_report.py` · `score_single_rule.py` | `report_path`, `report_md_path`, `summary` |
+| Step08 | `reporting_agent` | `generate_report.py` · `generate_rule_report.py` · `score_single_rule.py` | `report_path`, `report_md_path`, `rule_report_path`, `rule_report_md_path`, `summary` |
 
 ## issue_class Legend
 
@@ -73,7 +73,7 @@ Evaluate top-to-bottom for the current state. Each row is mutually exclusive.
 | `verified` | `step06.status == "ok" && issue_class in {"schema_invalid","hallucination"} && refine_budget_left("verified")` | `schema_invalid` \| `hallucination` | `verified` | re-execute Step06 tools (`run_rmc.py`, `vacuity_checker.py`, `mutation_engine.py`) with `refinement_ctx: {issue_class, diagnostics: schema violation list or hallucinated symbol list, prior_output: step06}`; append refinement event |
 | `verified` | `step06.status == "ok" && issue_class != null && !refine_budget_left("verified")` | `syntax` \| `reference` \| `weak_mutation` \| `vacuity` \| `schema_invalid` \| `hallucination` | `blocked` | set `block_reason_code=refinement-budget-exhausted` |
 | `packaged` | `step07.status == "error"` | n/a | `error` | propagate envelope |
-| `packaged` | `step07.status == "ok"` | null | `reported` | execute `generate_report.py` and `score_single_rule.py` with `{scorecards: [step02..step06 summaries], output_dir}`; emit `report_path`, `report_md_path`, `summary` |
+| `packaged` | `step07.status == "ok"` | null | `reported` | execute `generate_report.py` and `score_single_rule.py` with `{scorecards: [step02..step06 summaries], output_dir}`; then execute `generate_rule_report.py --rule-dir {dest_dir}/{rule_id}`; emit `report_path`, `report_md_path`, `rule_report_path`, `rule_report_md_path`, `summary` |
 | `reported` | `step08.status == "error"` | n/a | `error` | propagate envelope |
 | `reported` | `step08.status == "ok"` | null | terminal success | return `workflow_summary` |
 

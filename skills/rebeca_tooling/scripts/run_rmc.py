@@ -174,8 +174,8 @@ def run_rmc_detailed(
         "-x"
     ])
 
-    print("Executing RMC...")
-    print(f"Command: {' '.join(cmd)}")
+    print("Executing RMC...", file=sys.stderr)
+    print(f"Command: {' '.join(cmd)}", file=sys.stderr)
 
     # Execute with timeout
     stdout_log = output_path / "rmc_stdout.log"
@@ -229,11 +229,11 @@ def run_rmc_detailed(
         details["verification_outcome"] = "unknown"
         return details
 
-    print("✓ Phase 1: RMC generated C++ source files")
+    print("✓ Phase 1: RMC generated C++ source files", file=sys.stderr)
     details["cpp_generated"] = True
 
     # Phase 2: Compile the C++ files with g++
-    print("Phase 2: Compiling C++ files with g++...")
+    print("Phase 2: Compiling C++ files with g++...", file=sys.stderr)
 
     try:
         with open(compile_stderr_log, 'w') as stderr_f:
@@ -272,7 +272,7 @@ def run_rmc_detailed(
         details["verification_outcome"] = "unknown"
         return details
 
-    print("✓ Phase 2: C++ compilation succeeded")
+    print("✓ Phase 2: C++ compilation succeeded", file=sys.stderr)
     details["cpp_compile_ok"] = True
     details["rmc_exit_code"] = 0
     details["rmc_outcome"] = "verified"
@@ -318,14 +318,15 @@ def run_rmc_detailed(
     else:
         details["verification_outcome"] = "unknown"
 
-    print("✓ RMC workflow complete (parse + compile)")
+    print("✓ RMC workflow complete (parse + compile)", file=sys.stderr)
     if run_model_outcome and details["model_out"]["executed"]:
         print(
             f"✓ model.out outcome: {details['model_out']['outcome']} "
-            f"(exit={details['model_out']['exit_code']})"
+            f"(exit={details['model_out']['exit_code']})",
+            file=sys.stderr,
         )
-    print(f"Output directory: {output_path}")
-    print(f"Executable: {executable}")
+    print(f"Output directory: {output_path}", file=sys.stderr)
+    print(f"Executable: {executable}", file=sys.stderr)
     return details
 
 

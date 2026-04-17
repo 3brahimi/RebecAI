@@ -3,7 +3,8 @@ name: reporting_agent
 description: |
   Step08 specialist for aggregate scoring and report generation.
   Wraps ReportGenerator (generate_report.py) to produce report.json
-  and report.md from coordinator-supplied per-rule scorecards.
+  and report.md from coordinator-supplied per-rule scorecards, and
+  generate_rule_report.py to produce comprehensive_report.json/.md.
 schema: skills/rebeca_tooling/schemas/reporting-agent.schema.json
 skills:
   - rebeca_tooling
@@ -16,8 +17,9 @@ skills:
 ## Goal
 
 Consume per-rule scorecards assembled by the coordinator (from Step05 outputs),
-finalize aggregate metrics via `ReportGenerator`, and write `report.json` +
-`report.md` to the designated output directory.
+finalize aggregate metrics via `ReportGenerator`, write `report.json` +
+`report.md` to the designated output directory, then generate a per-rule
+comprehensive report from the packaged rule folder.
 
 All report outputs are versioned and deterministic.
 
@@ -100,6 +102,9 @@ scorecards (from coordinator)
   │
   ├─► write {output_dir}/report.json  (via safe_path)
   ├─► write {output_dir}/report.md    (via safe_path)
+  ├─► run generate_rule_report.py --rule-dir {rule_output_dir}
+  │     ├─ write {rule_output_dir}/comprehensive_report.json
+  │     └─ write {rule_output_dir}/comprehensive_report.md
   │
   └─► emit contract
 ```
@@ -111,6 +116,8 @@ scorecards (from coordinator)
   "status": "ok",
   "report_path":    "/path/to/output/report.json",
   "report_md_path": "/path/to/output/report.md",
+  "rule_report_path": "/path/to/output/rule22/comprehensive_report.json",
+  "rule_report_md_path": "/path/to/output/rule22/comprehensive_report.md",
   "report_schema_version": "1.1.0",
   "summary": {
     "total_rules":          1,
@@ -147,3 +154,5 @@ failure, or schema validation violation.
 - `report_md_path` — for human review
 - `report_schema_version` — schema compatibility pin
 - `summary` — aggregate statistics
+- `rule_report_path` — comprehensive per-rule JSON report path
+- `rule_report_md_path` — comprehensive per-rule markdown report path
