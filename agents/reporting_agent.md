@@ -63,8 +63,8 @@ scorecards in. This agent only aggregates and formats.
 ```json
 {
   "status": "ok",
-  "report_path":    "/path/to/output/report.json",
-  "report_md_path": "/path/to/output/report.md",
+  "report_path":    "/path/to/output/reports/Rule-22/report.json",
+  "report_md_path": "/path/to/output/reports/Rule-22/report.md",
   "report_schema_version": "1.1.0",
   "summary": {
     "total_rules":          1,
@@ -100,11 +100,11 @@ scorecards (from coordinator)
   │     ├─ status_counts, fallback_usage_count, blocked_rules_count
   │     └─ top_failure_reasons, aggregate_remediation_hints
   │
-  ├─► write {output_dir}/report.json  (via safe_path)
-  ├─► write {output_dir}/report.md    (via safe_path)
+  ├─► write {output_dir}/reports/{rule_id}/report.json  (via safe_path)
+  ├─► write {output_dir}/reports/{rule_id}/report.md    (via safe_path)
   ├─► run generate_rule_report.py --rule-dir {rule_output_dir}
-  │     ├─ write {rule_output_dir}/comprehensive_report.json
-  │     └─ write {rule_output_dir}/comprehensive_report.md
+  │     ├─ write {output_dir}/reports/{rule_id}/comprehensive_report.json
+  │     └─ write {output_dir}/reports/{rule_id}/comprehensive_report.md
   │
   └─► emit contract
 ```
@@ -114,10 +114,10 @@ scorecards (from coordinator)
 ```json
 {
   "status": "ok",
-  "report_path":    "/path/to/output/report.json",
-  "report_md_path": "/path/to/output/report.md",
-  "rule_report_path": "/path/to/output/rule22/comprehensive_report.json",
-  "rule_report_md_path": "/path/to/output/rule22/comprehensive_report.md",
+  "report_path":    "/path/to/output/reports/Rule-22/report.json",
+  "report_md_path": "/path/to/output/reports/Rule-22/report.md",
+  "rule_report_path": "/path/to/output/reports/Rule-22/comprehensive_report.json",
+  "rule_report_md_path": "/path/to/output/reports/Rule-22/comprehensive_report.md",
   "report_schema_version": "1.1.0",
   "summary": {
     "total_rules":          1,

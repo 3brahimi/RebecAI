@@ -105,7 +105,7 @@ For each rule:
 | Step05 | `synthesis_agent` | LLM-Assisted Candidate Generation | Generate candidate properties in parallel with Step04; all outputs tagged `is_candidate=true`, must be routed to Step06 | Candidate property |
 | Step06 | `verification_agent` | Verification and Counterexample Iteration | Run RMC model checking, vacuity check, mutation scoring; iterate until pass or explicit block | Verification result + mutation score |
 | Step07 | `packaging_agent` | Packaging and Automation | Collect pipeline artifacts, build finalized manifest, emit per-artifact installation report | Packaged artifacts |
-| Step08 | `reporting_agent` | Scoring and Reporting | Per-rule scorecards (100-point rubric), aggregate reporting, comprehensive per-rule reporting, no-silent-skip enforcement | `scorecard.json` + `report.json` / `report.md` + `comprehensive_report.json` / `comprehensive_report.md` |
+| Step08 | `reporting_agent` | Scoring and Reporting | Per-rule scorecards (100-point rubric), aggregate reporting, comprehensive per-rule reporting, no-silent-skip enforcement | `scorecard.json` + `reports/<rule-id>/report.json` / `report.md` + `reports/<rule-id>/comprehensive_report.json` / `comprehensive_report.md` |
 
 ## Expected Output
 
@@ -122,8 +122,12 @@ output/
 │   ├── rmc_stdout.log                  # RMC output
 │   └── rmc_stderr.log                  # Error logs
 ├── scorecard.json                      # Per-rule scoring
-├── aggregate_report.json               # Summary report
-└── comprehensive_report.json           # Detailed per-rule report
+└── reports/
+  └── Rule-22/
+    ├── report.json                 # Aggregate summary report for this run/rule
+    ├── report.md
+    ├── comprehensive_report.json   # Detailed per-rule report
+    └── comprehensive_report.md
 ```
 
 ## Scoring Rubric

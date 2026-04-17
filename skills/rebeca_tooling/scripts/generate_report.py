@@ -43,6 +43,13 @@ def _normalise_status(raw: str) -> str:
     return _STATUS_MAP.get(str(raw).lower().strip(), "Unknown")
 
 
+def _slug_rule_name(value: str) -> str:
+    out = "".join(ch if ch.isalnum() or ch in ("-", "_") else "-" for ch in value.strip())
+    while "--" in out:
+        out = out.replace("--", "-")
+    return out.strip("-") or "unknown-rule"
+
+
 # ── scorecard loader ─────────────────────────────────────────────────────────
 
 def _load_scorecards(source: str) -> List[Dict[str, Any]]:
@@ -283,6 +290,17 @@ class ReportGenerator:
 
 # ── CLI ───────────────────────────────────────────────────────────────────────
 
+def _resolve_report_output_dir(output_dir: Path, cards: List[Dict[str, Any]]) -> Path:
+    """Nest outputs under reports/<rule-id>/ (single) or reports/aggregate/ (multi)."""
+    base = output_dir if output_dir.name == "reports" else output_dir / "reports"
+    if len(cards) == 1:
+        rid = cards[0].get("rule_id")
+        if isinstance(rid, str) and rid.strip():
+            return base / _slug_rule_name(rid)
+        return base / "single-rule"
+    return base / "aggregate"
+
+
 def _write_output(gen: ReportGenerator, output_dir: Optional[Path], fmt: str) -> None:
     if output_dir is not None:
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -341,6 +359,7 @@ Examples:
     args = parser.parse_args()
 
     gen = ReportGenerator()
+    loaded_cards: List[Dict[str, Any]] = []
 
     if args.input_scores is not None:
         try:
@@ -350,6 +369,7 @@ Examples:
             sys.exit(1)
         for card in cards:
             gen.add_scorecard(card)
+            loaded_cards.append(card)
     else:
         # Read from stdin — accept JSON array, JSON object, or NDJSON
         raw = sys.stdin.read().strip()
@@ -364,10 +384,14 @@ Examples:
             sys.exit(1)
         for card in cards:
             gen.add_scorecard(card)
+            loaded_cards.append(card)
 
     gen.finalize()
 
-    output_dir = safe_path(args.output_dir) if args.output_dir else None
+    output_dir = None
+    if args.output_dir:
+        base_dir = safe_path(args.output_dir)
+        output_dir = _resolve_report_output_dir(base_dir, loaded_cards)
     _write_output(gen, output_dir, args.format)
 
 

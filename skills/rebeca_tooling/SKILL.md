@@ -461,8 +461,8 @@ python3 ~/.agents/skills/rebeca_tooling/scripts/mutation_engine.py \
 
 # Generate comprehensive per-rule report from a rule output folder
 python3 ~/.agents/skills/rebeca_tooling/scripts/generate_rule_report.py \
-  --rule-dir output/rules/Rule-22 \
-  --output-dir output/rules/Rule-22/reports
+  --rule-dir output/rules/Rule-22
+# default output: output/rules/reports/Rule-22/comprehensive_report.{json,md}
 
 # Consolidate all rule folders and emit aggregate markdown/json + plots
 python3 ~/.agents/skills/rebeca_tooling/scripts/consolidate_reports.py \
@@ -633,6 +633,7 @@ CI also runs this automatically via `.github/workflows/cli-help-doc-sync.yml`.
 | `verify_installation.py --rmc-jar ...` → unrecognized arg | Old doc pattern; `--rmc-jar` wasn't a flag | Flag now accepted (ignored); jar checks are `pre_run_rmc_check.py`'s responsibility |
 | `rmc_path.txt` not found | Path marker written with `.txt` extension by third-party tooling | Resolver now probes both `rmc_path` and `rmc_path.txt` |
 | `JSONDecodeError` piping pretty JSON to `generate_report.py` | Old main() was line-by-line only | Use `--input-scores file.json` or pipe a JSON array / NDJSON; both now accepted |
+| Reports overwrite root `output/report.*` on each run | Flat output path | `generate_report.py --output-dir output` now writes nested `output/reports/<rule-id>/report.{json,md}` (single rule) or `output/reports/aggregate/` (multi-rule) |
 | Report shows `rules_passed: 0` despite per-rule data | `finalize()` was a no-op | Fixed — `finalize()` now recomputes all aggregate fields from `per_rule_scorecards` |
 | Vacuity result disagrees with scorecard | Each tool used a different assertion or different defaults | Pass `--assertion-id` to both `vacuity_checker.py` and `score_single_rule.py` |
 | Mutation engine shows `mutation_score: 0` | Generation-only mode; mutants not executed | Add `--run-with-jar/model/property` flags to enable kill-run |

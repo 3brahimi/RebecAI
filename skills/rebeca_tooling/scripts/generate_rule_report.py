@@ -14,6 +14,19 @@ from reporting_metrics import RuleReportBundle, build_rule_report_bundle
 from utils import safe_path
 
 
+def _slug_rule_name(value: str) -> str:
+    out = "".join(ch if ch.isalnum() or ch in ("-", "_") else "-" for ch in value.strip())
+    while "--" in out:
+        out = out.replace("--", "-")
+    return out.strip("-") or "unknown-rule"
+
+
+def _default_output_dir(rule_dir: Path, bundle: RuleReportBundle) -> Path:
+    parent = rule_dir.parent
+    base = parent if parent.name == "reports" else parent / "reports"
+    return base / _slug_rule_name(bundle.rule_id)
+
+
 def _bundle_to_json_payload(bundle: RuleReportBundle) -> Dict[str, Any]:
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -158,7 +171,11 @@ def _bundle_to_markdown(payload: Dict[str, Any]) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Generate comprehensive per-rule report")
     parser.add_argument("--rule-dir", required=True, help="Rule output directory (e.g., output/rule22)")
-    parser.add_argument("--output-dir", default=None, help="Output directory (default: same as rule-dir)")
+    parser.add_argument(
+        "--output-dir",
+        default=None,
+        help="Output directory (default: sibling reports/<rule-id>/)",
+    )
     parser.add_argument("--json-name", default="comprehensive_report.json", help="Output JSON filename")
     parser.add_argument("--md-name", default="comprehensive_report.md", help="Output markdown filename")
     parser.add_argument("--output-json", action="store_true", help="Also print JSON to stdout")
@@ -180,7 +197,7 @@ def main() -> None:
     payload = _bundle_to_json_payload(bundle)
     markdown = _bundle_to_markdown(payload)
 
-    output_dir = safe_path(args.output_dir) if args.output_dir else rule_dir
+    output_dir = safe_path(args.output_dir) if args.output_dir else _default_output_dir(rule_dir, bundle)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     json_path = output_dir / args.json_name

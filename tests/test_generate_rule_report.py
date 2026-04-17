@@ -59,8 +59,9 @@ def test_generate_rule_report_creates_md_and_json() -> None:
         )
 
         assert proc.returncode == 0, proc.stderr
-        report_json = rule_dir / "comprehensive_report.json"
-        report_md = rule_dir / "comprehensive_report.md"
+        report_dir = base / "reports" / "Rule-23"
+        report_json = report_dir / "comprehensive_report.json"
+        report_md = report_dir / "comprehensive_report.md"
         assert report_json.exists()
         assert report_md.exists()
 
