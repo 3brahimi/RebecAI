@@ -78,3 +78,35 @@ def test_generate_report_writes_multi_rule_under_reports_aggregate() -> None:
         assert proc.returncode == 0, proc.stderr
         assert (out / "reports" / "aggregate" / "report.json").exists()
         assert (out / "reports" / "aggregate" / "report.md").exists()
+
+
+def test_generate_report_without_output_dir_still_writes_default_artifacts() -> None:
+    with tempfile.TemporaryDirectory(dir=Path.home()) as td:
+        base = Path(td)
+        scorecard = {
+            "rule_id": "Rule-22",
+            "status": "Pass",
+            "score_total": 100,
+            "score_breakdown": {"syntax": 10},
+        }
+
+        proc = subprocess.run(
+            [
+                "python3",
+                str(SCRIPTS_DIR / "generate_report.py"),
+                "--input-scores",
+                json.dumps([scorecard]),
+            ],
+            cwd=str(base),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        assert proc.returncode == 0, proc.stderr
+        # Stdout compatibility preserved (JSON emitted).
+        payload = json.loads(proc.stdout)
+        assert payload["total_rules"] == 1
+
+        # Deterministic default artifact location.
+        assert (base / "output" / "reports" / "Rule-22" / "report.json").exists()

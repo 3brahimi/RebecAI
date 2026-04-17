@@ -22,8 +22,20 @@ def _slug_rule_name(value: str) -> str:
 
 
 def _default_output_dir(rule_dir: Path, bundle: RuleReportBundle) -> Path:
-    parent = rule_dir.parent
-    base = parent if parent.name == "reports" else parent / "reports"
+    # Prefer the nearest ancestor named "output" for deterministic report placement.
+    # Example: output/packaged/Rule-22 -> output/reports/Rule-22
+    output_root = None
+    for candidate in (rule_dir, *rule_dir.parents):
+        if candidate.name == "output":
+            output_root = candidate
+            break
+
+    if output_root is None:
+        parent = rule_dir.parent
+        base = parent if parent.name == "reports" else parent / "reports"
+    else:
+        base = output_root / "reports"
+
     return base / _slug_rule_name(bundle.rule_id)
 
 

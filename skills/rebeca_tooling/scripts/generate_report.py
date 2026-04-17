@@ -301,6 +301,13 @@ def _resolve_report_output_dir(output_dir: Path, cards: List[Dict[str, Any]]) ->
     return base / "aggregate"
 
 
+def _emit_stdout(gen: ReportGenerator, fmt: str) -> None:
+    if fmt in ("json", "both"):
+        print(gen.to_json())
+    if fmt in ("markdown", "both"):
+        print(gen.to_markdown())
+
+
 def _write_output(gen: ReportGenerator, output_dir: Optional[Path], fmt: str) -> None:
     if output_dir is not None:
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -388,11 +395,19 @@ Examples:
 
     gen.finalize()
 
-    output_dir = None
     if args.output_dir:
         base_dir = safe_path(args.output_dir)
         output_dir = _resolve_report_output_dir(base_dir, loaded_cards)
+        _write_output(gen, output_dir, args.format)
+        return
+
+    # Default behavior: always write under ./output/reports/... for predictable artifacts.
+    default_base = safe_path(Path.cwd() / "output")
+    output_dir = _resolve_report_output_dir(default_base, loaded_cards)
     _write_output(gen, output_dir, args.format)
+
+    # Preserve pipeline behavior by mirroring requested format to stdout.
+    _emit_stdout(gen, args.format)
 
 
 if __name__ == "__main__":
