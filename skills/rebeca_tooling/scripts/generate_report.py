@@ -291,7 +291,31 @@ class ReportGenerator:
 # ── CLI ───────────────────────────────────────────────────────────────────────
 
 def _resolve_report_output_dir(output_dir: Path, cards: List[Dict[str, Any]]) -> Path:
-    """Nest outputs under reports/<rule-id>/ (single) or reports/aggregate/ (multi)."""
+    """Resolve an output directory for report.json/report.md.
+
+    Historical behavior: treat --output-dir as a *base* and always nest outputs
+    under a trailing ``reports/`` directory.
+
+    However, callers sometimes pass an already-resolved per-rule directory like
+    ``output/reports/<rule_id>``. In that case we must NOT add an extra
+    ``reports/<rule_id>`` layer (which causes duplicated trees).
+    """
+
+    if len(cards) == 1:
+        rid = cards[0].get("rule_id")
+        slug = _slug_rule_name(rid) if isinstance(rid, str) and rid.strip() else None
+
+        # If the caller already provided a per-rule directory under .../reports/<rule_id>,
+        # treat it as final.
+        if slug and output_dir.name == slug and output_dir.parent.name == "reports":
+            return output_dir
+        if output_dir.name == "single-rule" and output_dir.parent.name == "reports":
+            return output_dir
+    else:
+        # If the caller already provided .../reports/aggregate, treat it as final.
+        if output_dir.name == "aggregate" and output_dir.parent.name == "reports":
+            return output_dir
+
     base = output_dir if output_dir.name == "reports" else output_dir / "reports"
     if len(cards) == 1:
         rid = cards[0].get("rule_id")
