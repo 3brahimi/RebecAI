@@ -28,11 +28,14 @@ missing, print which ones are absent and stop.
 
 If `output_dir` was not provided, set it to `output/<rule_id>` now before
 proceeding.
-## Script Location
 
-Agent installation path: `<install_root>`
-Scripts path: `<scripts>`
+## Script Location
+All dumb tools live in the `rebeca_tooling` skill. Resolve their location before any step:
+
+Agent Installation Path: `<install_root>`
+Scripts Path: `<scripts>`
 RMC JAR Path: `<jar>`
+
 ## Steps
 
 ### Step 01 — Init
