@@ -518,6 +518,14 @@ def main():
     patch_agent_placeholders(primary_target, scripts_path, jar_for_patch)
     print(f"  ✓ Agent paths stamped: scripts={scripts_path}, jar={jar_for_patch}")
 
+    # Gemini installs physical copies that cannot follow symlinks back to the
+    # patched primary truth — patch their agents/ directory separately.
+    if not args.target_root:
+        gemini_root = GEMINI_ROOT_LOCAL if args.mode == "local" else GEMINI_ROOT_GLOBAL
+        if (gemini_root / "agents").is_dir():
+            patch_agent_placeholders(gemini_root, scripts_path, jar_for_patch)
+            print(f"  ✓ Gemini agent paths stamped: {gemini_root / 'agents'}")
+
     print("\n✅ Setup Complete!")
     print(f"  Primary Truth: {primary_target}")
 
