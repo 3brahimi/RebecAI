@@ -519,11 +519,16 @@ def main():
     print(f"  ✓ Agent paths stamped: scripts={scripts_path}, jar={jar_for_patch}")
 
     # Gemini installs physical copies that cannot follow symlinks back to the
-    # patched primary truth — patch their agents/ directory separately.
+    # patched primary truth — patch them separately using Gemini-rooted paths
+    # so the agent sees consistent installation-relative paths (e.g.
+    # .gemini/skills/... rather than .agents/skills/...).
+    # Skills are symlinked under .gemini/skills/ so Python resolves them fine.
+    # RMC jar lives only under primary_target/rmc/ — reuse that path.
     if not args.target_root:
         gemini_root = GEMINI_ROOT_LOCAL if args.mode == "local" else GEMINI_ROOT_GLOBAL
         if (gemini_root / "agents").is_dir():
-            patch_agent_placeholders(gemini_root, scripts_path, jar_for_patch)
+            gemini_scripts = gemini_root / "skills" / "rebeca_tooling" / "scripts"
+            patch_agent_placeholders(gemini_root, gemini_scripts, jar_for_patch)
             print(f"  ✓ Gemini agent paths stamped: {gemini_root / 'agents'}")
 
     print("\n✅ Setup Complete!")
