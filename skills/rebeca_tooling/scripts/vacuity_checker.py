@@ -23,6 +23,7 @@ Exit codes:
 
 import argparse
 import json
+import os
 import re
 import sys
 import tempfile
@@ -32,6 +33,27 @@ from typing import Any, Dict, Optional
 from output_policy import vacuity_work_dirs
 from run_rmc import run_rmc_detailed
 from utils import safe_path
+
+
+def _write_json_artifact(output_file: Path, payload: Dict[str, Any]) -> None:
+    """Atomically write *payload* as UTF-8 JSON to *output_file* (temp + rename)."""
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    serialised = json.dumps(payload, indent=2, ensure_ascii=False)
+    fd, tmp_path = tempfile.mkstemp(
+        dir=output_file.parent,
+        prefix=f".{output_file.name}.tmp",
+        suffix=".json",
+    )
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write(serialised)
+        os.replace(tmp_path, output_file)
+    except Exception:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        raise
 
 
 def extract_precondition(
@@ -304,7 +326,13 @@ def main() -> None:
     parser.add_argument("--model", required=True, help="Path to .rebeca model file")
     parser.add_argument("--property", required=True, help="Path to .property file")
     parser.add_argument(
-        "--output-dir", required=True, help="Base output directory (appends _vacuity/)"
+        "--output-dir",
+        required=True,
+        help=(
+            "Base output directory used for vacuity scratch work. When --rule-id is provided, "
+            "canonical subdirectories are created under output/work/<rule-id>/runs/{baseline,vacuity}/. "
+            "When omitted, scratch dirs are created inside --output-dir."
+        ),
     )
     parser.add_argument(
         "--timeout-seconds", type=int, default=120, help="RMC timeout in seconds"
@@ -324,6 +352,12 @@ def main() -> None:
              "When omitted, dirs are placed inside --output-dir.",
     )
     parser.add_argument("--output-json", action="store_true", help="Output result as JSON")
+    parser.add_argument(
+        "--output-file",
+        default=None,
+        metavar="PATH",
+        help="Write the result payload as JSON to PATH atomically (temp + rename)",
+    )
     args = parser.parse_args()
 
     result = check_vacuity(
@@ -335,6 +369,10 @@ def main() -> None:
         assertion_id=args.assertion_id,
         rule_id=args.rule_id,
     )
+
+    if args.output_file:
+        output_path = safe_path(args.output_file)
+        _write_json_artifact(output_path, result)
 
     is_ambiguous = (
         result["is_vacuous"] is None
