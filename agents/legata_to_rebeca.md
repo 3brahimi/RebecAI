@@ -29,13 +29,6 @@ missing, print which ones are absent and stop.
 If `output_dir` was not provided, set it to `output/<rule_id>` now before
 proceeding.
 
-## Script Location
-All dumb tools live in the `rebeca_tooling` skill. Resolve their location before any step:
-
-Agent Installation Path: `<install_root>`
-Scripts Path: `<scripts>`
-RMC JAR Path: `<jar>`
-
 ## Steps
 
 ### Step 01 — Init
@@ -43,8 +36,8 @@ RMC JAR Path: `<jar>`
 Provision the toolchain and verify the installation is healthy.
 
 ```
-python3 <scripts>/pre_run_rmc_check.py
-python3 <scripts>/verify_installation.py <install_root>
+python3 $SCRIPTS/pre_run_rmc_check.py
+python3 $SCRIPTS/verify_installation.py <install_root>
 ```
 
 Check: both commands exit 0. If not, stop.
@@ -56,7 +49,7 @@ Check: both commands exit 0. If not, stop.
 Classify the rule's formalization status.
 
 ```
-python3 <scripts>/classify_rule_status.py \
+python3 $SCRIPTS/classify_rule_status.py \
   --legata-path <legata_input> \
   --output-json
 ```
@@ -86,7 +79,7 @@ Generate `<rule_id>.rebeca` and `<rule_id>.property` using
 to `<output_dir>`.
 
 ```
-python3 <scripts>/transformation_utils.py \
+python3 $SCRIPTS/transformation_utils.py \
   --rule-id <rule_id> \
   --reference-model <reference_model> \
   --reference-property <reference_property> \
@@ -104,7 +97,7 @@ one correction before stopping.
 Generate candidate property variants.
 
 ```
-python3 <scripts>/mutation_engine.py \
+python3 $SCRIPTS/mutation_engine.py \
   --rule-id <rule_id> \
   --property <output_dir>/<rule_id>.property \
   --output-file <output_dir>/<rule_id>_candidates.json
@@ -119,14 +112,14 @@ Check: `<output_dir>/<rule_id>_candidates.json` exists and is non-empty JSON.
 Run the model checker, then the vacuity check, then mutation scoring.
 
 ```
-python3 <scripts>/run_rmc.py \
+python3 $SCRIPTS/run_rmc.py \
   --jar <jar> \
   --model <output_dir>/<rule_id>.rebeca \
   --property <output_dir>/<rule_id>.property \
   --output-dir <output_dir>/rmc-out \
   --timeout-seconds 120
 
-python3 <scripts>/vacuity_checker.py \
+python3 $SCRIPTS/vacuity_checker.py \
   --jar <jar> \
   --model <output_dir>/<rule_id>.rebeca \
   --property <output_dir>/<rule_id>.property \
@@ -134,7 +127,7 @@ python3 <scripts>/vacuity_checker.py \
   --rule-id <rule_id> \
   --output-json
 
-python3 <scripts>/mutation_engine.py \
+python3 $SCRIPTS/mutation_engine.py \
   --rule-id <rule_id> \
   --model <output_dir>/<rule_id>.rebeca \
   --property <output_dir>/<rule_id>.property \
@@ -168,12 +161,12 @@ Check: all three file types are present. If any are missing, stop.
 Score the rule and generate the report.
 
 ```
-python3 <scripts>/score_single_rule.py \
+python3 $SCRIPTS/score_single_rule.py \
   --rule-id <rule_id> \
   --verify-status pass \
   --output-file <output_dir>/reports/<rule_id>/scorecard.json
 
-python3 <scripts>/generate_report.py \
+python3 $SCRIPTS/generate_report.py \
   --input-scores <output_dir>/reports/<rule_id>/scorecard.json \
   --output-dir <output_dir>/reports/<rule_id> \
   --format both
