@@ -281,10 +281,19 @@ def link_to_target(target_root: Path, primary_truth: Path, owned_skills: set[str
             create_surgical_symlink(skill, target_root / "skills" / skill.name)
 
 
-def patch_agent_placeholders(target_root: Path, scripts_path: Path, jar_path: Path) -> None:
+def patch_agent_placeholders(
+    target_root: Path,
+    scripts_path: Path,
+    jar_path: Path,
+    install_root: Path = None,
+) -> None:
     """
     Replace <install_root>, <scripts>, and <jar> placeholders in installed
     agent markdown files with the absolute paths resolved at install time.
+
+    install_root overrides target_root for the <install_root> replacement only.
+    Use this for Gemini: scripts live under .gemini/skills/ but <install_root>
+    must still point to the primary truth (.agents/) where RMC jar resides.
 
     Only rewrites files under target_root/agents/ — never touches skills or
     Python source.
@@ -293,7 +302,7 @@ def patch_agent_placeholders(target_root: Path, scripts_path: Path, jar_path: Pa
     if not agents_dir.is_dir():
         return
 
-    root_str = str(target_root.absolute())
+    root_str = str((install_root if install_root is not None else target_root).absolute())
     scripts_str = str(scripts_path.absolute())
     jar_str = str(jar_path.absolute())
 
@@ -528,7 +537,10 @@ def main():
         gemini_root = GEMINI_ROOT_LOCAL if args.mode == "local" else GEMINI_ROOT_GLOBAL
         if (gemini_root / "agents").is_dir():
             gemini_scripts = gemini_root / "skills" / "rebeca_tooling" / "scripts"
-            patch_agent_placeholders(gemini_root, gemini_scripts, jar_for_patch)
+            patch_agent_placeholders(
+                gemini_root, gemini_scripts, jar_for_patch,
+                install_root=primary_target,
+            )
             print(f"  ✓ Gemini agent paths stamped: {gemini_root / 'agents'}")
 
     print("\n✅ Setup Complete!")
