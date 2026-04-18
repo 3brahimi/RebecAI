@@ -2,14 +2,37 @@
 """Execute RMC model checker with model and property files."""
 
 import argparse
+import json
 import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from rmc_result_parser import parse_rmc_result_file
 from utils import safe_path
+
+
+def _write_json_artifact(output_file: Path, payload: Dict[str, Any]) -> None:
+    """Atomically write *payload* as UTF-8 JSON to *output_file* (temp + rename)."""
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    serialised = json.dumps(payload, indent=2, ensure_ascii=False)
+    fd, tmp_path = tempfile.mkstemp(
+        dir=output_file.parent,
+        prefix=f".{output_file.name}.tmp",
+        suffix=".json",
+    )
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write(serialised)
+        os.replace(tmp_path, output_file)
+    except Exception:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        raise
 
 
 def _classify_model_outcome(exit_code: Optional[int]) -> str:
@@ -374,6 +397,20 @@ def main():
         help="Also execute compiled model.out and print semantic outcome",
     )
     parser.add_argument(
+        "--output-json",
+        action="store_true",
+        help="Output the full RMC details payload as JSON to stdout",
+    )
+    parser.add_argument(
+        "--output-file",
+        default=None,
+        metavar="PATH",
+        help=(
+            "Write the full RMC details payload as JSON to PATH atomically (temp + rename). "
+            "Preferred over parsing logs."
+        ),
+    )
+    parser.add_argument(
         "--model-out-timeout-seconds",
         type=int,
         default=30,
@@ -404,7 +441,9 @@ def main():
     )
 
     args = parser.parse_args()
-    if args.run_model_outcome:
+
+    needs_details_payload = bool(args.run_model_outcome or args.output_json or args.output_file)
+    if needs_details_payload:
         details = run_rmc_detailed(
             jar=args.jar,
             model=args.model,
@@ -412,23 +451,33 @@ def main():
             output_dir=args.output_dir,
             timeout_seconds=args.timeout_seconds,
             jvm_opts=args.jvm_opts,
-            run_model_outcome=True,
+            run_model_outcome=bool(args.run_model_outcome),
             model_out_timeout_seconds=args.model_out_timeout_seconds,
             model_out_args=args.model_out_args,
             model_out_export_result=args.model_out_export_result,
             model_out_hashmap_size=args.model_out_hashmap_size,
             model_out_export_statespace=args.model_out_export_statespace,
         )
+
+        if args.output_file:
+            output_path = safe_path(args.output_file)
+            _write_json_artifact(output_path, details)
+
+        if args.output_json:
+            print(json.dumps(details, indent=2, ensure_ascii=False))
+
         sys.exit(int(details["rmc_exit_code"]))
 
-    sys.exit(run_rmc(
-        args.jar,
-        args.model,
-        args.property,
-        args.output_dir,
-        args.timeout_seconds,
-        args.jvm_opts
-    ))
+    sys.exit(
+        run_rmc(
+            args.jar,
+            args.model,
+            args.property,
+            args.output_dir,
+            args.timeout_seconds,
+            args.jvm_opts,
+        )
+    )
 
 
 if __name__ == "__main__":
