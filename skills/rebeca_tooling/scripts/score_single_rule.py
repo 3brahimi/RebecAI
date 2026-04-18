@@ -6,7 +6,10 @@ Field names match scoring_reporting_contract.md exactly.
 """
 
 import json
+import os
 import sys
+import tempfile
+from pathlib import Path
 from typing import Dict, Any, Optional
 
 class RubricScorer:
@@ -251,7 +254,16 @@ def main():
         default=None,
         help="Label of the assertion that was checked (for audit trail)",
     )
-    parser.add_argument("--output-json", action="store_true", help="Output as JSON")
+    parser.add_argument("--output-json", action="store_true", help="Output as JSON to stdout")
+    parser.add_argument(
+        "--output-file",
+        default=None,
+        metavar="PATH",
+        help=(
+            "Write scorecard JSON atomically to PATH (temp + rename). "
+            "Preferred over shell redirection of --output-json."
+        ),
+    )
 
     args = parser.parse_args()
 
@@ -276,9 +288,25 @@ def main():
         vacuity_comparison=args.vacuity_comparison,
     )
 
+    if args.output_file:
+        out = Path(args.output_file)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        serialised = json.dumps(scorecard, indent=2, ensure_ascii=False)
+        fd, tmp = tempfile.mkstemp(dir=out.parent, prefix=f".{out.name}.tmp", suffix=".json")
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                fh.write(serialised)
+            os.replace(tmp, out)
+        except Exception:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+            raise
+
     if args.output_json:
         print(json.dumps(scorecard, indent=2))
-    else:
+    elif not args.output_file:
         print(f"Rule: {scorecard['rule_id']}")
         print(f"Status: {scorecard['status']}")
         print(f"Score: {scorecard['score_total']}/{scorer.total_points}")
