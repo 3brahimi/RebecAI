@@ -108,7 +108,7 @@ def _bundle_to_markdown(payload: Dict[str, Any]) -> str:
         "- **Mutants selected**: population selected for execution (sampling/budget may reduce this).",
         "- **Mutants executed**: actually run against RMC within budget/time limits.",
         "- **Killed/Survived**: killed means mutant changed semantic outcome; survived means no semantic flip.",
-        "- **Mutation score**: $100 \times \frac{\text{killed}}{\text{executed}}$ when executed > 0.",
+        "- **Mutation score**: $100 \\times \\frac{\\text{killed}}{\\text{executed}}$ when executed > 0.",
         "",
         "## Vacuity Diagnostics",
         "| Metric | Value |",

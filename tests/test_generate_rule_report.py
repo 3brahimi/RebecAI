@@ -73,6 +73,7 @@ def test_generate_rule_report_creates_md_and_json() -> None:
         assert "Mutation Testing" in md_text
         assert "How to Interpret This Report" in md_text
         assert "Mutation Interpretation" in md_text
+        assert "$100 \\times \\frac{\\text{killed}}{\\text{executed}}$" in md_text
         assert "Vacuity Interpretation" in md_text
 
 
