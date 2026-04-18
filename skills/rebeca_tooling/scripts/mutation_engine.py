@@ -6,7 +6,7 @@ Applies controlled mutations to .rebeca and .property files to verify semantic
 strength. A well-formed transformation should produce different RMC outcomes
 (kill the mutant) when mutations are applied.
 
-Mutation strategies (defined in docs/SCORING.md):
+Mutation strategies:
   .rebeca:    transition_bypass, predicate_flip, assignment_mutation
   .property:  comparison_value_mutation, boolean_predicate_negation,
               assertion_negation, assertion_predicate_inversion,
