@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import List, Tuple, Optional, Set
 
 # Configuration
-GITHUB_REPO = "3brahimi/claude-rebeca"
+GITHUB_REPO = "3brahimi/RebecAI"
 ZIP_URL = f"https://github.com/{GITHUB_REPO}/archive/refs/heads/main.zip"
 RMC_LATEST_URL = "https://github.com/rebeca-lang/org.rebecalang.rmc/releases/latest"
 
