@@ -85,7 +85,7 @@ scorecards in. This agent only aggregates and formats.
 | Field       | Type            | Required | Description                                          |
 |-------------|-----------------|----------|------------------------------------------------------|
 | `scorecards`| array or string | yes      | Array of scorecard objects, or inline JSON / `@/path/to/file` |
-| `output_dir`| string          | yes      | Directory to write `report.json` and `report.md`    |
+| `output_dir`| string          | yes      | **Report root directory**. Prefer passing a path whose basename is `reports` (e.g. `output/reports`). |
 
 ## Pipeline
 
@@ -100,11 +100,12 @@ scorecards (from coordinator)
   │     ├─ status_counts, fallback_usage_count, blocked_rules_count
   │     └─ top_failure_reasons, aggregate_remediation_hints
   │
-  ├─► write {output_dir}/reports/{rule_id}/report.json  (via safe_path)
-  ├─► write {output_dir}/reports/{rule_id}/report.md    (via safe_path)
+  ├─► run generate_report.py --output-dir {output_dir}
+  │     ├─ (single) writes: {output_dir}/{rule_id}/report.json + report.md
+  │     └─ (multi)   writes: {output_dir}/aggregate/report.json + report.md
   ├─► run generate_rule_report.py --rule-dir {rule_output_dir}
-  │     ├─ write {output_dir}/reports/{rule_id}/comprehensive_report.json
-  │     └─ write {output_dir}/reports/{rule_id}/comprehensive_report.md
+  │     ├─ write {output_dir}/{rule_id}/comprehensive_report.json
+  │     └─ write {output_dir}/{rule_id}/comprehensive_report.md
   │
   └─► emit contract
 ```
