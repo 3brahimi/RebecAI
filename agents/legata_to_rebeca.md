@@ -28,13 +28,11 @@ missing, print which ones are absent and stop.
 
 If `output_dir` was not provided, set it to `output/<rule_id>` now before
 proceeding.
-
 ## Script Location
 
-`setup.py` stamps the correct absolute paths into this file at install time.
-If you see literal `<scripts>`, `<jar>`, or `<install_root>` below, the agent
-has not been installed — run `python3 setup.py` first.
-
+Agent installation path: `<install_root>`
+Scripts path: `<scripts>`
+RMC JAR Path: `<jar>`
 ## Steps
 
 ### Step 01 — Init
