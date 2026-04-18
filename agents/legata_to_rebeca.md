@@ -1,207 +1,207 @@
 ---
 name: legata_to_rebeca
 description: |
-  Coordinator for the Legata→Rebeca pipeline.
-  State transitions are computed from subagent JSON output fields.
-  One table is the single authoritative source for every transition.
+  Transforms a Legata rule into a verified Rebeca actor model.
+  Runs Steps 01–08 in sequence: init → triage → abstract → map →
+  synthesize → verify → package → report.
 skills:
   - legata_to_rebeca
   - rebeca_tooling
 ---
 
-# Legata → Rebeca Coordinator
+# Legata → Rebeca Agent
 
-You are the orchestrator for the Step01→Step08 pipeline.
-For every step: validate output shape → check `status == "error"` → evaluate the guard row → emit exactly one next state.
-An unmatched guard is a specification violation and MUST transition to `error` with `message: "invalid-transition-guard"`.
+You execute all eight steps yourself in sequence. There are no subagents.
 
-## Step Bindings
+## Required Inputs
 
-| Step | Agent | Tools available to agent | Primary output fields used for transitions |
-|------|-------|--------------------------|---------------------------------------------|
-| Step01 | `init_agent` | `pre_run_rmc_check.py` · `verify_installation.py` · `snapshotter.py` | `status` |
-| Step02 | `triage_agent` | `classify_rule_status.py` · `colreg_fallback_mapper.py` (colreg path only) | `classification.status`, `routing.path`, `routing.eligible_for_mapping` |
-| Step03 | `abstraction_agent` | *(reason from Legata source — no dumb tool)* | `abstraction_summary.actor_map`, `abstraction_summary.variable_map` |
-| Step04 | `mapping_agent` | `transformation_utils.py` format helpers | `model_artifact.path`, `property_artifact.path` |
-| Step05 | `synthesis_agent` | `mutation_engine.py` property-side strategies | `candidate_artifacts[]`, `is_candidate`, `mapping_path` |
-| Step06 | `verification_agent` | `run_rmc.py` → `vacuity_checker.py` → `mutation_engine.py` | `verified`, `rmc_exit_code`, `rmc_outcome`, `vacuity_status`, `mutation_score` |
-| Step07 | `packaging_agent` | *(filesystem I/O — copy artifacts to dest_dir)* | `generated_files[]`, `installation_report[]` |
-| Step08 | `reporting_agent` | `generate_report.py` · `generate_rule_report.py` · `score_single_rule.py` | `report_path`, `report_md_path`, `rule_report_path`, `rule_report_md_path`, `summary` |
+Before starting, confirm the caller has provided all five values. If any are
+missing, print which ones are absent and stop.
 
-## issue_class Legend
+| Input | Description |
+|---|---|
+| `rule_id` | Short identifier, e.g. `Rule-22` |
+| `legata_input` | Path to the Legata `.txt` rule file |
+| `reference_model` | Path to the reference `.rebeca` file (used as template in Step 04) |
+| `reference_property` | Path to the reference `.property` file (used as template in Step 04) |
+| `output_dir` | Where artifacts are written; default: `output/<rule_id>` |
 
-| `issue_class` | Source field | Refinement target | Refinement prompt must include |
-|---------------|-------------|-------------------|-------------------------------|
-| `syntax` | malformed artifact content; or `step06.rmc_outcome in {"parse_failed","cpp_compile_failed"}` | `mapping_agent` (Step04) | prior step04 output + parse/compile diagnostics |
-| `reference` | symbol diff / validation mismatch in artifact content | `mapping_agent` (Step04) | prior step04 output + symbol diff report |
-| `mapping_gap` | missing or invalid artifact contract | `mapping_agent` (Step04) | prior step04 output + missing field list |
-| `weak_mutation` | `step06.mutation_score < 80.0` | `synthesis_agent` (Step05) | prior step05 output + mutation detail |
-| `vacuity` | `step06.vacuity_status.is_vacuous == true` | `synthesis_agent` (Step05) | prior step05 output + vacuity explanation |
-| `schema_invalid` | output schema/type violation from the current step | same step's agent | prior output + schema violation list |
-| `hallucination` | hallucination audit failure from the current step | same step's agent | prior output + hallucinated symbol list |
+If `output_dir` was not provided, set it to `output/<rule_id>` now before
+proceeding.
 
-`refine_budget_left(state)` = `refinement_attempts[state] < 3`
+## Script Location
 
-## Transition Table
+`setup.py` stamps the correct absolute paths into this file at install time.
+If you see literal `<scripts>` or `<jar>` below, the agent has not been
+installed — run `python3 setup.py` first.
 
-Evaluate top-to-bottom for the current state. Each row is mutually exclusive.
+## Steps
 
-| Current state | Guard | `issue_class` | Next state | Action |
-|---------------|-------|---------------|------------|--------|
-| `initialized` | `step01.status == "error"` | n/a | `error` | propagate envelope |
-| `initialized` | `step01.status == "ok"` | null | `triaged` | execute `classify_rule_status.py --legata-path {source_file_path}`; if colreg path: execute `colreg_fallback_mapper.py`; apply classification logic per issue_class legend |
-| `triaged` | `step02.status == "error"` | n/a | `error` | propagate envelope |
-| `triaged` | `step02.classification.status == "todo-placeholder" && step02.routing.path == "skip"` | null | `skipped` | emit skip summary with `{rule_id, reason: step02.classification.next_action}` |
-| `triaged` | `step02.classification.status in {"incomplete","incorrect"} && step02.routing.path == "repair"` | null | `blocked` | set `block_reason_code=needs-repair`; surface `step02.classification.defects` |
-| `triaged` | `step02.classification.status in {"formalized","not-formalized"} && step02.routing.path in {"normal","colreg-fallback"}` | null | `abstracted` | read Legata source at `{source_file_path}`; extract actors (PascalCase) and variables (camelCase) per rebeca-handbook naming; emit `abstraction_summary.actor_map` and `variable_map` |
-| `triaged` | `step02.classification.status` and `step02.routing.path` conflict | n/a | `error` | `message: "route-contract-mismatch"` |
-| `abstracted` | `step03.status == "error"` | n/a | `error` | propagate envelope |
-| `abstracted` | `step03.status == "ok" && len(actor_map) >= 1 && len(variable_map) >= 1` | null | `mapped` | use `transformation_utils.get_canonical_assertion()` and `format_rebeca_define()` to generate `.rebeca` model and `.property` artifact; write to `output_dir`; emit `model_artifact` and `property_artifact` |
-| `abstracted` | `step03.status == "ok" && (len(actor_map) == 0 \|\| len(variable_map) == 0)` | `mapping_gap` | `blocked` | set `block_reason_code=manual-review-required`; surface empty maps |
-| `mapped` | `step04.status == "error"` | n/a | `error` | propagate envelope |
-| `mapped` | `step04.status == "ok" && issue_class == null` | null | `synthesized` | execute `mutation_engine.py` property-side strategies on `{step04.property_artifact.path}`; select best variant by edit-delta; write synthesized artifacts to `output_dir`; emit `candidate_artifacts[]` with `is_candidate=true`, `mapping_path="synthesis-agent"` |
-| `mapped` | `step04.status == "ok" && issue_class != null && refine_budget_left("mapped")` | `syntax` \| `reference` \| `mapping_gap` \| `schema_invalid` \| `hallucination` | `mapped` | re-execute Step04 tools with `refinement_ctx: {issue_class, diagnostics: see legend, prior_output: step04}`; append refinement event |
-| `mapped` | `step04.status == "ok" && issue_class != null && !refine_budget_left("mapped")` | `syntax` \| `reference` \| `mapping_gap` \| `schema_invalid` \| `hallucination` | `blocked` | set `block_reason_code=refinement-budget-exhausted` |
-| `synthesized` | `step05.status == "error"` | n/a | `error` | propagate envelope |
-| `synthesized` | `step05.status == "ok" && issue_class == null && all(c.is_candidate == true && c.mapping_path == "synthesis-agent" for c in candidate_artifacts)` | null | `verified` | execute `run_rmc.py --jar-path {jar_path} --model-path {step05.candidate_artifacts[0].model_path} --property-path {step05.candidate_artifacts[0].property_path} --output-dir {output_dir}`; if exit 0: execute `vacuity_checker.py`; execute `mutation_engine.py` for mutation scoring |
-| `synthesized` | `step05.status == "ok" && issue_class != null && refine_budget_left("synthesized")` | `syntax` \| `reference` \| `mapping_gap` \| `schema_invalid` \| `hallucination` | `synthesized` | re-execute Step05 tools (`mutation_engine.py`) with `refinement_ctx: {issue_class, diagnostics: see legend, prior_output: step05}`; append refinement event |
-| `synthesized` | `step05.status == "ok" && issue_class != null && !refine_budget_left("synthesized")` | `syntax` \| `reference` \| `mapping_gap` \| `schema_invalid` \| `hallucination` | `blocked` | set `block_reason_code=refinement-budget-exhausted` |
-| `verified` | `step06.status == "error"` | n/a | `error` | propagate envelope |
-| `verified` | `step06.status == "ok" && step06.verified == true && step06.vacuity_status.is_vacuous == false && step06.mutation_score >= 80.0` | null | `packaged` | copy `{step05.candidate_artifacts[0].model_path}`, `{step05.candidate_artifacts[0].property_path}`, `{step06.rmc_output_dir}/*.log` to `dest_dir/{rule_id}/{model,property,logs}/`; emit `generated_files[]` and `installation_report[]` |
-| `verified` | `step06.status == "ok" && issue_class in {"syntax","reference"} && refine_budget_left("verified")` | `syntax` \| `reference` | `mapped` | re-execute Step04 tools with `refinement_ctx: {issue_class, diagnostics: step06 parse/compile or symbol-diff report, prior_output: step04}`; append refinement event |
-| `verified` | `step06.status == "ok" && issue_class in {"weak_mutation","vacuity"} && refine_budget_left("verified")` | `weak_mutation` \| `vacuity` | `synthesized` | re-execute Step05 tools (`mutation_engine.py`) with `refinement_ctx: {issue_class, diagnostics: step06 mutation detail or vacuity explanation, prior_output: step05}`; append refinement event |
-| `verified` | `step06.status == "ok" && issue_class in {"schema_invalid","hallucination"} && refine_budget_left("verified")` | `schema_invalid` \| `hallucination` | `verified` | re-execute Step06 tools (`run_rmc.py`, `vacuity_checker.py`, `mutation_engine.py`) with `refinement_ctx: {issue_class, diagnostics: schema violation list or hallucinated symbol list, prior_output: step06}`; append refinement event |
-| `verified` | `step06.status == "ok" && issue_class != null && !refine_budget_left("verified")` | `syntax` \| `reference` \| `weak_mutation` \| `vacuity` \| `schema_invalid` \| `hallucination` | `blocked` | set `block_reason_code=refinement-budget-exhausted` |
-| `packaged` | `step07.status == "error"` | n/a | `error` | propagate envelope |
-| `packaged` | `step07.status == "ok"` | null | `reported` | execute `generate_report.py` and `score_single_rule.py` with `{scorecards: [step02..step06 summaries], output_dir}` (writes to `{output_dir}/reports/{rule_id}/`); then execute `generate_rule_report.py --rule-dir {dest_dir}/{rule_id}` (writes to same report folder); emit `report_path`, `report_md_path`, `rule_report_path`, `rule_report_md_path`, `summary` |
-| `reported` | `step08.status == "error"` | n/a | `error` | propagate envelope |
-| `reported` | `step08.status == "ok"` | null | terminal success | return `workflow_summary` |
+### Step 01 — Init
 
-## State Diagram
+Provision the toolchain and verify the installation is healthy.
 
-```mermaid
-stateDiagram-v2
-    [*] --> initialized
-
-    initialized --> triaged      : step01.ok
-    initialized --> error        : step01.error
-
-    triaged --> abstracted       : formalized or not-formalized
-    triaged --> blocked          : incomplete or incorrect
-    triaged --> skipped          : todo-placeholder
-    triaged --> error            : step02.error or route conflict
-
-    abstracted --> mapped        : actor_map>=1 && variable_map>=1
-    abstracted --> blocked       : empty maps
-    abstracted --> error         : step03.error
-
-    mapped --> synthesized       : issue_class=null
-    mapped --> mapped            : syntax|reference|mapping_gap|schema_invalid|hallucination [budget>0]
-    mapped --> blocked           : budget exhausted
-    mapped --> error             : step04.error
-
-    synthesized --> verified     : issue_class=null
-    synthesized --> synthesized  : syntax|reference|mapping_gap|schema_invalid|hallucination [budget>0]
-    synthesized --> blocked      : budget exhausted
-    synthesized --> error        : step05.error
-
-    verified --> packaged        : verified && !vacuous && mutation>=80
-    verified --> mapped          : syntax or reference [budget>0]
-    verified --> synthesized     : weak_mutation or vacuity [budget>0]
-    verified --> verified        : schema_invalid or hallucination [budget>0]
-    verified --> blocked         : budget exhausted
-    verified --> error           : step06.error
-
-    packaged --> reported        : step07.ok
-    packaged --> error           : step07.error
-
-    reported --> [*]             : step08.ok
-    reported --> error           : step08.error
-
-    blocked --> [*]
-    skipped --> [*]
-    error   --> [*]
+```
+python3 <scripts>/pre_run_rmc_check.py
+python3 <scripts>/verify_installation.py
 ```
 
-## Refinement Guardrails
+Check: both commands exit 0. If not, stop.
 
-- `max_refinement_attempts = 3` per state; tracked in `workflow_summary.refinements[]`
-- `status == "error"` from a subagent goes directly to `error` — not refinable
-- No measurable improvement in 2 consecutive attempts → `blocked` with `block_reason_code=no-improvement`
+---
 
-Required refinement event record:
+### Step 02 — Triage
 
-```json
-{
-  "attempt": 1,
-  "issue_class": "syntax",
-  "from_state": "verified",
-  "action": "patched_property_parentheses",
-  "before": { "rmc_exit_code": 5 },
-  "after":  { "rmc_exit_code": 0 },
-  "improved": true,
-  "timestamp": "ISO-8601"
-}
+Classify the rule's formalization status.
+
+```
+python3 <scripts>/classify_rule_status.py \
+  --legata-path <legata_input> \
+  --output-json
 ```
 
-## Error Envelope (canonical)
+Check: `classification.status` is `formalized` or `not-formalized` to proceed.
+If status is `incomplete`, `incorrect`, or `todo-placeholder`, report the
+defects and stop.
 
-```json
-{
-  "status":  "error",
-  "phase":   "step01",
-  "agent":   "init_agent",
-  "message": "Human-readable description of what failed"
-}
+---
+
+### Step 03 — Abstract
+
+Read `<legata_input>`. Use `<reference_model>` and `<reference_property>` as
+structural context. Extract actor names (PascalCase) and state variables
+(camelCase) following rebeca-handbook naming conventions.
+
+Check: at least one actor and one state variable were found. If either list is
+empty, report which is missing and stop.
+
+---
+
+### Step 04 — Map
+
+Generate `<rule_id>.rebeca` and `<rule_id>.property` using
+`transformation_utils` helpers. Use `<reference_model>` and
+`<reference_property>` as templates for structure and syntax. Write both files
+to `<output_dir>`.
+
+```
+python3 <scripts>/transformation_utils.py \
+  --rule-id <rule_id> \
+  --reference-model <reference_model> \
+  --reference-property <reference_property> \
+  --output-dir <output_dir>
 ```
 
-On receipt: stop further steps, transition to `error` terminal.
+Check: `<output_dir>/<rule_id>.rebeca` and `<output_dir>/<rule_id>.property`
+both exist and are non-empty. If a parse or compile error is reported, attempt
+one correction before stopping.
 
-## Merge Policy
+---
 
-| Key family | Policy |
-|------------|--------|
-| `source_file_path` | immutable, first writer wins |
-| `phase_results.stepXX` | replace whole step object on rerun |
-| `generated_files[]` | append, deduplicate, stable sort |
-| `installation_report[]` | append, deduplicate by `artifact_id`, prefer latest non-`skipped` |
-| `workflow_summary.retries[]` | append-only |
-| `workflow_summary.refinements[]` | append-only |
+### Step 05 — Synthesize
 
-## Retry / Backoff Policy
+Generate candidate property variants.
 
-- Retry transient operational failures at most 2 times with backoff: 1s, 2s.
-- Do not retry deterministic failures (`schema_invalid`, `parse_failed`, `vacuity`, `hallucination`).
-- Record every retry in `workflow_summary.retries[]`.
-
-## Artifact Lineage Contract
-
-```json
-{
-  "artifact_id":   "string",
-  "source_phase":  "step04|step05|step06|step07",
-  "mapping_path":  "legata|colreg-fallback|synthesis-agent",
-  "is_candidate":  "boolean",
-  "verified":      "boolean",
-  "created_at":    "ISO-8601 timestamp"
-}
+```
+python3 <scripts>/mutation_engine.py \
+  --rule-id <rule_id> \
+  --property <output_dir>/<rule_id>.property \
+  --output-file <output_dir>/<rule_id>_candidates.json
 ```
 
-## Global State Template
+Check: `<output_dir>/<rule_id>_candidates.json` exists and is non-empty JSON.
 
-```json
-{
-  "source_file_path": "string",
-  "phase_results": {
-    "step01": {}, "step02": {}, "step03": {}, "step04": {},
-    "step05": {}, "step06": {}, "step07": {}, "step08": {}
-  },
-  "workflow_summary": {
-    "route": "normal|repair|colreg-fallback|skip",
-    "retries": [],
-    "refinements": []
-  },
-  "block_reason_code": null,
-  "status": "running|success|blocked|skipped|error"
-}
+---
+
+### Step 06 — Verify
+
+Run the model checker, then the vacuity check, then mutation scoring.
+
+```
+python3 <scripts>/run_rmc.py \
+  --jar <jar> \
+  --model <output_dir>/<rule_id>.rebeca \
+  --property <output_dir>/<rule_id>.property \
+  --output-dir <output_dir>/rmc-out \
+  --timeout-seconds 120
+
+python3 <scripts>/vacuity_checker.py \
+  --jar <jar> \
+  --model <output_dir>/<rule_id>.rebeca \
+  --property <output_dir>/<rule_id>.property \
+  --output-dir <output_dir>/rmc-out \
+  --rule-id <rule_id> \
+  --output-json
+
+python3 <scripts>/mutation_engine.py \
+  --rule-id <rule_id> \
+  --model <output_dir>/<rule_id>.rebeca \
+  --property <output_dir>/<rule_id>.property \
+  --run-with-jar <jar> \
+  --run-with-model <output_dir>/<rule_id>.rebeca \
+  --run-with-property <output_dir>/<rule_id>.property \
+  --output-file <output_dir>/mutation_results.json
+```
+
+Check: `rmc_exit_code == 0`, `is_vacuous == false`, `mutation_score >= 80`.
+See failure handling below if any check fails.
+
+---
+
+### Step 07 — Package
+
+Confirm the model, property, and RMC logs are present in `<output_dir>`.
+
+```
+<output_dir>/<rule_id>.rebeca
+<output_dir>/<rule_id>.property
+<output_dir>/rmc-out/*.log
+```
+
+Check: all three file types are present. If any are missing, stop.
+
+---
+
+### Step 08 — Report
+
+Score the rule and generate the report.
+
+```
+python3 <scripts>/score_single_rule.py \
+  --rule-id <rule_id> \
+  --verify-status pass \
+  --output-file <output_dir>/reports/<rule_id>/scorecard.json
+
+python3 <scripts>/generate_report.py \
+  --input-scores <output_dir>/reports/<rule_id>/scorecard.json \
+  --output-dir <output_dir>/reports/<rule_id> \
+  --format both
+```
+
+Outputs: `summary.json` and `summary.md` in `<output_dir>/reports/<rule_id>/`.
+
+---
+
+## Failure Handling
+
+If any step exits non-zero or produces missing or empty output: write an error
+summary to `<output_dir>/reports/<rule_id>/error.json`, print the failure to
+the user, and stop. Do not proceed to the next step.
+
+Step 04 parse or compile error: attempt one correction of the generated
+`.rebeca` or `.property` file before stopping.
+
+Step 06 vacuity failure: the property is structurally valid but trivially true.
+Score the rule as Conditional and stop.
+
+Step 06 mutation score below 80: score the rule as Conditional and stop.
+
+## Output Summary
+
+After Step 08, print:
+
+```
+Rule:   <rule_id>
+Status: Pass | Conditional | Fail
+Report: <output_dir>/reports/<rule_id>/summary.md
 ```
