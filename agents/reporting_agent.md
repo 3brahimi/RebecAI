@@ -46,7 +46,7 @@ Each scorecard passed to this agent MUST conform to the fields consumed by
 | `remediation_hints` | list[str]      | Step05 + `RubricScorer` |
 | `score_breakdown`   | object         | `RubricScorer`       |
 
-## 100-Point Rubric (from docs/SCORING.md)
+## 100-Point Rubric
 
 | Dimension              | Points | Verification method              |
 |------------------------|--------|----------------------------------|
