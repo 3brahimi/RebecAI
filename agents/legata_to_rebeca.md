@@ -32,8 +32,8 @@ proceeding.
 ## Script Location
 
 `setup.py` stamps the correct absolute paths into this file at install time.
-If you see literal `<scripts>` or `<jar>` below, the agent has not been
-installed — run `python3 setup.py` first.
+If you see literal `<scripts>`, `<jar>`, or `<install_root>` below, the agent
+has not been installed — run `python3 setup.py` first.
 
 ## Steps
 
@@ -43,7 +43,7 @@ Provision the toolchain and verify the installation is healthy.
 
 ```
 python3 <scripts>/pre_run_rmc_check.py
-python3 <scripts>/verify_installation.py
+python3 <scripts>/verify_installation.py <install_root>
 ```
 
 Check: both commands exit 0. If not, stop.

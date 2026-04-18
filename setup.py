@@ -283,8 +283,8 @@ def link_to_target(target_root: Path, primary_truth: Path, owned_skills: set[str
 
 def patch_agent_placeholders(target_root: Path, scripts_path: Path, jar_path: Path) -> None:
     """
-    Replace <scripts> and <jar> placeholders in installed agent markdown files
-    with the absolute paths resolved at install time.
+    Replace <install_root>, <scripts>, and <jar> placeholders in installed
+    agent markdown files with the absolute paths resolved at install time.
 
     Only rewrites files under target_root/agents/ — never touches skills or
     Python source.
@@ -293,13 +293,17 @@ def patch_agent_placeholders(target_root: Path, scripts_path: Path, jar_path: Pa
     if not agents_dir.is_dir():
         return
 
+    root_str = str(target_root.absolute())
     scripts_str = str(scripts_path.absolute())
     jar_str = str(jar_path.absolute())
 
     for f in agents_dir.rglob("*.md"):
         try:
             content = f.read_text(encoding="utf-8")
-            new_content = content.replace("<scripts>", scripts_str).replace("<jar>", jar_str)
+            new_content = (content
+                .replace("<install_root>", root_str)
+                .replace("<scripts>", scripts_str)
+                .replace("<jar>", jar_str))
             if new_content != content:
                 f.write_text(new_content, encoding="utf-8")
         except Exception:
