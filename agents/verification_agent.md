@@ -80,12 +80,14 @@ phase1 and phase2 only run when phase0 exit_code == 0.
 ## Phase0 — RMC Syntax/Compilation Check
 
 ```bash
-python3 $SCRIPTS/run_rmc.py \
-  --jar $JAR \
+python3 <scripts>/run_rmc.py \
+  --jar <jar> \
   --model $MODEL \
   --property $PROPERTY \
-  --output-dir $OUTPUT_DIR \
-  --timeout-seconds 120
+  --output-dir $OUTPUT_DIR/rmc \
+  --timeout-seconds 120 \
+  --run-model-outcome \
+  --output-file $OUTPUT_DIR/rmc_details.json
 ```
 
 ### Exit Code Classification
@@ -106,12 +108,30 @@ python3 $SCRIPTS/run_rmc.py \
 Only run if Phase0 passed (`rmc_exit_code == 0`).
 
 ```bash
-python3 $SCRIPTS/mutation_engine.py \
+python3 <scripts>/mutation_engine.py \
   --rule-id $RULE_ID \
   --model $MODEL \
   --property $PROPERTY \
   --strategy all \
-  --output-json
+  --output-file $OUTPUT_DIR/mutation_candidates.json
+```
+
+Then execute a bounded kill-run to compute a mutation score:
+
+```bash
+python3 <scripts>/mutation_engine.py \
+  --rule-id $RULE_ID \
+  --model $MODEL \
+  --property $PROPERTY \
+  --strategy all \
+  --run-with-jar <jar> \
+  --run-with-model $MODEL \
+  --run-with-property $PROPERTY \
+  --run-timeout 60 \
+  --max-mutants 50 \
+  --total-timeout 600 \
+  --seed 42 \
+  --output-file $OUTPUT_DIR/mutation_killrun.json
 ```
 
 For each generated mutant, run RMC:
@@ -137,12 +157,13 @@ See `rebeca_mutation` skill for strategy details and Python workflow.
 Only run if Phase0 passed. Run in parallel with Phase1 (both require Phase0).
 
 ```bash
-python3 $SCRIPTS/vacuity_checker.py \
-  --jar $JAR \
+python3 <scripts>/vacuity_checker.py \
+  --jar <jar> \
   --model $MODEL \
   --property $PROPERTY \
   --output-dir $OUTPUT_DIR \
   --timeout-seconds 60 \
+  --output-file $OUTPUT_DIR/vacuity_check.json \
   --output-json
 ```
 
@@ -157,12 +178,12 @@ A vacuous property passes RMC trivially because its precondition is never reacha
 **Always runs** — independent of Phase0 outcome. Uses the golden snapshot captured by Step01.
 
 ```bash
-python3 $SCRIPTS/symbol_differ.py \
+python3 <scripts>/symbol_differ.py \
   --snapshot $SNAPSHOT_PATH \
   --model $MODEL \
   --property $PROPERTY \
   --rmc-exit-code $PHASE0_EXIT_CODE \
-  --rmc-stderr-log $OUTPUT_DIR/rmc_stderr.log \
+  --rmc-stderr-log $OUTPUT_DIR/rmc/rmc_stderr.log \
   --output-json
 ```
 
