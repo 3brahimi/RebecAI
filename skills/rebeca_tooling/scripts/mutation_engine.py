@@ -21,7 +21,9 @@ Exit codes (CLI):
 """
 
 import argparse
+import datetime
 import json
+import os
 import random
 import re
 import subprocess
@@ -648,6 +650,98 @@ def run_mutants(
     }
 
 
+def write_mutation_artifact(output_file: Path, payload: Dict[str, Any]) -> None:
+    """
+    Atomically write *payload* as UTF-8 JSON to *output_file*.
+
+    Uses a sibling temp file + os.replace() so callers never observe a
+    partial or empty file even if the process is interrupted mid-write.
+
+    Raises:
+        ValueError: if the resulting JSON would be empty or the payload
+                    missing required keys.
+        OSError:    on filesystem errors (propagated to caller).
+    """
+    required_key_sets = ({"rule_id"}, {"mutants", "total_mutants", "kill_stats"})
+    has_rule_id = "rule_id" in payload
+    has_content_key = bool({"mutants", "total_mutants", "kill_stats"} & payload.keys())
+    if not has_rule_id or not has_content_key:
+        missing = []
+        if not has_rule_id:
+            missing.append("rule_id")
+        if not has_content_key:
+            missing.append("one of mutants/total_mutants/kill_stats")
+        raise ValueError(
+            f"Mutation artifact payload missing required keys: {', '.join(missing)}"
+        )
+
+    serialised = json.dumps(payload, indent=2, ensure_ascii=False)
+    if not serialised.strip():
+        raise ValueError("Serialised mutation artifact is empty")
+
+    output_file = Path(output_file)
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+
+    # Write to a sibling temp file, then rename atomically.
+    fd, tmp_path = tempfile.mkstemp(
+        dir=output_file.parent,
+        prefix=f".{output_file.name}.tmp",
+        suffix=".json",
+    )
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write(serialised)
+        os.replace(tmp_path, output_file)
+    except Exception:
+        # Best-effort cleanup of the temp file on error.
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        raise
+
+    # Post-condition: file must be non-empty and parseable.
+    size = output_file.stat().st_size
+    if size == 0:
+        raise OSError(f"Artifact written to {output_file} is 0 bytes after rename")
+
+
+def write_mutation_error_artifact(
+    output_file: Path,
+    rule_id: str,
+    *,
+    command: Optional[List[str]] = None,
+    return_code: Optional[int] = None,
+    stdout_preview: str = "",
+    stderr_preview: str = "",
+    exception_msg: str = "",
+) -> Path:
+    """
+    Write a structured error artifact as ``<output_file>.error.json``.
+
+    This is always written on failure so that downstream steps receive an
+    explicit error signal rather than a missing or empty artifact.
+
+    Returns the path of the error file written.
+    """
+    error_path = output_file.with_suffix(".error.json")
+    error_path.parent.mkdir(parents=True, exist_ok=True)
+
+    payload: Dict[str, Any] = {
+        "status": "error",
+        "rule_id": rule_id,
+        "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
+        "command": command or [],
+        "return_code": return_code,
+        "stdout_preview": stdout_preview[:2000],
+        "stderr_preview": stderr_preview[:2000],
+        "exception": exception_msg,
+    }
+    serialised = json.dumps(payload, indent=2, ensure_ascii=False)
+    error_path.write_text(serialised, encoding="utf-8")
+    return error_path
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Generate mutation variants of .rebeca/.property files for semantic validation"
@@ -662,7 +756,17 @@ def main() -> None:
         help="Mutation strategy to apply (default: all)",
     )
     parser.add_argument(
-        "--output-json", action="store_true", help="Output results as JSON"
+        "--output-json", action="store_true", help="Output results as JSON to stdout"
+    )
+    parser.add_argument(
+        "--output-file",
+        default=None,
+        metavar="PATH",
+        help=(
+            "Write mutation artifact as JSON to PATH atomically (temp + rename). "
+            "On failure, writes PATH.error.json and exits non-zero. "
+            "Preferred over shell redirection of --output-json."
+        ),
     )
     # ── optional kill-run mode ──────────────────────────────────────────────
     run_group = parser.add_argument_group(
@@ -749,17 +853,38 @@ def main() -> None:
             file=sys.stderr,
         )
 
+    output: Dict[str, Any] = {
+        "mode": mode,
+        "rule_id": args.rule_id,
+        "total_mutants": len(mutations),
+        "mutants": mutant_summary,
+    }
+    if kill_stats is not None:
+        output["kill_stats"] = kill_stats
+
+    # ── --output-file: atomic write with error artifact on failure ──────────
+    if args.output_file:
+        output_path = safe_path(args.output_file)
+        try:
+            write_mutation_artifact(output_path, output)
+        except Exception as exc:
+            error_path = write_mutation_error_artifact(
+                output_path,
+                rule_id=args.rule_id,
+                exception_msg=str(exc),
+            )
+            print(
+                f"[mutation_engine] ERROR: failed to write artifact to {output_path}: {exc}\n"
+                f"  Diagnostics written to: {error_path}",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+    # ── --output-json: stdout JSON (backward-compatible) ───────────────────
     if args.output_json:
-        output: Dict[str, Any] = {
-            "mode": mode,
-            "rule_id": args.rule_id,
-            "total_mutants": len(mutations),
-            "mutants": mutant_summary,
-        }
-        if kill_stats is not None:
-            output["kill_stats"] = kill_stats
         print(json.dumps(output, indent=2))
-    else:
+    elif not args.output_file:
+        # Human-readable summary when neither flag is given
         print(f"Rule:            {args.rule_id}")
         print(f"Total mutants:   {len(mutations)}")
         for m in mutations:
