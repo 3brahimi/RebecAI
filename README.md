@@ -35,11 +35,87 @@ curl -sSL https://raw.githubusercontent.com/3brahimi/RebecAI/main/setup.py | pyt
 
 # Clean up all installed artifacts before re-install
 python3 purge.py && python3 setup.py
+```
 
-# Example: Transform a rule
-@legata_to_rebeca Transform legata/Rule-22-Equipment-Range.legata to Rebeca.
-Reference model: legata/rebeca/SimulationModelCode.rebeca
-Reference property: legata/rebeca/SimulationModelCode.property
+## Invoking the Agent
+
+The coordinator agent is named `legata_to_rebeca`. Below are copy-paste prompt templates for each supported platform. Fill in the four required values before sending.
+
+**Required values**
+
+| Placeholder | What to provide |
+|-------------|-----------------|
+| `<rule_id>` | Short identifier, e.g. `Rule-22` |
+| `<legata_file>` | Path to the Legata `.txt` rule file |
+| `<reference_model>` | Path to the reference `.rebeca` model |
+| `<reference_property>` | Path to the reference `.property` file |
+
+---
+
+### Claude Code
+
+```
+@legata_to_rebeca
+
+Transform <rule_id> to Rebeca.
+
+rule_id:            <rule_id>
+legata_input:       <legata_file>
+reference_model:    <reference_model>
+reference_property: <reference_property>
+output_dir:         output/<rule_id>
+```
+
+Run inside the project directory where RebecAI is installed (`~/.claude/agents/legata_to_rebeca.md` must exist). The agent has Bash access and will call the tooling scripts directly.
+
+---
+
+### Gemini CLI
+
+```
+@legata_to_rebeca
+
+Transform <rule_id> to Rebeca.
+
+rule_id:            <rule_id>
+legata_input:       <legata_file>
+reference_model:    <reference_model>
+reference_property: <reference_property>
+output_dir:         output/<rule_id>
+```
+
+Run from the project root. Gemini CLI loads agents from `~/.gemini/agents/`. The agent file is a physical copy with Gemini-incompatible frontmatter keys stripped by the installer.
+
+---
+
+### GitHub Copilot Chat
+
+Select the `legata_to_rebeca` agent in the Copilot Chat agent picker, then send:
+
+```
+Transform <rule_id> to Rebeca.
+
+rule_id:            <rule_id>
+legata_input:       <legata_file>
+reference_model:    <reference_model>
+reference_property: <reference_property>
+output_dir:         output/<rule_id>
+```
+
+The agent file lives at `.github/agents/legata_to_rebeca.agent.md`. Copilot Chat runs a single agent context — there are no spawned subagents. The coordinator executes all eight steps itself in sequence.
+
+---
+
+**Concrete example (COLREG Rule 22)**
+
+```
+Transform Rule-22 to Rebeca.
+
+rule_id:            Rule-22
+legata_input:       legata/colreg/Rule22.txt
+reference_model:    legata/rebeca/SimulationModelCode.rebeca
+reference_property: legata/rebeca/SimulationModelCode.property
+output_dir:         output/Rule-22
 ```
 
 ## Architecture: Multi-Agent Orchestration
