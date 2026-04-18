@@ -13,11 +13,10 @@ RebecAI provides a unified framework to:
 
 ## Repository Structure
 
-| Category | Implementation Path | Documentation Path | Purpose |
-| :--- | :--- | :--- | :--- |
-| **Agents** | `agents/` | `docs/agents/` | Coordinator + 8 specialist subagents |
-| **Skills** | `skills/` | `docs/skills/` | Reusable knowledge injected at subagent startup |
-| **Guides** | N/A | `docs/guides/` | Procedural workflows, setup, and architecture |
+| Category | Path | Purpose |
+| :--- | :--- | :--- |
+| **Agents** | `agents/` | Coordinator + 8 specialist subagents |
+| **Skills** | `skills/` | Reusable knowledge injected at subagent startup |
 
 ## Quick Start
 
@@ -177,14 +176,6 @@ legata_to_rebeca (coordinator)
 - **Python 3.8+** | **Java 11+** (for RMC) | **C++ compiler** (g++/clang)
 - **Platforms:** ✅ macOS · ✅ Linux · ✅ Windows
 
-## Quick Links
-
-- **[Installation Guide](docs/guides/installation.md)** — setup, flags, platform notes
-- **[Usage Guide](docs/guides/usage.md)** — workflow examples
-- **[Architecture](docs/guides/architecture.md)** — MAO design, SSOT, symlinking strategy
-- **[Agent Reference](docs/agents/legata-to-rebeca.md)** — step bindings, frontmatter spec, output schema
-- **[Scoring Contract](docs/SCORING.md)** — 100-point rubric definition
-
 ## Contributing
 
-See [Contributing Guide](docs/guides/contributing.md) to learn how to add agents, skills, or dumb tools.
+To add agents, skills, or dumb tools: follow the structure in `agents/` and `skills/` and run `python3 setup.py` to install.
