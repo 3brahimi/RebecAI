@@ -535,10 +535,9 @@ def main():
     # RMC jar lives only under primary_target/rmc/ — reuse that path.
     if not args.target_root:
         gemini_root = GEMINI_ROOT_LOCAL if args.mode == "local" else GEMINI_ROOT_GLOBAL
-        if (gemini_root / "agents").is_dir():
-            gemini_scripts = gemini_root / "skills" / "rebeca_tooling" / "scripts"
-            patch_agent_placeholders(primary_target, gemini_scripts, jar_for_patch, gemini_root)
-            print(f"  ✓ Gemini agent paths stamped: {gemini_root / 'agents'}")
+        gemini_scripts = gemini_root / "skills" / "rebeca_tooling" / "scripts"
+        patch_agent_placeholders(gemini_root, gemini_scripts, jar_for_patch)
+        print(f"  ✓ Gemini agent paths stamped: {gemini_root / 'agents'}")
 
     print("\n✅ Setup Complete!")
     print(f"  Primary Truth: {primary_target}")
