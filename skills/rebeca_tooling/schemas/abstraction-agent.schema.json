@@ -91,7 +91,7 @@
       "legata_path":   { "type": "string", "minLength": 1 },
       "snapshot_path": {
         "type": "string",
-        "description": "Optional WF-01 snapshot JSON; seeded into variable_map when present."
+        "description": "Optional Step01 snapshot JSON; seeded into variable_map when present."
       },
       "colreg_text": {
         "type": "string",

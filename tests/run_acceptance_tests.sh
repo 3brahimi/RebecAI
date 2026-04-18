@@ -18,7 +18,7 @@ FAILED=0
 # AT-001: Prescribed Workflow
 echo -n "AT-001 (Prescribed Workflow): "
 if [[ -f "$AGENT_FILE" ]]; then
-  if grep -q "Step01\|WF-01" "$AGENT_FILE"; then
+  if grep -q "Step01" "$AGENT_FILE"; then
     echo "PASS"
     ((PASSED++))
   else

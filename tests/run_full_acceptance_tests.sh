@@ -61,11 +61,11 @@ check_grep_not() {
   fi
 }
 
-# AT-001: Prescribed workflow artifact exists with WF-01..WF-08
+# AT-001: Prescribed workflow artifact exists with Step01..Step08
 echo -n "AT-001 (Prescribed Workflow Artifact): "
 if check_file "$AGENT_FILE" && \
-  check_grep "Step01\|WF-01" "$AGENT_FILE" && \
-  check_grep "Step08\|WF-08" "$AGENT_FILE"; then
+  check_grep "Step01" "$AGENT_FILE" && \
+  check_grep "Step08" "$AGENT_FILE"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -87,11 +87,11 @@ else
   FAILED_TESTS+=("AT-002")
 fi
 
-# AT-003: Agent workflow explicitly covers WF-01..WF-08 with status
+# AT-003: Agent workflow explicitly covers Step01..Step08 with status
 echo -n "AT-003 (Agent Workflow Phases): "
-if check_grep "Step01\|WF-01" "$AGENT_FILE" && \
-  check_grep "Step02\|WF-02" "$AGENT_FILE" && \
-  check_grep "Step07\|WF-07" "$AGENT_FILE"; then
+if check_grep "Step01" "$AGENT_FILE" && \
+  check_grep "Step02" "$AGENT_FILE" && \
+  check_grep "Step08" "$AGENT_FILE"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -124,7 +124,7 @@ else
   FAILED_TESTS+=("AT-004")
 fi
 
-# AT-005: Workflow skill includes WF-01..WF-08 with embedded Rebeca constraints
+# AT-005: Workflow skill includes Step01..Step08 with embedded Rebeca constraints
 echo -n "AT-005 (Workflow Skill Content): "
 if check_grep "Legata" "$ARTIFACT_ROOT/skills/legata_to_rebeca/SKILL.md" && \
    check_grep "Rebeca" "$ARTIFACT_ROOT/skills/legata_to_rebeca/SKILL.md"; then
