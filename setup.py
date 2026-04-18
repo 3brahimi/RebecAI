@@ -280,13 +280,31 @@ def link_to_target(target_root: Path, primary_truth: Path, owned_skills: set[str
         elif skill.is_file():
             create_surgical_symlink(skill, target_root / "skills" / skill.name)
 
-    # 3. Link Instructions (Copilot/Github only)
-    if is_github:
-        # Note: Standalone installer might not have full docs if ZIP was minimal,
-        # but we download the full project zip so it should be there.
-        docs_src = primary_truth / "docs"
-        if docs_src.exists():
-            create_surgical_symlink(docs_src, target_root / "instructions")
+
+def patch_agent_placeholders(target_root: Path, scripts_path: Path, jar_path: Path) -> None:
+    """
+    Replace <scripts> and <jar> placeholders in installed agent markdown files
+    with the absolute paths resolved at install time.
+
+    Only rewrites files under target_root/agents/ — never touches skills or
+    Python source.
+    """
+    agents_dir = target_root / "agents"
+    if not agents_dir.is_dir():
+        return
+
+    scripts_str = str(scripts_path.absolute())
+    jar_str = str(jar_path.absolute())
+
+    for f in agents_dir.rglob("*.md"):
+        try:
+            content = f.read_text(encoding="utf-8")
+            new_content = content.replace("<scripts>", scripts_str).replace("<jar>", jar_str)
+            if new_content != content:
+                f.write_text(new_content, encoding="utf-8")
+        except Exception:
+            pass
+
 
 def patch_rmc_paths(target_root: Path, rmc_jar_path: Path):
     jar_path_str = str(rmc_jar_path.absolute())
@@ -344,7 +362,6 @@ def main():
         if src_root:
             agents = sorted((src_root / "agents").glob("*.md"))
             skills = sorted(p for p in (src_root / "skills").iterdir() if p.is_dir() and p.name != "__pycache__")
-            docs   = src_root / "docs"
 
             print(f"  agents/  ({len(agents)} files)")
             for a in agents:
@@ -354,9 +371,6 @@ def main():
             for s in skills:
                 print(f"    {primary_target / 'skills' / s.name}/")
 
-            if docs.exists():
-                print(f"  docs/")
-                print(f"    {primary_target / 'docs'}/")
         else:
             print("  (source not available locally — would download from GitHub)")
         print()
@@ -372,8 +386,6 @@ def main():
                         print(f"    agents/{link_name}  →  {primary_target / 'agents' / a.name}")
                     for s in sorted(p for p in (src_root / "skills").iterdir() if p.is_dir() and p.name != "__pycache__"):
                         print(f"    skills/{s.name}/  →  {primary_target / 'skills' / s.name}/")
-                    if is_github and (src_root / "docs").exists():
-                        print(f"    instructions/  →  {primary_target / 'docs'}/")
             print()
 
         if not args.no_rmc:
@@ -426,8 +438,8 @@ def main():
     print(f"  Installing Master Source to {primary_target}...")
     _ignore = shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo", ".*")
 
-    # agents/ and docs/ are fully owned — safe to replace wholesale
-    for sub in ("agents", "docs"):
+    # agents/ is fully owned — safe to replace wholesale
+    for sub in ("agents",):
         dest = primary_target / sub
         if dest.exists(): shutil.rmtree(dest)
         if (src_root / sub).exists():
@@ -494,6 +506,13 @@ def main():
             (primary_target / "skills" / "rmc_path.txt").write_text(str(rmc_jar_path), encoding="utf-8")
         else:
             print("    ⚠ RMC auto-download failed. Please install manually.")
+
+    # Stamp resolved <scripts> and <jar> into agent markdown files so the agent
+    # receives concrete paths at runtime — no filesystem probing required.
+    scripts_path = primary_target / "skills" / "rebeca_tooling" / "scripts"
+    jar_for_patch = rmc_jar_path if rmc_jar_path else (primary_target / "rmc" / "rmc.jar")
+    patch_agent_placeholders(primary_target, scripts_path, jar_for_patch)
+    print(f"  ✓ Agent paths stamped: scripts={scripts_path}, jar={jar_for_patch}")
 
     print("\n✅ Setup Complete!")
     print(f"  Primary Truth: {primary_target}")
