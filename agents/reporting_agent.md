@@ -148,6 +148,18 @@ scorecards (from coordinator)
 Emit on: invalid/escaped `output_dir`, scorecard parse failure, file write
 failure, or schema validation violation.
 
+## Canonical Artifact Persistence (REQUIRED)
+
+After all report files are written and the output contract is assembled, persist the canonical pointer artifact atomically **before** returning output to the coordinator:
+
+```bash
+python skills/rebeca_tooling/scripts/artifact_writer.py \
+  --rule-id <source_file_path> --step step08_reporting \
+  --data '<output_contract_json>' [--base-dir output]
+```
+
+The `step08_reporting.json` artifact is required by Gate 0. It must contain `report_path` and `summary.{total_rules,rules_passed,score_mean}`. Gate 0 also verifies that the four required report files (`summary.json`, `summary.md`, `verification.json`, `quality_gates.json`) exist under `output/reports/<rule_id>/`.
+
 ## Output Patch (for coordinator)
 
 - `workflow_summary.step08`

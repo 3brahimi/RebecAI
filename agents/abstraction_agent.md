@@ -39,7 +39,13 @@ Schema: `skills/rebeca_tooling/schemas/abstraction-agent.schema.json` → `input
 5. Apply naming conventions deterministically (see table below).
 6. Map each concept to a Rebeca type and bounds.
 7. Validate output against schema.
-8. Emit success contract; exit 0. On any failure emit Error Envelope; exit 1.
+8. Persist the canonical step artifact atomically:
+   ```bash
+   python skills/rebeca_tooling/scripts/artifact_writer.py \
+     --rule-id <source_file_path> --step step03_abstraction \
+     --data '<output_contract_json>' [--base-dir output]
+   ```
+9. Emit success contract; exit 0. On any failure emit Error Envelope; exit 1.
 
 ## Naming Contract (fixed — never changes between runs)
 

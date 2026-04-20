@@ -120,6 +120,18 @@ to `generated_files` — this is the mandatory verification gate.
 Emit on: invalid/escaped paths, empty abstraction_summary, artifact write
 failure, schema validation violation.
 
+## Canonical Artifact Persistence (REQUIRED)
+
+After all candidate artifacts are written and the output contract is assembled, persist the canonical step artifact atomically **before** returning output to the coordinator:
+
+```bash
+python skills/rebeca_tooling/scripts/artifact_writer.py \
+  --rule-id <source_file_path> --step step05_candidates \
+  --data '<output_contract_json>' [--base-dir output]
+```
+
+The `step05_candidates.json` artifact is required by Gate 0 and must contain `candidate_artifacts[]` with `model_path`, `property_path`, `is_candidate`, `confidence`, `mapping_path` per item.
+
 ## Output Patch (for coordinator)
 
 - `workflow_summary.step05`

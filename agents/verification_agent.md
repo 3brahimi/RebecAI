@@ -245,6 +245,18 @@ Emit on: invalid paths, `run_rmc` internal exception, `check_vacuity` exception,
 **Do not** emit an error envelope for non-zero `rmc_exit_code` — that is a valid
 `verified=false` outcome, not an agent failure.
 
+## Canonical Artifact Persistence (REQUIRED)
+
+After all verification phases complete and the output contract is assembled, persist the canonical gate artifact atomically **before** returning output to the coordinator:
+
+```bash
+python skills/rebeca_tooling/scripts/artifact_writer.py \
+  --rule-id <source_file_path> --step step06_verification_gate \
+  --data '<output_contract_json>' [--base-dir output]
+```
+
+The `step06_verification_gate.json` artifact is required by Gate 0 and the FSM transition guard. It must contain `verified`, `rmc_exit_code`, `vacuity_status.is_vacuous`, and `mutation_score`.
+
 ## Output Patch (for coordinator)
 
 - `workflow_summary.step06`

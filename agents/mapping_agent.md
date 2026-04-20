@@ -37,7 +37,13 @@ Schema: `skills/rebeca_tooling/schemas/mapping-agent.schema.json` → `input` bl
 4. Generate the `.property` file using the canonical assertion pattern.
 5. Write both files to `output_dir`.
 6. Validate output against schema.
-7. Emit success contract; exit 0. On any failure emit Error Envelope; exit 1.
+7. Persist the canonical step artifact atomically:
+   ```bash
+   python skills/rebeca_tooling/scripts/artifact_writer.py \
+     --rule-id <source_file_path> --step step04_mapping \
+     --data '<output_contract_json>' [--base-dir output]
+   ```
+8. Emit success contract; exit 0. On any failure emit Error Envelope; exit 1.
 
 ## Canonical Assertion Pattern
 

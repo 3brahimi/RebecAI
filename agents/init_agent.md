@@ -32,7 +32,13 @@ tamper-evident baseline.
 2. Call `pre_run_rmc_check(rmc_destination)` — downloads RMC if missing.
 3. Detect RMC version and record Python environment metadata.
 4. Call `capture_snapshot(model, property, source_file_path)` — writes snapshot JSON to `snapshot_out`.
-5. Emit success contract JSON to stdout; exit 0.
+5. Persist the canonical step artifact atomically:
+   ```bash
+   python skills/rebeca_tooling/scripts/artifact_writer.py \
+     --rule-id <source_file_path> --step step01_init \
+     --data '<output_contract_json>' [--base-dir output]
+   ```
+6. Emit success contract JSON to stdout; exit 0.
 
 If any step fails, emit the **Error Envelope** (see below) to stdout and exit 1 immediately.
 

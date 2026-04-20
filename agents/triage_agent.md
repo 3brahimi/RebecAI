@@ -44,7 +44,15 @@ Schema: `skills/rebeca_tooling/schemas/triage-agent.schema.json` → `input` blo
    | `todo-placeholder`  | `skip`           | `false`                |
 
 4. If `path == colreg-fallback`, call `COLREGFallbackMapper().map_rule(source_file_path, colreg_text)`.
-5. Emit success contract JSON to stdout; exit 0.
+5. Persist the canonical step artifact atomically:
+   ```bash
+   python skills/rebeca_tooling/scripts/artifact_writer.py \
+     --rule-id <source_file_path> --step step02_triage \
+     --data '<output_contract_json>' [--base-dir output]
+   ```
+   On the COLREG-fallback path, also write the sibling artifact (`--step step02_colreg_fallback`).
+   Alternatively, invoke `cli_runner.py --tool triage --rule-id <source_file_path>` which writes the artifact automatically.
+6. Emit success contract JSON to stdout; exit 0.
 
 If any step fails, emit the **Error Envelope** to stdout and exit 1.
 

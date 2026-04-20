@@ -158,7 +158,7 @@ STEP_OUTPUT_SCHEMAS: dict[str, dict[str, Any]] = {
                         "dest_path": {"type": "string"},
                         "artifact_type": {"type": "string"},
                         "status": {"type": "string"},
-                        "reason": {"type": "string"},
+                        "reason": {"type": ["string", "null"]},
                     },
                 },
             },

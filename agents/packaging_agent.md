@@ -104,6 +104,18 @@ Emit on: invalid/escaped paths, `dest_dir` creation failure, or schema
 validation violation. Individual artifact copy failures do NOT trigger
 an error envelope — they produce `status: "failed"` entries in the report.
 
+## Canonical Artifact Persistence (REQUIRED)
+
+After all files are promoted and the output contract is assembled, persist the canonical manifest artifact atomically **before** returning output to the coordinator:
+
+```bash
+python skills/rebeca_tooling/scripts/artifact_writer.py \
+  --rule-id <source_file_path> --step step07_packaging_manifest \
+  --data '<output_contract_json>' [--base-dir output]
+```
+
+The `step07_packaging_manifest.json` artifact is required by Gate 0 and must contain `installation_report[]` with `source_path`, `dest_path`, `status` per item.
+
 ## Output Patch (for coordinator)
 
 - `workflow_summary.step07`
