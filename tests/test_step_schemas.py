@@ -72,6 +72,20 @@ VALID_FIXTURES: dict[str, dict[str, object]] = {
         "report_path": "/tmp/reports/Rule-22/summary.json",
         "summary": {"total_rules": 10, "rules_passed": 9, "score_mean": 91.5},
     },
+    "fsm_action": {
+        "status": "ok",
+        "current_state": "initialized",
+        "next_state": "triaged",
+        "action": {
+            "type": "run_step",
+            "step": "step02_triage",
+            "agent": "triage_agent",
+            "inputs": {"rule_id": "Rule-22"},
+        },
+        "reason_code": "artifact_missing",
+        "required_artifacts": ["step02_triage.json"],
+        "missing_artifacts": ["step02_triage.json"],
+    },
 }
 
 
@@ -84,6 +98,7 @@ MISSING_REQUIRED_FIELD: dict[str, str] = {
     "step06": "verified",
     "step07": "installation_report",
     "step08": "report_path",
+    "fsm_action": "action",
 }
 
 

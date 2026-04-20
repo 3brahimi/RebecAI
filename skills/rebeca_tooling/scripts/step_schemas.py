@@ -183,6 +183,94 @@ STEP_OUTPUT_SCHEMAS: dict[str, dict[str, Any]] = {
             },
         },
     },
+    # FSM Controller: next-action output
+    "fsm_action": {
+        "type": "object",
+        "required": [
+            "status",
+            "current_state",
+            "next_state",
+            "action",
+            "reason_code",
+            "required_artifacts",
+            "missing_artifacts",
+        ],
+        "additionalProperties": False,
+        "properties": {
+            "status": {"type": "string", "enum": ["ok", "error", "retry", "blocked"]},
+            "current_state": {"type": "string"},
+            "next_state": {"type": "string"},
+            "action": {
+                "type": "object",
+                "required": ["type", "step", "agent", "inputs"],
+                "additionalProperties": False,
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": ["run_step", "refine_step", "finish", "block", "skip", "error"],
+                    },
+                    "step": {
+                        "type": "string",
+                        "enum": [
+                            "step01_init",
+                            "step02_triage",
+                            "step03_abstraction",
+                            "step04_mapping",
+                            "step05_synthesis",
+                            "step06_verification_gate",
+                            "step07_packaging",
+                            "step08_reporting",
+                            "none",
+                        ],
+                    },
+                    "agent": {
+                        "type": "string",
+                        "enum": [
+                            "init_agent",
+                            "triage_agent",
+                            "abstraction_agent",
+                            "mapping_agent",
+                            "synthesis_agent",
+                            "verification_agent",
+                            "packaging_agent",
+                            "reporting_agent",
+                            "none",
+                        ],
+                    },
+                    "inputs": {"type": "object"},
+                },
+            },
+            "reason_code": {"type": "string"},
+            "required_artifacts": {"type": "array", "items": {"type": "string"}},
+            "missing_artifacts": {"type": "array", "items": {"type": "string"}},
+        },
+        "allOf": [
+            {
+                "if": {"properties": {"action": {"properties": {"type": {"const": "refine_step"}}}}},
+                "then": {
+                    "properties": {
+                        "action": {
+                            "properties": {
+                                "inputs": {
+                                    "required": [
+                                        "prior_artifact_path",
+                                        "issue_class",
+                                        "issue_detail",
+                                        "attempt_index",
+                                        "budget_remaining",
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+            },
+            {
+                "if": {"properties": {"action": {"properties": {"type": {"enum": ["finish", "block", "skip"]}}}}},
+                "then": {"properties": {"action": {"properties": {"step": {"const": "none"}, "agent": {"const": "none"}}}}},
+            },
+        ],
+    },
 }
 
 
