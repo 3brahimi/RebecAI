@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "synthesis-agent-legacy-alias",
-  "description": "Legacy alias for synthesis-agent candidate-generation contract. All outputs tagged is_candidate=true, mapping_path=synthesis-agent for mandatory WF-06 verification.",
+  "description": "Legacy alias for synthesis-agent candidate-generation contract. All outputs tagged is_candidate=true, mapping_path=synthesis-agent for mandatory Step06 verification.",
   "definitions": {
     "ErrorEnvelope": {
       "type": "object",

@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "synthesis-agent",
-  "description": "WF-05: Property synthesis using MutationEngine strategies before WF-06 verification",
+  "description": "Step05: Property synthesis using MutationEngine strategies before Step06 verification",
   "definitions": {
     "ErrorEnvelope": {
       "type": "object",

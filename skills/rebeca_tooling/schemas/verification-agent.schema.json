@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "verification-agent",
-  "description": "WF-05: RMC verification, vacuity check, mutation scoring",
+  "description": "Step06: RMC verification, vacuity check, mutation scoring",
   "definitions": {
     "ErrorEnvelope": {
       "type": "object",

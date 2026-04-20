@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "abstraction-agent contract",
-  "description": "Input and output schemas for the abstraction-agent (WF-03).",
+  "description": "Input and output schemas for the abstraction-agent (Step03).",
 
   "definitions": {
     "ErrorEnvelope": {

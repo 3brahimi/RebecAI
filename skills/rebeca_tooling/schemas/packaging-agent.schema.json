@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "packaging-agent",
-  "description": "WF-07: Collect pipeline artifacts, build manifest, emit installation report",
+  "description": "Step07: Collect pipeline artifacts, build manifest, emit installation report",
   "definitions": {
     "ErrorEnvelope": {
       "type": "object",

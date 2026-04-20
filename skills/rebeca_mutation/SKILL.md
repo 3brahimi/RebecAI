@@ -14,7 +14,7 @@ description: |
 | Trigger | Action |
 |---------|--------|
 | After `run_rmc` returns exit code 0 (property verified) | Run vacuity check first; then run mutation suite |
-| During WF-06 (Verification) quality gate | Compute mutation score; fail if score < threshold |
+| During Step06 (Verification) quality gate | Compute mutation score; fail if score < threshold |
 | On-demand quality audit of an existing `.property` file | Run targeted mutation strategies |
 
 ---
@@ -47,7 +47,7 @@ Mutation Score = (Killed Mutants) / (Total Mutants) × 100
 - **Survived**: baseline and mutant semantic outcomes are identical.
 - **Error**: baseline/mutant semantic outcome is unavailable (`unknown`/timeout/non-comparable).
 
-Target threshold: **≥ 80%** to pass the WF-06 quality gate.
+Target threshold: **≥ 80%** to pass the Step06 quality gate.
 
 ---
 
@@ -234,13 +234,13 @@ python3 ~/.agents/skills/rebeca_tooling/scripts/mutation_engine.py \
 
 ---
 
-## WF-06 Integration
+## Step06 Integration
 
-During **WF-06 (Verification)**, after `run_rmc` exits 0, invoke this skill as a
+During **Step06 (Verification)**, after `run_rmc` exits 0, invoke this skill as a
 quality gate:
 
 ```python
-# Inside WF-06 handler
+# Inside Step06 handler
 if rmc_exit_code == 0:
     report = run_mutation_suite(jar, model, property_file, output_dir)
     if report["vacuity"]["is_vacuous"]:

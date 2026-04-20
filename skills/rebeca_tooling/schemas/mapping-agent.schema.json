@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "mapping-agent contract",
-  "description": "Input and output schemas for the mapping-agent (WF-04).",
+  "description": "Input and output schemas for the mapping-agent (Step04).",
 
   "definitions": {
     "ErrorEnvelope": {

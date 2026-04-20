@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "reporting-agent",
-  "description": "WF-08: Consume per-rule scorecards, produce report.json + report.md via ReportGenerator",
+  "description": "Step08: Consume per-rule scorecards, produce report.json + report.md via ReportGenerator",
   "definitions": {
     "ErrorEnvelope": {
       "type": "object",
