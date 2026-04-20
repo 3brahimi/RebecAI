@@ -1,0 +1,14 @@
+{
+  "action": {
+    "agent": "none",
+    "inputs": {},
+    "step": "none",
+    "type": "finish"
+  },
+  "current_state": "reported",
+  "missing_artifacts": [],
+  "next_state": "reported",
+  "reason_code": "all_artifacts_complete",
+  "required_artifacts": [],
+  "status": "ok"
+}

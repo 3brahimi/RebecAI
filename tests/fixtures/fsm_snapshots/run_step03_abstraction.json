@@ -1,0 +1,20 @@
+{
+  "action": {
+    "agent": "abstraction_agent",
+    "inputs": {
+      "rule_id": "SnapTest-Rule"
+    },
+    "step": "step03_abstraction",
+    "type": "run_step"
+  },
+  "current_state": "triaged",
+  "missing_artifacts": [
+    "step03_abstraction.json"
+  ],
+  "next_state": "abstracted",
+  "reason_code": "artifact_missing",
+  "required_artifacts": [
+    "step03_abstraction.json"
+  ],
+  "status": "ok"
+}

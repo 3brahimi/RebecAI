@@ -1,0 +1,20 @@
+{
+  "action": {
+    "agent": "mapping_agent",
+    "inputs": {
+      "rule_id": "SnapTest-Rule"
+    },
+    "step": "step04_mapping",
+    "type": "run_step"
+  },
+  "current_state": "abstracted",
+  "missing_artifacts": [
+    "step04_mapping.json"
+  ],
+  "next_state": "mapped",
+  "reason_code": "artifact_missing",
+  "required_artifacts": [
+    "step04_mapping.json"
+  ],
+  "status": "ok"
+}

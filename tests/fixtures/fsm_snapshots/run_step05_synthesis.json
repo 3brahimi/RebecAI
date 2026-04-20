@@ -1,0 +1,20 @@
+{
+  "action": {
+    "agent": "synthesis_agent",
+    "inputs": {
+      "rule_id": "SnapTest-Rule"
+    },
+    "step": "step05_synthesis",
+    "type": "run_step"
+  },
+  "current_state": "mapped",
+  "missing_artifacts": [
+    "step05_candidates.json"
+  ],
+  "next_state": "synthesized",
+  "reason_code": "artifact_missing",
+  "required_artifacts": [
+    "step05_candidates.json"
+  ],
+  "status": "ok"
+}

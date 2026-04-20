@@ -1,0 +1,20 @@
+{
+  "action": {
+    "agent": "packaging_agent",
+    "inputs": {
+      "rule_id": "SnapTest-Rule"
+    },
+    "step": "step07_packaging",
+    "type": "run_step"
+  },
+  "current_state": "verified",
+  "missing_artifacts": [
+    "step07_packaging_manifest.json"
+  ],
+  "next_state": "packaged",
+  "reason_code": "artifact_missing",
+  "required_artifacts": [
+    "step07_packaging_manifest.json"
+  ],
+  "status": "ok"
+}

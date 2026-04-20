@@ -1,0 +1,20 @@
+{
+  "action": {
+    "agent": "reporting_agent",
+    "inputs": {
+      "rule_id": "SnapTest-Rule"
+    },
+    "step": "step08_reporting",
+    "type": "run_step"
+  },
+  "current_state": "packaged",
+  "missing_artifacts": [
+    "step08_reporting.json"
+  ],
+  "next_state": "reported",
+  "reason_code": "artifact_missing",
+  "required_artifacts": [
+    "step08_reporting.json"
+  ],
+  "status": "ok"
+}

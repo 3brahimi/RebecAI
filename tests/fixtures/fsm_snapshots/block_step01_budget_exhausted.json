@@ -1,0 +1,18 @@
+{
+  "action": {
+    "agent": "none",
+    "inputs": {},
+    "step": "none",
+    "type": "block"
+  },
+  "current_state": "start",
+  "missing_artifacts": [
+    "step01_init.json"
+  ],
+  "next_state": "start",
+  "reason_code": "budget_exhausted",
+  "required_artifacts": [
+    "step01_init.json"
+  ],
+  "status": "blocked"
+}

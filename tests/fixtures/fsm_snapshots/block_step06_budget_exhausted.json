@@ -1,0 +1,18 @@
+{
+  "action": {
+    "agent": "none",
+    "inputs": {},
+    "step": "none",
+    "type": "block"
+  },
+  "current_state": "synthesized",
+  "missing_artifacts": [
+    "step06_verification_gate.json"
+  ],
+  "next_state": "synthesized",
+  "reason_code": "budget_exhausted",
+  "required_artifacts": [
+    "step06_verification_gate.json"
+  ],
+  "status": "blocked"
+}
