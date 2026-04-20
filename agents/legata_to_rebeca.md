@@ -74,6 +74,38 @@ Required per-attempt artifacts (write into the Step06 attempt directory):
 | Step07 | `packaging_agent` | `output_policy.promote_candidate()` (copy-only) | `generated_files[]`, `installation_report[]` |
 | Step08 | `reporting_agent` | `score_single_rule.py` · `generate_report.py` · `generate_rule_report.py` | `report_path`, `report_md_path`, `rule_report_path`, `rule_report_md_path`, `summary` |
 
+## Canonical Artifact Persistence (MUST FOLLOW)
+
+After **every** step agent returns its JSON contract, you MUST atomically persist the contract to disk as the canonical step artifact. Use `artifact_writer.py`:
+
+```bash
+python skills/rebeca_tooling/scripts/artifact_writer.py \
+  --rule-id <RULE_ID> \
+  --step <STEP_NAME> \
+  --data '<agent_json_output>' \
+  [--base-dir output]
+```
+
+Step-name-to-artifact mapping:
+
+| Step | `--step` argument | Canonical artifact path |
+|------|-------------------|------------------------|
+| Step01 | `step01_init` | `output/work/<rule_id>/step01_init.json` |
+| Step02 | `step02_triage` | `output/work/<rule_id>/step02_triage.json` |
+| Step02 (COLREG fallback) | `step02_colreg_fallback` | `output/work/<rule_id>/step02_colreg_fallback.json` |
+| Step03 | `step03_abstraction` | `output/work/<rule_id>/step03_abstraction.json` |
+| Step04 | `step04_mapping` | `output/work/<rule_id>/step04_mapping.json` |
+| Step05 | `step05_candidates` | `output/work/<rule_id>/step05_candidates.json` |
+| Step06 | `step06_verification_gate` | `output/work/<rule_id>/step06_verification_gate.json` |
+| Step07 | `step07_packaging_manifest` | `output/work/<rule_id>/step07_packaging_manifest.json` |
+| Step08 | `step08_reporting` | `output/work/<rule_id>/step08_reporting.json` |
+
+Rules:
+- Write **before** evaluating the transition guard for that step — the FSM reads these files.
+- The write is atomic (tmp→rename); do not write the final path directly.
+- On refinement retry, overwrite the artifact with the latest attempt's output.
+- Gate 0 machine-check: `python3 tests/check_artifact_gaps.py --rule-id <RULE_ID>` — must exit 0 before the FSM controller is consulted.
+
 ## issue_class Legend
 
 | `issue_class` | Source field | Refinement target | Refinement prompt must include |

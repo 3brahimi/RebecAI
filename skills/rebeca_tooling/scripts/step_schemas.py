@@ -1,4 +1,8 @@
-"""Step boundary JSON schema validation helpers for the Step01→Step08 pipeline."""
+"""Step boundary JSON schema validation helpers for the Step01→Step08 pipeline.
+
+v2 schemas are aligned to the actual agent output contracts so artifacts written
+to disk (via artifact_writer.py) pass validation without any field renaming.
+"""
 
 from __future__ import annotations
 
@@ -16,82 +20,166 @@ except ImportError:  # pragma: no cover - exercised by fallback tests if depende
 
 
 STEP_OUTPUT_SCHEMAS: dict[str, dict[str, Any]] = {
+    # Step01: init — toolchain bootstrap
     "step01": {
         "type": "object",
-        "required": ["status", "rule_id", "rmc_jar_path", "snapshot_path"],
-        "properties": {"status": {"type": "string"}, "rule_id": {"type": "string"}, "rmc_jar_path": {"type": "string"}, "snapshot_path": {"type": "string"}},
+        "required": ["status", "source_file_path", "snapshot_path", "rmc"],
+        "properties": {
+            "status": {"type": "string"},
+            "source_file_path": {"type": "string"},
+            "snapshot_path": {"type": "string"},
+            "rmc": {
+                "type": "object",
+                "required": ["jar"],
+                "properties": {
+                    "jar": {"type": "string"},
+                    "version": {"type": "string"},
+                },
+            },
+        },
     },
+    # Step02: triage — clause eligibility classification + routing
     "step02": {
         "type": "object",
         "required": ["status", "routing", "classification"],
         "properties": {
             "status": {"type": "string"},
-            "routing": {"type": "object"},
+            "routing": {
+                "type": "object",
+                "required": ["path", "eligible_for_mapping"],
+                "properties": {
+                    "path": {"type": "string"},
+                    "eligible_for_mapping": {"type": "boolean"},
+                },
+            },
             "classification": {
                 "type": "object",
                 "required": ["status", "evidence", "defects"],
-                "properties": {"status": {"type": "string"}, "evidence": {"type": "array"}, "defects": {"type": "array"}},
+                "properties": {
+                    "status": {"type": "string"},
+                    "evidence": {"type": "array"},
+                    "defects": {"type": "array"},
+                },
             },
         },
     },
+    # Step03: abstraction — actor/variable namespace lock
     "step03": {
         "type": "object",
-        "required": ["status", "actors", "state_variables", "assertion_map"],
-        "properties": {"status": {"type": "string"}, "actors": {"type": "array"}, "state_variables": {"type": "array"}, "assertion_map": {"type": "object"}},
+        "required": ["status", "abstraction_summary"],
+        "properties": {
+            "status": {"type": "string"},
+            "abstraction_summary": {
+                "type": "object",
+                "required": ["actor_map", "variable_map"],
+                "properties": {
+                    "actor_map": {"type": "array"},
+                    "variable_map": {"type": "array"},
+                    "naming_contract": {"type": "object"},
+                },
+            },
+        },
     },
+    # Step04: mapping — model + property file generation
     "step04": {
         "type": "object",
         "required": ["status", "model_artifact", "property_artifact"],
         "properties": {
             "status": {"type": "string"},
-            "model_artifact": {"type": "object", "required": ["path"], "properties": {"path": {"type": "string"}}},
-            "property_artifact": {"type": "object", "required": ["path"], "properties": {"path": {"type": "string"}}},
+            "model_artifact": {
+                "type": "object",
+                "required": ["path"],
+                "properties": {"path": {"type": "string"}},
+            },
+            "property_artifact": {
+                "type": "object",
+                "required": ["path"],
+                "properties": {"path": {"type": "string"}},
+            },
         },
     },
+    # Step05: synthesis — candidate artifact index
     "step05": {
         "type": "object",
-        "required": ["status", "candidates"],
+        "required": ["status", "candidate_artifacts"],
         "properties": {
             "status": {"type": "string"},
-            "candidates": {
+            "candidate_artifacts": {
                 "type": "array",
                 "items": {
                     "type": "object",
-                    "required": ["path", "confidence", "mapping_path"],
-                    "properties": {"path": {"type": "string"}, "confidence": {"type": "number"}, "mapping_path": {"type": "string"}},
+                    "required": ["model_path", "property_path", "is_candidate", "confidence", "mapping_path"],
+                    "properties": {
+                        "artifact_id": {"type": "string"},
+                        "model_path": {"type": "string"},
+                        "property_path": {"type": "string"},
+                        "strategy": {"type": "string"},
+                        "is_candidate": {"type": "boolean"},
+                        "confidence": {"type": "number"},
+                        "mapping_path": {"type": "string"},
+                    },
                 },
             },
         },
     },
+    # Step06: verification gate — RMC + vacuity + mutation summary
+    # All three fields (verified, vacuity_status.is_vacuous, mutation_score) are
+    # required because the FSM transition guard evaluates all three.
     "step06": {
         "type": "object",
-        "required": ["status", "verified", "exit_code", "output_dir"],
-        "properties": {"status": {"type": "string"}, "verified": {"type": "boolean"}, "exit_code": {"type": "integer"}, "output_dir": {"type": "string"}},
-    },
-    "step07": {
-        "type": "object",
-        "required": ["status", "manifest"],
+        "required": ["status", "verified", "rmc_exit_code", "vacuity_status", "mutation_score"],
         "properties": {
             "status": {"type": "string"},
-            "manifest": {
+            "verified": {"type": "boolean"},
+            "rmc_exit_code": {"type": "integer"},
+            "rmc_output_dir": {"type": "string"},
+            "vacuity_status": {
+                "type": "object",
+                "required": ["is_vacuous"],
+                "properties": {"is_vacuous": {"type": "boolean"}},
+            },
+            "mutation_score": {"type": "number"},
+        },
+    },
+    # Step07: packaging — promotion lineage manifest
+    "step07": {
+        "type": "object",
+        "required": ["status", "installation_report"],
+        "properties": {
+            "status": {"type": "string"},
+            "installation_report": {
                 "type": "array",
                 "items": {
                     "type": "object",
-                    "required": ["src", "dest", "status"],
-                    "properties": {"src": {"type": "string"}, "dest": {"type": "string"}, "status": {"type": "string"}},
+                    "required": ["source_path", "dest_path", "status"],
+                    "properties": {
+                        "artifact_id": {"type": "string"},
+                        "source_path": {"type": "string"},
+                        "dest_path": {"type": "string"},
+                        "artifact_type": {"type": "string"},
+                        "status": {"type": "string"},
+                        "reason": {"type": "string"},
+                    },
                 },
             },
         },
     },
+    # Step08: reporting — terminal aggregation pointer
     "step08": {
         "type": "object",
-        "required": ["status", "report"],
+        "required": ["status", "report_path", "summary"],
         "properties": {
             "status": {"type": "string"},
-            "report": {
+            "report_path": {"type": "string"},
+            "report_md_path": {"type": "string"},
+            "summary": {
                 "type": "object",
                 "required": ["total_rules", "rules_passed", "score_mean"],
-                "properties": {"total_rules": {"type": "integer"}, "rules_passed": {"type": "integer"}, "score_mean": {"type": "number"}},
+                "properties": {
+                    "total_rules": {"type": "integer"},
+                    "rules_passed": {"type": "integer"},
+                    "score_mean": {"type": "number"},
+                },
             },
         },
     },

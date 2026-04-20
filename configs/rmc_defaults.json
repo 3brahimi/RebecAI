@@ -31,5 +31,11 @@
     "strategy": "exhaustive",
     "counterexample_limit": 1000,
     "property_timeout_multiplier": 1.5
+  },
+  "max_refinement_attempts": {
+    "step04": 3,
+    "step05": 3,
+    "step06": 2,
+    "default": 2
   }
 }

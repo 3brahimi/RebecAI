@@ -283,10 +283,27 @@ def vacuity_work_dirs(
     base = Path(output_dir)
     if rule_id is not None:
         _validate_rule_id(rule_id)
-        wp = work_paths(rule_id, run_id, base_dir=base.parent if base.name != "output" else base.parent)
+        wp = work_paths(rule_id, run_id, base_dir=base)
         secondary = str(wp.run_dir / "vacuity")
         baseline = str(wp.run_dir / "baseline")
     else:
         secondary = str(base / "vacuity")
         baseline = str(base / "baseline")
     return secondary, baseline
+
+
+def step_artifact_path(rule_id: str, step: str, base_dir: Path = Path("output")) -> Path:
+    """Return canonical path for a step's durable artifact JSON.
+
+    Convention: output/work/<rule_id>/<step>.json
+    e.g. output/work/Rule-22/step02_triage.json
+    """
+    _validate_rule_id(rule_id)
+    allowed = {
+        "step01_init", "step02_triage", "step02_colreg_fallback",
+        "step03_abstraction", "step04_mapping", "step05_candidates",
+        "step06_verification_gate", "step07_packaging_manifest", "step08_reporting",
+    }
+    if step not in allowed:
+        raise ValueError(f"Unknown step artifact name: {step!r}. Must be one of {sorted(allowed)}")
+    return Path(base_dir) / "work" / rule_id / f"{step}.json"
