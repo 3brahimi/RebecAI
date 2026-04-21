@@ -65,7 +65,7 @@ Check `output/work/<RULE_ID>/fsm_state.json`:
 - If the file does **not exist**, or `terminal_status` is not `null`:
 
 ```bash
-python skills/rebeca_tooling/scripts/workflow_fsm.py \
+python <scripts>/workflow_fsm.py \
   --rule-id <RULE_ID> --base-dir output --reset
 ```
 
@@ -77,7 +77,7 @@ Repeat until a terminal action is received:
 
 1. **Call FSM** (skip on first iteration if reset already returned an action):
    ```bash
-   python skills/rebeca_tooling/scripts/workflow_fsm.py \
+   python <scripts>/workflow_fsm.py \
      --rule-id <RULE_ID> --base-dir output
    ```
 
@@ -88,18 +88,18 @@ Repeat until a terminal action is received:
    - `action.inputs` — pass **verbatim** as the agent's input context
 
    Schema sources (machine-verifiable):
-   - `skills/rebeca_tooling/schemas/workflow-fsm-action.schema.json`
-   - `skills/rebeca_tooling/scripts/step_schemas.py` key `"fsm_action"`
+   - `<scripts>/schemas/workflow-fsm-action.schema.json`
+   - `<scripts>/step_schemas.py` key `"fsm_action"`
 
    Terminal constraint (enforced by schema `allOf`): when `action.type` is `finish`, `block`, or `skip`, the schema requires `action.step = "none"` and `action.agent = "none"`.
 
 3. **If `action.type` is `run_step` or `refine_step`:**
-   a. Invoke the mapped subagent (see Step Bindings) with `action.inputs` verbatim.
-   b. Resolve the artifact step name from the enum→artifact mapping in **Artifact Persistence** and persist the agent's JSON output:
+   a. Invoke the subagent specified in `action.agent` with `action.inputs` verbatim.
+   b. Persist the agent's JSON output:
       ```bash
-      python skills/rebeca_tooling/scripts/artifact_writer.py \
+      python <scripts>/artifact_writer.py \
         --rule-id <RULE_ID> \
-        --step <artifact_step_name_for_action_step> \
+        --step <action.step> \
         --data '<agent_json_output>' \
         --base-dir output
       ```
@@ -123,57 +123,17 @@ Terminal actions end the executor loop and MUST NOT invoke another step agent. E
 
 ## Step Bindings
 
-Step Bindings map FSM `action.step` / `action.agent` to the exact subagent and toolchain. Do not remap ad hoc — any change here must also update the FSM schema enums and tests.
-
-Format: `action.step` / `action.agent` → subagent — tools
-
-- `step01_init` / `init_agent` → @init_agent — `pre_run_rmc_check.py` · `verify_installation.py` · `snapshotter.py`
-- `step02_triage` / `triage_agent` → @triage_agent — `classify_rule_status.py` · `colreg_fallback_mapper.py`
-- `step03_abstraction` / `abstraction_agent` → @abstraction_agent — *(reason from Legata source)*
-- `step04_mapping` / `mapping_agent` → @mapping_agent — `transformation_utils.py`
-- `step05_synthesis` / `synthesis_agent` → @synthesis_agent — `mutation_engine.py` property-side strategies
-- `step06_verification_gate` / `verification_agent` → @verification_agent — `run_rmc.py` → `vacuity_checker.py` → `mutation_engine.py`
-- `step07_packaging` / `packaging_agent` → @packaging_agent — `output_policy.promote_candidate()`
-- `step08_reporting` / `reporting_agent` → @reporting_agent — `score_single_rule.py` · `generate_report.py` · `generate_rule_report.py`
+The FSM `action.agent` field specifies which subagent to invoke (e.g., `@init_agent`, `@triage_agent`, `@mapping_agent`). Invoke it directly with `action.inputs` verbatim. Do not remap.
 
 ## Artifact Persistence
 
-After every step agent returns its JSON contract, persist it atomically using `artifact_writer.py` (see Part 2 step 3b). The write is atomic (tmp→rename); do not write the final path directly. On refinement retry, overwrite the artifact with the latest attempt's output.
-
-The `--step` argument passed to `artifact_writer.py` is the **artifact name**, not the FSM `action.step` enum. They are identical for most steps but intentionally differ for three steps — the artifact name describes what was produced, not which step produced it:
-
-- `step05_synthesis` (enum) → `--step step05_candidates` — the synthesis step produces a **candidates index**
-- `step06_verification_gate` (enum) → `--step step06_verification_gate` — same name; the `_gate` suffix marks it as a **gate decision artifact**, not raw RMC output
-- `step07_packaging` (enum) → `--step step07_packaging_manifest` — the packaging step produces a **manifest**, not a binary package
-
-Anti-drift rule: if any name changes here, it must also change in `workflow_fsm._PIPELINE`, `run_pipeline._STEP_ENUM_TO_ARTIFACT`, and `output_policy.step_artifact_path()` allowed set — in the same commit.
-
-`action.step` enum → `--step` argument → canonical artifact path:
-
-- `step01_init` → `step01_init` → `output/work/<rule_id>/step01_init.json`
-- `step02_triage` → `step02_triage` → `output/work/<rule_id>/step02_triage.json`
-- `step02_colreg_fallback` → `step02_colreg_fallback` → `output/work/<rule_id>/step02_colreg_fallback.json` *(COLREG path only)*
-- `step03_abstraction` → `step03_abstraction` → `output/work/<rule_id>/step03_abstraction.json`
-- `step04_mapping` → `step04_mapping` → `output/work/<rule_id>/step04_mapping.json`
-- `step05_synthesis` → `step05_candidates` → `output/work/<rule_id>/step05_candidates.json` *(enum ≠ artifact)*
-- `step06_verification_gate` → `step06_verification_gate` → `output/work/<rule_id>/step06_verification_gate.json`
-- `step07_packaging` → `step07_packaging_manifest` → `output/work/<rule_id>/step07_packaging_manifest.json` *(enum ≠ artifact)*
-- `step08_reporting` → `step08_reporting` → `output/work/<rule_id>/step08_reporting.json`
+The FSM `action.step` field is passed directly to `artifact_writer.py` as the `--step` argument. The script handles any enum-to-filename mapping internally. Write is atomic (tmp→rename).
 
 Gate 0 machine-check (run before first FSM call if resuming an interrupted run):
 ```bash
-python3 skills/rebeca_tooling/scripts/check_artifact_gaps.py --rule-id <RULE_ID> --base-dir output
+python3 <scripts>/check_artifact_gaps.py --rule-id <RULE_ID> --base-dir output
 ```
 
 ## issue_class Reference
 
-_The FSM emits `issue_class` in `action.inputs` for `refine_step` actions. Pass it verbatim to the agent and supply the listed context._
-
-- **`syntax`** — RMC parse/compile failure → invoke `mapping_agent` with prior step04 output + parse/compile diagnostics
-- **`reference`** — Symbol diff / validation mismatch → invoke `mapping_agent` with prior step04 output + symbol diff report
-- **`mapping_gap`** — Missing or invalid artifact contract → invoke `mapping_agent` with prior step04 output + missing field list
-- **`weak_mutation`** — `mutation_score < 80.0` → invoke `synthesis_agent` with prior step05 output + mutation detail
-- **`vacuous_property`** — `vacuity_status.is_vacuous == true` → invoke `synthesis_agent` with prior step05 output + vacuity explanation
-- **`verification_failed`** — `verified == false` → invoke `verification_agent` with prior step06 output + RMC diagnostics
-- **`schema_invalid`** — Schema/type violation → invoke same step's agent with prior output + schema violation list
-- **`artifact_missing`** — File not found on disk → invoke same step's agent with no prior context (treat as first run)
+The FSM emits `issue_class` in `action.inputs` for `refine_step` actions. Pass `action.inputs` verbatim to the subagent specified in `action.agent` — the subagent will interpret the issue class and request the appropriate prior context from you.
