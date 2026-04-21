@@ -1,0 +1,14 @@
+{
+  "status": "ok",
+  "source_file_path": "PhaseF-Rule",
+  "installation_report": [
+    {
+      "artifact_id": "PhaseF-Rule_model",
+      "source_path": "output/work/PhaseF-Rule/candidates/base.rebeca",
+      "dest_path": "output/PhaseF-Rule/PhaseF-Rule.rebeca",
+      "artifact_type": "model",
+      "status": "promoted",
+      "reason": null
+    }
+  ]
+}

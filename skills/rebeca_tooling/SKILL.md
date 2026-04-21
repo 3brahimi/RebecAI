@@ -677,4 +677,5 @@ Install if missing:
 
 - **legata_to_rebeca** skill - Workflow guidance
 - **rebeca-handbook** skill - Modeling best practices
+- **rebeca-hallucination** skill - Contains the tight `run_pipeline.py` anti-hallucination checklist for rollout sign-off
 - **legata_to_rebeca** agent - Main orchestration agent

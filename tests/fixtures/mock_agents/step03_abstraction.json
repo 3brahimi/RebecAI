@@ -1,0 +1,13 @@
+{
+  "status": "ok",
+  "source_file_path": "PhaseF-Rule",
+  "abstraction_summary": {
+    "actor_map": [
+      "Ship"
+    ],
+    "variable_map": [
+      "speed"
+    ],
+    "naming_contract": {}
+  }
+}

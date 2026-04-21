@@ -1,0 +1,9 @@
+{
+  "status": "ok",
+  "source_file_path": "PhaseF-Rule",
+  "snapshot_path": "/tmp/snap.json",
+  "rmc": {
+    "jar": "/tmp/rmc.jar",
+    "version": "2.14"
+  }
+}
