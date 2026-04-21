@@ -36,20 +36,9 @@ You are a **thin executor**. You do not decide what step comes next — the FSM 
 - `workflow_fsm.py` is the canonical FSM controller: a pure decision engine that reads artifacts from disk and prints exactly one JSON action to stdout. Coordinators MUST call it directly.
 - `run_pipeline.py` is a rollout/testing harness that wraps `workflow_fsm.py` internally. It is used for integration testing and optional automated runners — NOT by coordinators. Do not invoke `run_pipeline.py` from coordinator logic.
 
-## Rebeca Handbook Constraints (MUST FOLLOW)
+## Output Contract
 
-_These rules prevent the most common model-checking failures. Violating them causes RMC parse/verify errors._
-
-- Every generated `.property` MUST contain an `Assertion { ... }` block with a boolean **condition**.
-- Do NOT place temporal operators inside `Assertion` expressions; use the `LTL { ... }` block for temporal properties.
-- If RMC reports parse failures, treat it as a contract violation and follow FSM to route back for refinement with diagnostics.
-
-## Canonical Output Contract (MUST FOLLOW)
-
-_All file placements derive from `output_policy.py`. Never place artifacts outside these directories._
-
-All paths MUST be derived from `skills/rebeca_tooling/scripts/output_policy.py`.
-Never place verification logs, scratch candidates, or reports inside the final rule directory.
+**Global invariants:** All paths derive from `output_policy.py` — never place artifacts outside these directories. Every `.property` must contain an `Assertion { ... }` block with a boolean condition; use `LTL { ... }` for temporal properties. On RMC parse failure, treat as a contract violation and route back for refinement with diagnostics.
 
 Directory contract:
 
@@ -59,31 +48,14 @@ Directory contract:
 - **Work (scratch; candidates + attempts):**
   - `output/work/<rule_id>/candidates/`
   - `output/work/<rule_id>/runs/<run_id>/attempt-<N>/`
-- **Verification (RMC outputs; publish winner to `current/`):**
-  - `output/verification/<rule_id>/<run_id>/`
-  - `output/verification/<rule_id>/current/`
+- **Verification** (RMC outputs; publish winner to `current/`):
+  - `output/verification/<rule_id>/<run_id>/` — Step06 writes here: `rmc_details.json`, `vacuity_check.json`, `mutation_candidates.json`, `mutation_killrun.json`, `scorecard.json` (via `output_policy.verification_paths(rule_id, run_id).run_dir`)
+  - `output/verification/<rule_id>/current/` — winning run published after successful verification (via `.current_dir`)
+  - Note: `output/work/<rule_id>/runs/<run_id>/attempt-<N>/` is synthesis scratch (Steps 04/05) — distinct from the verification tree.
 - **Reports:**
-  - `output/reports/<rule_id>/summary.json`
-  - `output/reports/<rule_id>/summary.md`
-  - `output/reports/<rule_id>/verification.json`
-  - `output/reports/<rule_id>/quality_gates.json`
+  - `output/reports/<rule_id>/summary.json`, `summary.md`, `verification.json`, `quality_gates.json`
 
-Step06 per-verification-run artifacts — write into `output/verification/<rule_id>/<run_id>/`
-(obtained via `output_policy.verification_paths(rule_id, run_id).run_dir`):
-- `rmc_details.json` — raw RMC output from `run_rmc.py`
-- `vacuity_check.json` — vacuity result from `vacuity_checker.py`
-- `mutation_candidates.json` — generated mutants from `mutation_engine.py`
-- `mutation_killrun.json` — kill-run results from `mutation_engine.py`
-- `scorecard.json` — per-run score from `score_single_rule.py`
-
-After successful verification, publish the winning run directory to
-`output/verification/<rule_id>/current/`
-(obtained via `output_policy.verification_paths(rule_id, run_id).current_dir`).
-
-Note: `output/work/<rule_id>/runs/<run_id>/attempt-<N>/` is the synthesis scratch directory
-(Steps 04/05 candidates). It is distinct from the verification tree above.
-
-## Executor Protocol (MUST FOLLOW)
+## Executor Protocol
 
 _Three-part loop: conditional reset → execution loop → terminal handler. Do not skip parts._
 
@@ -123,7 +95,7 @@ Repeat until a terminal action is received:
 
 3. **If `action.type` is `run_step` or `refine_step`:**
    a. Invoke the mapped subagent (see Step Bindings) with `action.inputs` verbatim.
-   b. Resolve the artifact step name from the enum→artifact mapping in **Canonical Artifact Persistence** and persist the agent's JSON output:
+   b. Resolve the artifact step name from the enum→artifact mapping in **Artifact Persistence** and persist the agent's JSON output:
       ```bash
       python skills/rebeca_tooling/scripts/artifact_writer.py \
         --rule-id <RULE_ID> \
@@ -164,9 +136,7 @@ Format: `action.step` / `action.agent` → subagent — tools
 - `step07_packaging` / `packaging_agent` → @packaging_agent — `output_policy.promote_candidate()`
 - `step08_reporting` / `reporting_agent` → @reporting_agent — `score_single_rule.py` · `generate_report.py` · `generate_rule_report.py`
 
-## Canonical Artifact Persistence (MUST FOLLOW)
-
-_Every step output must be persisted atomically via `artifact_writer.py` before the next FSM call._
+## Artifact Persistence
 
 After every step agent returns its JSON contract, persist it atomically using `artifact_writer.py` (see Part 2 step 3b). The write is atomic (tmp→rename); do not write the final path directly. On refinement retry, overwrite the artifact with the latest attempt's output.
 
