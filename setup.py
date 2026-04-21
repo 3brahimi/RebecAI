@@ -325,11 +325,12 @@ def patch_agent_placeholders(
     Rewrites files under target_root/agents/ and target_root/skills/ — never
     touches Python source.
     """
-    root_str = str((install_root if install_root is not None else target_root).absolute())
+    effective_root = install_root if install_root is not None else target_root
+    root_str = str(effective_root.absolute())
     scripts_str = str(scripts_path.absolute())
     jar_str = str(jar_path.absolute())
-    agents_str = str((target_root / "agents").absolute())
-    skills_str = str((target_root / "skills").absolute())
+    agents_str = str((effective_root / "agents").absolute())
+    skills_str = str((effective_root / "skills").absolute())
 
     # Process both agents/ and skills/ directories
     for base_dir in [target_root / "agents", target_root / "skills"]:
