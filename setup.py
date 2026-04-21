@@ -585,7 +585,7 @@ def main():
     if not args.target_root:
         gemini_root = GEMINI_ROOT_LOCAL if args.mode == "local" else GEMINI_ROOT_GLOBAL
         gemini_scripts = gemini_root / "skills" / "rebeca_tooling" / "scripts"
-        patch_agent_placeholders(primary_target, gemini_scripts, jar_for_patch, gemini_root)
+        patch_agent_placeholders(gemini_root, gemini_scripts, jar_for_patch)
         print(f"  ✓ Gemini agent paths stamped: {gemini_root / 'agents'}")
 
     print("\n✅ Setup Complete!")
