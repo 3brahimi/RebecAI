@@ -28,7 +28,7 @@ Return a fully machine-actionable outcome with per-phase results.
 | `model_path`       | string  | yes      | Path to `.rebeca` model file                        |
 | `property_path`    | string  | yes      | Path to `.property` file                            |
 | `jar_path`         | string  | yes      | Path to `rmc.jar`                                   |
-| `output_dir`       | string  | yes      | Directory to write RMC artefacts into               |
+| `output_dir`       | string  | yes      | `output/verification/<rule_id>/<run_id>/` — obtained via `output_policy.verification_paths(rule_id, run_id).run_dir` |
 | `timeout`          | integer | no       | Per-invocation timeout in seconds (≥1, default 120) |
 
 ## Verification Pipeline (three sequential phases)
@@ -244,6 +244,32 @@ Emit on: invalid paths, `run_rmc` internal exception, `check_vacuity` exception,
 
 **Do not** emit an error envelope for non-zero `rmc_exit_code` — that is a valid
 `verified=false` outcome, not an agent failure.
+
+## Step06 Artifact Placement (MUST FOLLOW)
+
+_Clarifies exactly where per-run artifacts land and which tree is the verification tree._
+
+Set `$OUTPUT_DIR` to `output_policy.verification_paths(rule_id, run_id).run_dir`:
+```
+output/verification/<rule_id>/<run_id>/
+```
+
+Per-run artifacts written under `$OUTPUT_DIR`:
+- `rmc_details.json` — raw RMC output (from `--output-file $OUTPUT_DIR/rmc_details.json`)
+- `mutation_candidates.json` — generated mutants
+- `mutation_killrun.json` — kill-run results
+- `vacuity_check.json` — vacuity result (from `--output-file $OUTPUT_DIR/vacuity_check.json`)
+- `scorecard.json` — per-run score (write after all phases complete)
+
+After a passing run, publish the winner atomically to the canonical view:
+```bash
+# current_dir = output_policy.verification_paths(rule_id, run_id).current_dir
+#             = output/verification/<rule_id>/current/
+cp -rT "$OUTPUT_DIR" "$CURRENT_DIR"   # or rename if on the same filesystem
+```
+
+**Do not** write Step06 artifacts into `output/work/<rule_id>/runs/<run_id>/attempt-<N>/` —
+that directory is the synthesis scratch space for Steps 04/05, not for verification outputs.
 
 ## Canonical Artifact Persistence (REQUIRED)
 

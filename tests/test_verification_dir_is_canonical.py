@@ -132,3 +132,81 @@ class TestWorkPaths:
     def test_attempt_below_one_raises(self, tmp_path):
         with pytest.raises(ValueError, match="attempt must be >= 1"):
             work_paths("Rule22", "run-1", attempt=0, base_dir=tmp_path)
+
+
+# ---------------------------------------------------------------------------
+# Step06 artifact placement — verification tree vs. work/synthesis tree
+# ---------------------------------------------------------------------------
+
+class TestStep06ArtifactPlacement:
+    """Verify the distinction between the verification tree and work/synthesis tree."""
+
+    STEP06_ARTIFACTS = [
+        "rmc_details.json",
+        "vacuity_check.json",
+        "mutation_candidates.json",
+        "mutation_killrun.json",
+        "scorecard.json",
+    ]
+
+    def test_verification_run_dir_not_inside_work_tree(self, tmp_path):
+        vp = verification_paths("Rule22", "run-001", base_dir=tmp_path)
+        wp = work_paths("Rule22", "run-001", base_dir=tmp_path)
+        assert not vp.run_dir.is_relative_to(wp.run_dir), (
+            "verification run_dir must not be inside the work run_dir"
+        )
+
+    def test_work_attempt_dir_not_inside_verification_tree(self, tmp_path):
+        vp = verification_paths("Rule22", "run-001", base_dir=tmp_path)
+        wp = work_paths("Rule22", "run-001", attempt=1, base_dir=tmp_path)
+        assert not wp.attempt_dir.is_relative_to(vp.rule_verification_dir), (
+            "work attempt_dir must not be inside the verification tree"
+        )
+
+    def test_step06_artifacts_belong_under_verification_run_dir(self, tmp_path):
+        vp = verification_paths("Rule22", "run-001", base_dir=tmp_path)
+        vp.run_dir.mkdir(parents=True, exist_ok=True)
+        for fname in self.STEP06_ARTIFACTS:
+            artifact = vp.run_dir / fname
+            artifact.write_text("{}", encoding="utf-8")
+            assert artifact.exists(), f"{fname} must be writable under verification run_dir"
+            assert artifact.is_relative_to(vp.run_dir), (
+                f"{fname} must be under output/verification/<rule_id>/<run_id>/"
+            )
+
+    def test_current_dir_is_sibling_of_run_dir(self, tmp_path):
+        vp = verification_paths("Rule22", "run-001", base_dir=tmp_path)
+        assert vp.current_dir.parent == vp.run_dir.parent, (
+            "current/ must be a sibling of the run_id directory, "
+            "both under output/verification/<rule_id>/"
+        )
+
+    def test_publish_winner_to_current_dir(self, tmp_path):
+        """Publishing: copying run_dir contents to current_dir is semantically valid."""
+        import shutil
+        vp = verification_paths("Rule22", "run-001", base_dir=tmp_path)
+        vp.run_dir.mkdir(parents=True, exist_ok=True)
+        (vp.run_dir / "rmc_details.json").write_text('{"phase": "step06"}', encoding="utf-8")
+
+        vp.current_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(vp.run_dir / "rmc_details.json", vp.current_dir / "rmc_details.json")
+
+        assert (vp.current_dir / "rmc_details.json").exists(), (
+            "published artifact must exist under current/"
+        )
+        assert vp.current_dir.is_relative_to(vp.rule_verification_dir)
+
+    def test_verification_run_dir_path_structure(self, tmp_path):
+        vp = verification_paths("COLREG-Rule22", "run-abc", base_dir=tmp_path)
+        parts = vp.run_dir.parts
+        assert "verification" in parts
+        assert "COLREG-Rule22" in parts
+        assert "run-abc" in parts
+
+    def test_work_attempt_dir_path_structure(self, tmp_path):
+        wp = work_paths("COLREG-Rule22", "run-abc", attempt=3, base_dir=tmp_path)
+        parts = wp.attempt_dir.parts
+        assert "work" in parts
+        assert "runs" in parts
+        assert "attempt-3" in parts
+        assert "verification" not in parts

@@ -263,12 +263,13 @@ generator.add_scorecard(scorecard)
 generator.finalize()
 
 Path("reports/").mkdir(parents=True, exist_ok=True)
-with open("reports/report.json", "w") as f:
+with open("reports/summary.json", "w") as f:
     f.write(generator.to_json())
-with open("reports/report.md", "w") as f:
+with open("reports/summary.md", "w") as f:
     f.write(generator.to_markdown())
 
-# Outputs: reports/report.json and reports/report.md
+# Outputs: reports/summary.json and reports/summary.md
+# Use generate_report.py --output-dir to also emit verification.json and quality_gates.json.
 ```
 
 #### Generate Per-Rule Comprehensive Report

@@ -2,9 +2,11 @@
 name: reporting_agent
 description: |
   Step08 specialist for aggregate scoring and report generation.
-  Wraps ReportGenerator (generate_report.py) to produce report.json
-  and report.md from coordinator-supplied per-rule scorecards, and
+  Wraps ReportGenerator (generate_report.py) to produce summary.json
+  and summary.md from coordinator-supplied per-rule scorecards, and
   generate_rule_report.py to produce comprehensive_report.json/.md.
+  Also writes verification.json and quality_gates.json (all four are
+  canonical Step08 outputs required by Gate 0).
 schema: skills/rebeca_tooling/schemas/reporting-agent.schema.json
 skills:
   - rebeca_tooling
@@ -17,9 +19,15 @@ skills:
 ## Goal
 
 Consume per-rule scorecards assembled by the coordinator (from Step05 outputs),
-finalize aggregate metrics via `ReportGenerator`, write `report.json` +
-`report.md` to the designated output directory, then generate a per-rule
-comprehensive report from the packaged rule folder.
+finalize aggregate metrics via `ReportGenerator`, write the four canonical report
+files to `output/reports/<rule_id>/`, then generate a per-rule comprehensive
+report from the packaged rule folder.
+
+Canonical Step08 outputs (all four required by Gate 0):
+1. `summary.json` — aggregate scorecard summary (JSON)
+2. `summary.md` — aggregate scorecard summary (Markdown)
+3. `verification.json` — per-rule verification outcomes
+4. `quality_gates.json` — gate pass/fail results per rule
 
 All report outputs are versioned and deterministic.
 
@@ -63,8 +71,8 @@ scorecards in. This agent only aggregates and formats.
 ```json
 {
   "status": "ok",
-  "report_path":    "/path/to/output/reports/Rule-22/report.json",
-  "report_md_path": "/path/to/output/reports/Rule-22/report.md",
+  "summary_path":    "/path/to/output/reports/Rule-22/summary.json",
+  "summary_md_path": "/path/to/output/reports/Rule-22/summary.md",
   "report_schema_version": "1.1.0",
   "summary": {
     "total_rules":          1,
@@ -101,8 +109,12 @@ scorecards (from coordinator)
   │     └─ top_failure_reasons, aggregate_remediation_hints
   │
   ├─► run generate_report.py --output-dir {output_dir}
-  │     ├─ (single) writes: {output_dir}/{rule_id}/report.json + report.md
-  │     └─ (multi)   writes: {output_dir}/aggregate/report.json + report.md
+  │     ├─ (single) writes: {output_dir}/{rule_id}/summary.json + summary.md
+  │     ├─ (single) writes: {output_dir}/{rule_id}/verification.json
+  │     ├─ (single) writes: {output_dir}/{rule_id}/quality_gates.json
+  │     └─ (multi)   writes: {output_dir}/aggregate/summary.json + summary.md
+  │                          {output_dir}/aggregate/verification.json
+  │                          {output_dir}/aggregate/quality_gates.json
   ├─► run generate_rule_report.py --rule-dir {rule_output_dir}
   │     ├─ write {output_dir}/{rule_id}/comprehensive_report.json
   │     └─ write {output_dir}/{rule_id}/comprehensive_report.md
@@ -115,8 +127,8 @@ scorecards (from coordinator)
 ```json
 {
   "status": "ok",
-  "report_path":    "/path/to/output/reports/Rule-22/report.json",
-  "report_md_path": "/path/to/output/reports/Rule-22/report.md",
+  "summary_path":    "/path/to/output/reports/Rule-22/summary.json",
+  "summary_md_path": "/path/to/output/reports/Rule-22/summary.md",
   "rule_report_path": "/path/to/output/reports/Rule-22/comprehensive_report.json",
   "rule_report_md_path": "/path/to/output/reports/Rule-22/comprehensive_report.md",
   "report_schema_version": "1.1.0",
@@ -158,13 +170,13 @@ python skills/rebeca_tooling/scripts/artifact_writer.py \
   --data '<output_contract_json>' [--base-dir output]
 ```
 
-The `step08_reporting.json` artifact is required by Gate 0. It must contain `report_path` and `summary.{total_rules,rules_passed,score_mean}`. Gate 0 also verifies that the four required report files (`summary.json`, `summary.md`, `verification.json`, `quality_gates.json`) exist under `output/reports/<rule_id>/`.
+The `step08_reporting.json` artifact is required by Gate 0. It must contain `summary_path` and `summary.{total_rules,rules_passed,score_mean}`. Gate 0 also verifies that the four required report files (`summary.json`, `summary.md`, `verification.json`, `quality_gates.json`) exist under `output/reports/<rule_id>/`.
 
 ## Output Patch (for coordinator)
 
 - `workflow_summary.step08`
-- `report_path` — for downstream archival
-- `report_md_path` — for human review
+- `summary_path` — for downstream archival
+- `summary_md_path` — for human review
 - `report_schema_version` — schema compatibility pin
 - `summary` — aggregate statistics
 - `rule_report_path` — comprehensive per-rule JSON report path

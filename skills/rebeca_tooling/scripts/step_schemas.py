@@ -167,11 +167,11 @@ STEP_OUTPUT_SCHEMAS: dict[str, dict[str, Any]] = {
     # Step08: reporting — terminal aggregation pointer
     "step08": {
         "type": "object",
-        "required": ["status", "report_path", "summary"],
+        "required": ["status", "summary_path", "summary"],
         "properties": {
             "status": {"type": "string"},
-            "report_path": {"type": "string"},
-            "report_md_path": {"type": "string"},
+            "summary_path": {"type": "string"},
+            "summary_md_path": {"type": "string"},
             "summary": {
                 "type": "object",
                 "required": ["total_rules", "rules_passed", "score_mean"],

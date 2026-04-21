@@ -291,7 +291,7 @@ class ReportGenerator:
 # ── CLI ───────────────────────────────────────────────────────────────────────
 
 def _resolve_report_output_dir(output_dir: Path, cards: List[Dict[str, Any]]) -> Path:
-    """Resolve an output directory for report.json/report.md.
+    """Resolve an output directory for summary.json/summary.md.
 
     Historical behavior: treat --output-dir as a *base* and always nest outputs
     under a trailing ``reports/`` directory.
@@ -332,13 +332,69 @@ def _emit_stdout(gen: ReportGenerator, fmt: str) -> None:
         print(gen.to_markdown())
 
 
+def _write_verification_json(gen: ReportGenerator, output_dir: Path) -> None:
+    """Write verification.json with per-rule verification outcomes (canonical Step08 output)."""
+    cards = gen.report_data["per_rule_scorecards"]
+    records = []
+    for card in cards:
+        vacuity = card.get("vacuity") or {}
+        records.append({
+            "rule_id": card.get("rule_id"),
+            "status": card.get("status"),
+            "score_total": card.get("score_total"),
+            "verified": card.get("status") in ("Pass", "Conditional"),
+            "vacuity_status": vacuity.get("status", "unchecked"),
+            "is_vacuous": vacuity.get("is_vacuous"),
+        })
+    (output_dir / "verification.json").write_text(
+        json.dumps({"rules": records, "total": len(records)}, indent=2),
+        encoding="utf-8",
+    )
+
+
+def _write_quality_gates_json(gen: ReportGenerator, output_dir: Path) -> None:
+    """Write quality_gates.json with gate pass/fail per rule (canonical Step08 output)."""
+    d = gen.report_data
+    per_rule: Dict[str, Any] = {}
+    for card in d["per_rule_scorecards"]:
+        rule_id = card.get("rule_id", "unknown")
+        score = card.get("score_total", 0)
+        status = card.get("status", "Unknown")
+        is_vacuous = (card.get("vacuity") or {}).get("is_vacuous", None)
+        bd = card.get("score_breakdown", {})
+        per_rule[rule_id] = {
+            "score_above_threshold": score >= 80,
+            "syntax_ok": (bd.get("syntax") or 0) >= 10,
+            "verified": status in ("Pass", "Conditional"),
+            "non_vacuous": is_vacuous is not True,
+            "mutation_ok": (bd.get("semantic_alignment") or 0) >= 44,
+            "gate_passed": score >= 80 and status in ("Pass", "Conditional"),
+        }
+    overall = all(g["gate_passed"] for g in per_rule.values()) if per_rule else False
+    (output_dir / "quality_gates.json").write_text(
+        json.dumps(
+            {
+                "gate_passed": overall,
+                "per_rule_gates": per_rule,
+                "score_mean": d.get("score_mean", 0.0),
+                "rules_passed": d.get("rules_passed", 0),
+                "total_rules": d.get("total_rules", 0),
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+
 def _write_output(gen: ReportGenerator, output_dir: Optional[Path], fmt: str) -> None:
     if output_dir is not None:
         output_dir.mkdir(parents=True, exist_ok=True)
-        if fmt in ("json", "both"):
-            (output_dir / "report.json").write_text(gen.to_json(), encoding="utf-8")
-        if fmt in ("markdown", "both"):
-            (output_dir / "report.md").write_text(gen.to_markdown(), encoding="utf-8")
+        # Canonical Step08 file contract requires both summary artifacts whenever
+        # an output directory is provided, regardless of CLI --format.
+        (output_dir / "summary.json").write_text(gen.to_json(), encoding="utf-8")
+        (output_dir / "summary.md").write_text(gen.to_markdown(), encoding="utf-8")
+        _write_verification_json(gen, output_dir)
+        _write_quality_gates_json(gen, output_dir)
     else:
         if fmt in ("json", "both"):
             print(gen.to_json())
@@ -377,8 +433,8 @@ Examples:
     parser.add_argument(
         "--output-dir",
         default=None,
-        help="Directory to write report.json and/or report.md. "
-             "Defaults to stdout.",
+           help="Directory to write canonical Step08 report files: summary.json, summary.md, "
+               "verification.json, quality_gates.json. Defaults to stdout.",
     )
     parser.add_argument(
         "--format",

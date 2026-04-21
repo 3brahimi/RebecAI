@@ -45,8 +45,10 @@ def test_generate_report_writes_single_rule_under_reports_rule_id() -> None:
         )
 
         assert proc.returncode == 0, proc.stderr
-        assert (out / "reports" / "Rule-22" / "report.json").exists()
-        assert (out / "reports" / "Rule-22" / "report.md").exists()
+        assert (out / "reports" / "Rule-22" / "summary.json").exists()
+        assert (out / "reports" / "Rule-22" / "summary.md").exists()
+        assert (out / "reports" / "Rule-22" / "verification.json").exists()
+        assert (out / "reports" / "Rule-22" / "quality_gates.json").exists()
 
 
 def test_generate_report_writes_multi_rule_under_reports_aggregate() -> None:
@@ -76,8 +78,10 @@ def test_generate_report_writes_multi_rule_under_reports_aggregate() -> None:
         )
 
         assert proc.returncode == 0, proc.stderr
-        assert (out / "reports" / "aggregate" / "report.json").exists()
-        assert (out / "reports" / "aggregate" / "report.md").exists()
+        assert (out / "reports" / "aggregate" / "summary.json").exists()
+        assert (out / "reports" / "aggregate" / "summary.md").exists()
+        assert (out / "reports" / "aggregate" / "verification.json").exists()
+        assert (out / "reports" / "aggregate" / "quality_gates.json").exists()
 
 
 def test_generate_report_without_output_dir_still_writes_default_artifacts() -> None:
@@ -109,4 +113,7 @@ def test_generate_report_without_output_dir_still_writes_default_artifacts() -> 
         assert payload["total_rules"] == 1
 
         # Deterministic default artifact location.
-        assert (base / "output" / "reports" / "Rule-22" / "report.json").exists()
+        assert (base / "output" / "reports" / "Rule-22" / "summary.json").exists()
+        assert (base / "output" / "reports" / "Rule-22" / "summary.md").exists()
+        assert (base / "output" / "reports" / "Rule-22" / "verification.json").exists()
+        assert (base / "output" / "reports" / "Rule-22" / "quality_gates.json").exists()

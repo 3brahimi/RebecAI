@@ -69,7 +69,7 @@ VALID_FIXTURES: dict[str, dict[str, object]] = {
     },
     "step08": {
         "status": "ok",
-        "report_path": "/tmp/reports/Rule-22/summary.json",
+        "summary_path": "/tmp/reports/Rule-22/summary.json",
         "summary": {"total_rules": 10, "rules_passed": 9, "score_mean": 91.5},
     },
     "fsm_action": {
@@ -97,7 +97,7 @@ MISSING_REQUIRED_FIELD: dict[str, str] = {
     "step05": "candidate_artifacts",
     "step06": "verified",
     "step07": "installation_report",
-    "step08": "report_path",
+    "step08": "summary_path",
     "fsm_action": "action",
 }
 

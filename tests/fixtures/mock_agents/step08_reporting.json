@@ -1,8 +1,8 @@
 {
   "status": "ok",
   "source_file_path": "PhaseF-Rule",
-  "report_path": "output/reports/PhaseF-Rule/summary.json",
-  "report_md_path": "output/reports/PhaseF-Rule/summary.md",
+  "summary_path": "output/reports/PhaseF-Rule/summary.json",
+  "summary_md_path": "output/reports/PhaseF-Rule/summary.md",
   "summary": {
     "total_rules": 1,
     "rules_passed": 1,

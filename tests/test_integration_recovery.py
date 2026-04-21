@@ -119,8 +119,8 @@ MOCK_PAYLOADS: dict[str, dict] = {
     "step08_reporting": {
         "status": "ok",
         "source_file_path": RULE_ID,
-        "report_path": f"output/reports/{RULE_ID}/summary.json",
-        "report_md_path": f"output/reports/{RULE_ID}/summary.md",
+        "summary_path": f"output/reports/{RULE_ID}/summary.json",
+        "summary_md_path": f"output/reports/{RULE_ID}/summary.md",
         "summary": {"total_rules": 1, "rules_passed": 1, "score_mean": 90.0},
     },
 }
