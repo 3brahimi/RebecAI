@@ -39,54 +39,8 @@ Use this skill when you need to:
 ## Library Location
 
 All Python modules are in `<scripts>`:
-```
-skills/rebeca_tooling/
-├── __init__.py
-├── schemas
-│   ├── abstraction-agent.schema.json
-│   ├── llm-lane-agent.schema.json
-│   ├── mapping-agent.schema.json
-│   ├── packaging-agent.schema.json
-│   ├── reporting-agent.schema.json
-│   ├── synthesis-agent.schema.json
-│   ├── triage-agent.schema.json
-│   ├── verification-agent.schema.json
-│   └── workflow-fsm-action.schema.json
-├── scripts
-│   ├── __init__.py
-│   ├── agent_utils.py
-│   ├── artifact_writer.py
-│   ├── check_artifact_gaps.py
-│   ├── classify_rule_status.py
-│   ├── cleanup_outputs.py
-│   ├── cli_runner.py
-│   ├── colreg_fallback_mapper.py
-│   ├── consolidate_reports.py
-│   ├── download_rmc.py
-│   ├── generate_report.py
-│   ├── generate_rule_report.py
-│   ├── install_artifacts.py
-│   ├── mutation_engine.py
-│   ├── output_policy.py
-│   ├── pre_run_rmc_check.py
-│   ├── reporting_metrics.py
-│   ├── rmc_resolver.py
-│   ├── rmc_result_parser.py
-│   ├── run_pipeline.py
-│   ├── run_rmc.py
-│   ├── score_single_rule.py
-│   ├── shadow_compare.py
-│   ├── snapshotter.py
-│   ├── step_schemas.py
-│   ├── symbol_differ.py
-│   ├── transformation_utils.py
-│   ├── utils.py
-│   ├── vacuity_checker.py
-│   ├── verify_installation.py
-│   └── workflow_fsm.py
-└── SKILL.md
-
-3 directories, 42 files
+```bash
+ls <scripts>
 ```
 
 ## Python Library Usage
@@ -554,29 +508,6 @@ def verify_rule(rule_id: str, model_path: str, property_path: str) -> dict:
         return {"rule_id": rule_id, "status": "error", "exit_code": result}
 ```
 
-## Integration with Other Skills
-
-Other skills can reference this tooling skill:
-
-```python
-# In another skill or agent
-import sys
-from pathlib import Path
-
-# Reference rebeca_tooling skill
-tooling_skill = Path("<skills>/rebeca_tooling").expanduser()
-sys.path.insert(0, str(tooling_skill))
-
-from scripts import run_rmc, RuleStatusClassifier
-
-# Use tooling functions
-classifier = RuleStatusClassifier()
-status = classifier.classify("rule.legata")
-
-if status["status"] == "formalized":
-    result = run_rmc(...)
-```
-
 ## Module Reference
 
 | Module | Purpose | CLI | Library | Exported |
@@ -604,6 +535,13 @@ if status["status"] == "formalized":
 | `consolidate_reports.py` | Multi-rule consolidation + tables + status/score/mutation/cactus plots (SVG+PNG) | ✓ | ✓ | ✗ (use directly) |
 | `step_schemas.py` | Structured step output schema validation | ✗ | ✓ | ✓ |
 | `transformation_utils.py` | Rule/property transformation utilities | ✗ | ✓ | ✗ (use directly) |
+| `output_policy.py` | Canonical path policy for all pipeline outputs — the only permitted source of artifact paths | ✗ | ✓ | ✓ |
+| `artifact_writer.py` | Atomically persist a step's JSON output to its canonical path (tmp→rename); required after every step | ✓ | ✓ | ✗ (use directly) |
+| `check_artifact_gaps.py` | Gate 0 machine check — exits 0 only when all 8 step artifacts are present and schema-valid | ✓ | ✓ | ✗ (use directly) |
+| `workflow_fsm.py` | Deterministic FSM controller — reads artifacts, evaluates predicates, emits one JSON action to stdout | ✓ | ✓ | ✗ (use directly) |
+| `run_pipeline.py` | Feature-flagged executor loop (`FSM_CONTROLLER_ENABLED=1`); drives full pipeline via `workflow_fsm.py` | ✓ | ✓ | ✗ (use directly) |
+| `shadow_compare.py` | Parity comparison between two completed runs — artifact presence and schema validity | ✓ | ✓ | ✗ (use directly) |
+| `cleanup_outputs.py` | Remove scratch work directories while preserving promoted finals and reports | ✓ | ✓ | ✗ (use directly) |
 
 ## JSON Output Purity Contract
 
@@ -645,7 +583,7 @@ CI also runs this automatically via `.github/workflows/cli-help-doc-sync.yml`.
 11. **Use generate_rule_report.py for artifact-rich per-rule outputs** instead of scorecard-only summaries when mutation/vacuity/model stats are required
 12. **Use consolidate_reports.py for portfolio-level review** and include SVG plots for papers/decks, PNG for slides/CI artifacts
 
-### Additional troubleshooting notes
+## Troubleshooting
 
 | Symptom | Likely Cause | Fix |
 |---------|-------------|-----|
@@ -657,8 +595,6 @@ CI also runs this automatically via `.github/workflows/cli-help-doc-sync.yml`.
 | Report shows `rules_passed: 0` despite per-rule data | `finalize()` was a no-op | Fixed — `finalize()` now recomputes all aggregate fields from `per_rule_scorecards` |
 | Vacuity result disagrees with scorecard | Each tool used a different assertion or different defaults | Pass `--assertion-id` to both `vacuity_checker.py` and `score_single_rule.py` |
 | Mutation engine shows `mutation_score: 0` | Generation-only mode; mutants not executed | Add `--run-with-jar/model/property` flags to enable kill-run |
-
-## Troubleshooting
 
 ### Import Errors
 
@@ -692,10 +628,3 @@ Install if missing:
 - Ubuntu/Debian: `sudo apt install build-essential`
 - macOS: `xcode-select --install`
 - Windows: Install MinGW or use WSL2
-
-## See Also
-
-- **legata_to_rebeca** skill - Workflow guidance
-- **rebeca-handbook** skill - Modeling best practices
-- **rebeca-hallucination** skill - Contains the tight `run_pipeline.py` anti-hallucination checklist for rollout sign-off
-- **legata_to_rebeca** agent - Main orchestration agent

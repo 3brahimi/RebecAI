@@ -122,18 +122,3 @@ result = detect_hallucinations(
 # score integration
 integrity_pass = not result.is_hallucination
 ```
-
----
-
-## Tight anti-hallucination checklist for `run_pipeline.py`
-
-Use this checklist for rollout/sign-off runs:
-
-- [ ] Use `FSM_CONTROLLER_ENABLED=1` so next-action decisions come from `workflow_fsm.py`.
-- [ ] Treat filesystem artifacts + schema validation as source of truth (never logs/chat text).
-- [ ] Require all step artifacts under `output/work/<rule_id>/` to be present and schema-valid.
-- [ ] Accept terminal success only when Step08 artifact exists **and** required report files exist.
-- [ ] Treat `--mock-agents-dir` outputs as test-only evidence (not parity sign-off evidence).
-- [ ] Require shadow parity pass (`shadow_compare.py`) with zero divergences and zero invalid artifacts.
-- [ ] If `reason_code=budget_exhausted`, classify run as blocked; do not auto-promote.
-- [ ] Block promotion on any missing artifact, schema violation, or report-file mismatch.

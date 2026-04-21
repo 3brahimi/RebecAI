@@ -1,7 +1,7 @@
 ---
 name: init_agent
 description: |
-  Step01 specialist: validates inputs, provisions RMC, pins toolchain metadata,
+  Step01 specialist: validates inputs, records pinned toolchain versions,
   and captures a golden snapshot. Emits a JSON contract into coordinator shared_state.step01.
 skills:
   - rebeca_tooling
@@ -9,55 +9,29 @@ skills:
 
 # init_agent (Step01): Toolchain and Inputs Initialization
 
-## Goal
+Validates that input files exist, records pinned RMC and Python versions, and captures a
+golden snapshot for downstream verification.
 
-Bootstrap a deterministic transformation session: verify files exist, ensure RMC is
-available (downloading if needed), record pinned toolchain versions, and capture a
-golden snapshot so downstream agents (`verification_agent`, `integrity_agent`) have a
-tamper-evident baseline.
+## Inputs (from `action.inputs`)
 
-## Inputs (from coordinator `shared_state`)
+- `rule_id` — rule identifier (e.g. `Rule-22`)
+- `model` — path to `.rebeca` model file
+- `property` — path to `.property` file
+- `snapshot_out` — destination path for the snapshot JSON
 
-| Field             | Type   | Required | Description                                          |
-|-------------------|--------|----------|------------------------------------------------------|
-| `source_file_path`         | string | yes      | Rule identifier, e.g. `Rule-22`                      |
-| `model`           | string | yes      | Path to `.rebeca` model file                         |
-| `property`        | string | yes      | Path to `.property` file                             |
-| `snapshot_out`    | string | yes      | Destination path for the snapshot JSON               |
-| `rmc_destination` | string | no       | Override RMC directory (env/marker used if omitted)  |
-
-## Tasks (in order)
-
-1. Validate that `model` and `property` exist and pass `safe_path()`.
-2. Call `pre_run_rmc_check(rmc_destination)` — downloads RMC if missing.
-3. Detect RMC version and record Python environment metadata.
-4. Call `capture_snapshot(model, property, source_file_path)` — writes snapshot JSON to `snapshot_out`.
-5. Persist the canonical step artifact atomically:
-   ```bash
-   python <scripts>/artifact_writer.py \
-     --rule-id <source_file_path> --step step01_init \
-     --data '<output_contract_json>' [--base-dir output]
-   ```
-6. Emit success contract JSON to stdout; exit 0.
-
-If any step fails, emit the **Error Envelope** (see below) to stdout and exit 1 immediately.
-
-## CLI
+## Invocation
 
 ```bash
 python <scripts>/init_agent.py \
-  --rule-id       Rule-22 \
-  --model         output/Rule-22.rebeca \
-  --property      output/Rule-22.property \
-  --snapshot-out  output/snapshots/Rule-22.snapshot.json \
-  [--rmc-destination ~/.rebeca/rmc]
+  --rule-id      <rule_id> \
+  --model        <model> \
+  --property     <property> \
+  --snapshot-out <snapshot_out>
 ```
 
-Exit code `0` = success, `1` = failure.
+Capture stdout as the step artifact JSON. Exit 0 = success, exit 1 = failure.
 
 ## Output Contract (success)
-
-Merged into coordinator `phase_results.step01`:
 
 ```json
 {
@@ -79,43 +53,21 @@ Merged into coordinator `phase_results.step01`:
 }
 ```
 
-## Error Envelope (failure)
+## Artifact Persistence
 
-All failures from this agent conform to the canonical **Error Envelope** schema, which
-is also the standard format across all sub_agents in this pipeline:
-
-```json
-{
-  "status":  "error",
-  "phase":   "step01",
-  "agent":   "init_agent",
-  "message": "Human-readable description of what failed"
-}
+```bash
+python <scripts>/artifact_writer.py \
+  --rule-id <rule_id> --step step01_init \
+  --data '<stdout_json>' --base-dir output
 ```
+
+## Error Envelope (failure)
 
 | Field     | Type   | Description                                       |
 |-----------|--------|---------------------------------------------------|
 | `status`  | string | Always `"error"`                                  |
-| `phase`   | string | Workflow step key (`"step01"` through `"step08"`) |
-| `agent`   | string | Name of the failing agent                         |
+| `phase`   | string | Workflow step key — `"step01"`                    |
+| `agent`   | string | Always `"init_agent"`                             |
 | `message` | string | Root-cause description; safe to surface to user   |
 
-The coordinator MUST NOT advance to Step02 when it receives this envelope.
-
-## Failure Modes
-
-| Condition                            | `message` prefix                           |
-|--------------------------------------|--------------------------------------------|
-| Model or property file not found     | `"Model file not found: …"`               |
-| Path escapes `~` (`safe_path` error) | `"Invalid path: …"`                        |
-| `pre_run_rmc_check` returns != 0     | `"pre_run_rmc_check failed (exit N): …"`  |
-| `capture_snapshot` raises            | `"snapshotter failed: …"`                  |
-
-## Implementation Notes
-
-- Uses `<scripts>/` exclusively via its `__init__.py` exports.
-- Temp files (if any) are written inside `Path.home()` to satisfy `safe_path()`.
-- RMC version detection: tries `java -jar rmc.jar` with a 5 s timeout; extracts the
-  first non-empty output line. Falls back to the jar filename stem (e.g. `rmc-2.15.0`).
-- This agent is **idempotent**: re-running with the same inputs overwrites the snapshot
-  JSON in place without side effects.
+Propagate to the coordinator without retrying.

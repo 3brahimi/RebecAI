@@ -47,7 +47,7 @@ Schema: `<skills>/rebeca_tooling/schemas/mapping-agent.schema.json` → `input` 
 
 ## Canonical Assertion Pattern
 
-Per `transformation_patterns.md` and the Legata obligation semantics:
+Per the Legata obligation semantics (see `legata_to_rebeca` skill):
 
 ```
 RuleN: !condition || exclusion || assurance;
