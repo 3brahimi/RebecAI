@@ -38,35 +38,55 @@ Use this skill when you need to:
 
 ## Library Location
 
-All Python modules are in `scripts/` subdirectory of this skill:
+All Python modules are in `<scripts>`:
 ```
 skills/rebeca_tooling/
-├── SKILL.md (this file)
-└── scripts/
-    ├── __init__.py
-    ├── agent_utils.py
-    ├── cli_runner.py
-    ├── utils.py
-    ├── download_rmc.py
-    ├── run_rmc.py
-    ├── rmc_result_parser.py
-    ├── pre_run_rmc_check.py
-    ├── rmc_resolver.py
-    ├── install_artifacts.py
-    ├── verify_installation.py
-    ├── classify_rule_status.py
-    ├── colreg_fallback_mapper.py
-    ├── vacuity_checker.py
-    ├── mutation_engine.py
-    ├── snapshotter.py
-    ├── symbol_differ.py
-    ├── reporting_metrics.py
-    ├── score_single_rule.py
-    ├── generate_report.py
-    ├── generate_rule_report.py
-    ├── consolidate_reports.py
-    ├── step_schemas.py
-    └── transformation_utils.py
+├── __init__.py
+├── schemas
+│   ├── abstraction-agent.schema.json
+│   ├── llm-lane-agent.schema.json
+│   ├── mapping-agent.schema.json
+│   ├── packaging-agent.schema.json
+│   ├── reporting-agent.schema.json
+│   ├── synthesis-agent.schema.json
+│   ├── triage-agent.schema.json
+│   ├── verification-agent.schema.json
+│   └── workflow-fsm-action.schema.json
+├── scripts
+│   ├── __init__.py
+│   ├── agent_utils.py
+│   ├── artifact_writer.py
+│   ├── check_artifact_gaps.py
+│   ├── classify_rule_status.py
+│   ├── cleanup_outputs.py
+│   ├── cli_runner.py
+│   ├── colreg_fallback_mapper.py
+│   ├── consolidate_reports.py
+│   ├── download_rmc.py
+│   ├── generate_report.py
+│   ├── generate_rule_report.py
+│   ├── install_artifacts.py
+│   ├── mutation_engine.py
+│   ├── output_policy.py
+│   ├── pre_run_rmc_check.py
+│   ├── reporting_metrics.py
+│   ├── rmc_resolver.py
+│   ├── rmc_result_parser.py
+│   ├── run_pipeline.py
+│   ├── run_rmc.py
+│   ├── score_single_rule.py
+│   ├── shadow_compare.py
+│   ├── snapshotter.py
+│   ├── step_schemas.py
+│   ├── symbol_differ.py
+│   ├── transformation_utils.py
+│   ├── utils.py
+│   ├── vacuity_checker.py
+│   ├── verify_installation.py
+│   └── workflow_fsm.py
+└── SKILL.md
+
+3 directories, 42 files
 ```
 
 ## Python Library Usage
