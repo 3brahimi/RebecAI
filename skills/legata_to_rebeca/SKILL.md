@@ -10,41 +10,13 @@ Use this skill when transforming a COLREG maritime safety rule from Legata forma
 
 ---
 
-## Script Path Resolution
-
-All dumb tools live in the `rebeca_tooling` skill. Resolve their location before any step:
-
-```bash
-# When running inside .github/ context:
-SCRIPTS=".github/skills/rebeca_tooling/scripts"
-
-# When running inside .claude/ or ~/.agents/ context:
-# SCRIPTS="$HOME/.agents/skills/rebeca_tooling/scripts"
-```
-
-Resolve the RMC jar path:
-
-```bash
-# Option 1: read the pinned path written by setup.py
-JAR=$(cat .github/skills/rmc_path.txt 2>/dev/null)
-
-# Option 2: let pre_run_rmc_check.py auto-provision it
-python3 $SCRIPTS/pre_run_rmc_check.py
-JAR=$(cat .github/skills/rmc_path.txt)
-
-# Option 3: common fallback locations
-# .github/rmc/rmc.jar  |  ~/.agents/rmc/rmc.jar  |  ~/.claude/rmc/rmc.jar
-```
-
----
-
 ## Step01 — Toolchain and Inputs Initialization
 
 Validate prerequisites and provision RMC before doing anything else.
 
 ```bash
-python3 $SCRIPTS/pre_run_rmc_check.py
-python3 $SCRIPTS/verify_installation.py --rmc-jar $JAR
+python3 <scripts>/pre_run_rmc_check.py
+python3 <scripts>/verify_installation.py --rmc-jar <jar>
 ```
 
 **Fail fast if:**
@@ -54,7 +26,7 @@ python3 $SCRIPTS/verify_installation.py --rmc-jar $JAR
 
 **Capture golden snapshot:**
 ```bash
-python3 $SCRIPTS/snapshotter.py \
+python3 <scripts>/snapshotter.py \
   --model path/to/SimulationModelCode.rebeca \
   --property path/to/SimulationModelCode.property \
   --output output/snapshots/Rule22.snapshot.json \
@@ -68,7 +40,7 @@ python3 $SCRIPTS/snapshotter.py \
 Classify the Legata rule before attempting transformation.
 
 ```bash
-python3 $SCRIPTS/classify_rule_status.py \
+python3 <scripts>/classify_rule_status.py \
   --legata-path legata/colreg/Rule22.txt \
   --output-json
 ```
@@ -84,7 +56,7 @@ python3 $SCRIPTS/classify_rule_status.py \
 
 For `colreg-fallback` path:
 ```bash
-python3 $SCRIPTS/colreg_fallback_mapper.py \
+python3 <scripts>/colreg_fallback_mapper.py \
   --colreg-text legata/colreg/Rule22.txt \
   --rule-id Rule-22 \
   --output-json
@@ -145,11 +117,11 @@ RuleXX: !conditionVariable || !excludeVariable || assureVariable;
 Generate property mutation candidates for semantic strength testing.
 
 ```bash
-python3 $SCRIPTS/mutation_engine.py \
+python3 <scripts>/mutation_engine.py \
   --rule-id Rule-22 \
   --model output/Rule-22.rebeca \
   --property output/Rule-22.property \
-  --run-with-jar $JAR \
+  --run-with-jar <jar> \
   --run-with-model output/Rule-22.rebeca \
   --run-with-property output/Rule-22.property \
   --run-timeout 60 \
@@ -170,8 +142,8 @@ This step is **mandatory**. Do not skip it or mark it complete without actually 
 ### 6a — Run RMC model checker
 
 ```bash
-python3 $SCRIPTS/run_rmc.py \
-  --jar $JAR \
+python3 <scripts>/run_rmc.py \
+  --jar <jar> \
   --model output/Rule-22.rebeca \
   --property output/Rule-22.property \
   --output-dir output/verification \
@@ -190,8 +162,8 @@ python3 $SCRIPTS/run_rmc.py \
 ### 6b — Vacuity check (only if Step06a exit code == 0)
 
 ```bash
-python3 $SCRIPTS/vacuity_checker.py \
-  --jar $JAR \
+python3 <scripts>/vacuity_checker.py \
+  --jar <jar> \
   --model output/Rule-22.rebeca \
   --property output/Rule-22.property \
   --output-dir output/verification \
@@ -204,7 +176,7 @@ If `is_vacuous == true`, the property passes trivially. Route back to Step05 for
 ### 6c — Mutation scoring (only if Step06a exit code == 0)
 
 ```bash
-python3 $SCRIPTS/mutation_engine.py \
+python3 <scripts>/mutation_engine.py \
   --rule-id Rule-22 \
   --model output/Rule-22.rebeca \
   --property output/Rule-22.property \
@@ -236,7 +208,7 @@ This step is **mandatory**. Do not skip it or summarize without running the scri
 ### 8a — Score the rule
 
 ```bash
-python3 $SCRIPTS/score_single_rule.py \
+python3 <scripts>/score_single_rule.py \
   --rule-id Rule-22 \
   --model output/packaged/Rule-22/model/Rule-22.rebeca \
   --property output/packaged/Rule-22/property/Rule-22.property \
@@ -256,7 +228,7 @@ python3 $SCRIPTS/score_single_rule.py \
 ### 8b — Generate aggregate report
 
 ```bash
-python3 $SCRIPTS/generate_report.py \
+python3 <scripts>/generate_report.py \
   < output/scorecard_Rule-22.json \
   > output/report.json
 ```

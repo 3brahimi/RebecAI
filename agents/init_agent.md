@@ -34,7 +34,7 @@ tamper-evident baseline.
 4. Call `capture_snapshot(model, property, source_file_path)` — writes snapshot JSON to `snapshot_out`.
 5. Persist the canonical step artifact atomically:
    ```bash
-   python skills/rebeca_tooling/scripts/artifact_writer.py \
+   python <scripts>/artifact_writer.py \
      --rule-id <source_file_path> --step step01_init \
      --data '<output_contract_json>' [--base-dir output]
    ```
@@ -45,7 +45,7 @@ If any step fails, emit the **Error Envelope** (see below) to stdout and exit 1 
 ## CLI
 
 ```bash
-python skills/rebeca_tooling/scripts/init_agent.py \
+python <scripts>/init_agent.py \
   --rule-id       Rule-22 \
   --model         output/Rule-22.rebeca \
   --property      output/Rule-22.property \
@@ -113,7 +113,7 @@ The coordinator MUST NOT advance to Step02 when it receives this envelope.
 
 ## Implementation Notes
 
-- Uses `skills/rebeca_tooling/scripts/` exclusively via its `__init__.py` exports.
+- Uses `<scripts>/` exclusively via its `__init__.py` exports.
 - Temp files (if any) are written inside `Path.home()` to satisfy `safe_path()`.
 - RMC version detection: tries `java -jar rmc.jar` with a 5 s timeout; extracts the
   first non-empty output line. Falls back to the jar filename stem (e.g. `rmc-2.15.0`).

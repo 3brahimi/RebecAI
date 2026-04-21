@@ -78,7 +78,7 @@ import sys
 from pathlib import Path
 
 # Add skill's lib to path
-skill_path = Path("~/.agents/skills/rebeca_tooling").expanduser()
+skill_path = Path("<skills>/rebeca_tooling").expanduser()
 sys.path.insert(0, str(skill_path))
 
 from scripts import (
@@ -124,7 +124,7 @@ result = download_rmc(
 from scripts import run_rmc
 
 result = run_rmc(
-    jar=".agents/rmc/rmc.jar",
+    jar=<jar>,
     model="path/to/model.rebeca",
     property_file="path/to/property.property",
     output_dir="verification_output",
@@ -154,8 +154,7 @@ from scripts import pre_run_rmc_check
 # Resolver precedence:
 #   1) RMC_JAR
 #   2) RMC_DESTINATION/rmc.jar
-#   3) ./.claude/{rmc_path,rmc_path.txt}, then ~/.claude/{rmc_path,rmc_path.txt}
-#   4) ~/.claude/rmc/rmc.jar
+#   3) <jar>
 result = pre_run_rmc_check()
 
 # Exit codes:
@@ -237,7 +236,7 @@ python3 - <<'PY'
 import importlib
 from pathlib import Path
 
-scripts = Path("skills/rebeca_tooling/scripts")
+scripts = Path("<scripts>")
 exports = importlib.import_module("skills.rebeca_tooling.scripts").__all__
 print("# Exported symbols")
 for name in sorted(exports):
@@ -363,12 +362,12 @@ All modules have command-line interfaces:
 
 ```bash
 # Download RMC
-python3 ~/.agents/skills/rebeca_tooling/scripts/download_rmc.py \
+python3 <scripts>/download_rmc.py \
   --url https://github.com/rebeca-lang/org.rebecalang.rmc/releases/latest \
   --dest-dir .agents/rmc
 
 # Run verification
-python3 ~/.agents/skills/rebeca_tooling/scripts/run_rmc.py \
+python3 <scripts>/run_rmc.py \
   --jar .agents/rmc/rmc.jar \
   --model model.rebeca \
   --property property.property \
@@ -377,19 +376,19 @@ python3 ~/.agents/skills/rebeca_tooling/scripts/run_rmc.py \
   --jvm-opt "-Xmx2g"
 
 # Pre-run check
-python3 ~/.agents/skills/rebeca_tooling/scripts/pre_run_rmc_check.py
+python3 <scripts>/pre_run_rmc_check.py
 ```
 
 ### Rule Triage
 
 ```bash
 # Classify rule status
-python3 ~/.agents/skills/rebeca_tooling/scripts/classify_rule_status.py \
+python3 <scripts>/classify_rule_status.py \
   --legata-path legata/Rule-22.legata \
   --output-json
 
 # COLREG fallback mapping
-python3 ~/.agents/skills/rebeca_tooling/scripts/colreg_fallback_mapper.py \
+python3 <scripts>/colreg_fallback_mapper.py \
   --rule-id Rule-99 \
   --colreg-text "Every vessel shall maintain a proper lookout" \
   --output-json
@@ -399,7 +398,7 @@ python3 ~/.agents/skills/rebeca_tooling/scripts/colreg_fallback_mapper.py \
 
 ```bash
 # Score single rule — basic
-python3 ~/.agents/skills/rebeca_tooling/scripts/score_single_rule.py \
+python3 <scripts>/score_single_rule.py \
   --rule-id Rule-22 \
   --verify-status pass \
   --output-json
@@ -408,7 +407,7 @@ python3 ~/.agents/skills/rebeca_tooling/scripts/score_single_rule.py \
 #   --is-vacuous true|false        feed the is_vacuous field from check_vacuity()
 #   --assertion-id Rule22          audit trail: which assertion was checked
 # A vacuous pass downgrades status to Conditional (85/100).
-python3 ~/.agents/skills/rebeca_tooling/scripts/score_single_rule.py \
+python3 <scripts>/score_single_rule.py \
   --rule-id Rule-22 \
   --verify-status pass \
   --is-vacuous false \
@@ -416,8 +415,8 @@ python3 ~/.agents/skills/rebeca_tooling/scripts/score_single_rule.py \
   --output-json
 
 # Vacuity check — use --assertion-id when multiple assertions exist
-python3 ~/.agents/skills/rebeca_tooling/scripts/vacuity_checker.py \
-  --jar ~/.claude/rmc/rmc.jar \
+python3 <scripts>/vacuity_checker.py \
+  --jar <jar> \
   --model model.rebeca \
   --property property.property \
   --output-dir output/Rule-22 \
@@ -426,27 +425,27 @@ python3 ~/.agents/skills/rebeca_tooling/scripts/vacuity_checker.py \
 
 # Generate report — accepts JSON array, NDJSON, or file path
 # (a) from file
-python3 ~/.agents/skills/rebeca_tooling/scripts/generate_report.py \
+python3 <scripts>/generate_report.py \
   --input-scores scorecards.json \
   --output-dir reports/ \
   --format both
 
 # (b) from single scorecard on stdin (NDJSON or JSON object)
 python3 score_single_rule.py --rule-id Rule-22 --verify-status pass --output-json \
-  | python3 ~/.agents/skills/rebeca_tooling/scripts/generate_report.py
+  | python3 <scripts>/generate_report.py
 
 # Mutation generation only
-python3 ~/.agents/skills/rebeca_tooling/scripts/mutation_engine.py \
+python3 <scripts>/mutation_engine.py \
   --rule-id Rule-22 \
   --property property.property \
   --output-json
 
 # Mutation + kill-run (executes mutants with RMC, reports killed/survived/score)
-python3 ~/.agents/skills/rebeca_tooling/scripts/mutation_engine.py \
+python3 <scripts>/mutation_engine.py \
   --rule-id Rule-22 \
   --model model.rebeca \
   --property property.property \
-  --run-with-jar ~/.claude/rmc/rmc.jar \
+  --run-with-jar <jar> \
   --run-with-model model.rebeca \
   --run-with-property property.property \
   --run-timeout 60 \
@@ -461,17 +460,17 @@ python3 ~/.agents/skills/rebeca_tooling/scripts/mutation_engine.py \
 # killed, survived, errors, mutation_score, mutant_results
 
 # Generate comprehensive per-rule report from a rule output folder
-python3 ~/.agents/skills/rebeca_tooling/scripts/generate_rule_report.py \
+python3 <scripts>/generate_rule_report.py \
   --rule-dir output/rules/Rule-22
 # default output: output/rules/reports/Rule-22/comprehensive_report.{json,md}
 
 # Consolidate all rule folders and emit aggregate markdown/json + plots
-python3 ~/.agents/skills/rebeca_tooling/scripts/consolidate_reports.py \
+python3 <scripts>/consolidate_reports.py \
   --root-dir output/rules \
   --output-dir output/reports
 
 # Headless/CI mode if plot rendering is unavailable
-python3 ~/.agents/skills/rebeca_tooling/scripts/consolidate_reports.py \
+python3 <scripts>/consolidate_reports.py \
   --root-dir output/rules \
   --output-dir output/reports \
   --skip-plots
@@ -483,14 +482,14 @@ python3 ~/.agents/skills/rebeca_tooling/scripts/consolidate_reports.py \
 # Complete setup (use setup.py instead — see above)
 
 # Install artifacts only
-python3 ~/.agents/skills/rebeca_tooling/scripts/install_artifacts.py \
+python3 <scripts>/install_artifacts.py \
   --target-root .claude \
   --mode all
 
 # Verify installation
-python3 ~/.agents/skills/rebeca_tooling/scripts/verify_installation.py .claude
+python3 <scripts>/verify_installation.py .claude
 # --rmc-jar is accepted for backward compatibility (ignored; use pre_run_rmc_check.py for jar checks)
-python3 ~/.agents/skills/rebeca_tooling/scripts/verify_installation.py .claude --rmc-jar ~/.claude/rmc/rmc.jar
+python3 <scripts>/verify_installation.py .claude --rmc-jar <jar>
 ```
 
 ## Platform Support
@@ -545,7 +544,7 @@ import sys
 from pathlib import Path
 
 # Reference rebeca_tooling skill
-tooling_skill = Path("~/.agents/skills/rebeca_tooling").expanduser()
+tooling_skill = Path("<skills>/rebeca_tooling").expanduser()
 sys.path.insert(0, str(tooling_skill))
 
 from scripts import run_rmc, RuleStatusClassifier
@@ -596,7 +595,7 @@ For every script supporting `--output-json`:
 When chaining scripts in pipelines, prefer JSON-mode everywhere:
 
 ```bash
-python3 ~/.agents/skills/rebeca_tooling/scripts/classify_rule_status.py \
+python3 <scripts>/classify_rule_status.py \
   --legata-path legata/Rule-22.legata \
   --output-json
 ```
@@ -646,7 +645,7 @@ CI also runs this automatically via `.github/workflows/cli-help-doc-sync.yml`.
 If you get `ModuleNotFoundError`:
 ```python
 # Ensure skill path is correct
-skill_path = Path("~/.agents/skills/rebeca_tooling").expanduser()
+skill_path = Path("<skills>/rebeca_tooling").expanduser()
 print(f"Skill path exists: {skill_path.exists()}")
 print(f"Scripts path exists: {(skill_path / 'scripts').exists()}")
 ```

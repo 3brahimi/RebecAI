@@ -7,7 +7,7 @@ description: |
   generate_rule_report.py to produce comprehensive_report.json/.md.
   Also writes verification.json and quality_gates.json (all four are
   canonical Step08 outputs required by Gate 0).
-schema: skills/rebeca_tooling/schemas/reporting-agent.schema.json
+schema: <skills>/rebeca_tooling/schemas/reporting-agent.schema.json
 skills:
   - rebeca_tooling
   - rebeca_hallucination
@@ -165,7 +165,7 @@ failure, or schema validation violation.
 After all report files are written and the output contract is assembled, persist the canonical pointer artifact atomically **before** returning output to the coordinator:
 
 ```bash
-python skills/rebeca_tooling/scripts/artifact_writer.py \
+python <scripts>/artifact_writer.py \
   --rule-id <source_file_path> --step step08_reporting \
   --data '<output_contract_json>' [--base-dir output]
 ```

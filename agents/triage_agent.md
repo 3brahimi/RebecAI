@@ -5,7 +5,7 @@ description: |
   attaches structured evidence and defects, and routes to normal mapping,
   repair, COLREG-fallback, or skip. Emits a JSON contract into
   coordinator shared_state.step02.
-schema: skills/rebeca_tooling/schemas/triage-agent.schema.json
+schema: <skills>/rebeca_tooling/schemas/triage-agent.schema.json
 skills:
   - rebeca_tooling
 ---
@@ -26,7 +26,7 @@ invocation (the coordinator loops for multi-rule pipelines).
 | `legata_path` | string | yes      | Path to the `.legata` source file                 |
 | `colreg_text` | string | no       | Raw COLREG text; required when fallback is likely |
 
-Schema: `skills/rebeca_tooling/schemas/triage-agent.schema.json` → `input` block.
+Schema: `<skills>/rebeca_tooling/schemas/triage-agent.schema.json` → `input` block.
 
 ## Tasks (in order)
 
@@ -46,7 +46,7 @@ Schema: `skills/rebeca_tooling/schemas/triage-agent.schema.json` → `input` blo
 4. If `path == colreg-fallback`, call `COLREGFallbackMapper().map_rule(source_file_path, colreg_text)`.
 5. Persist the canonical step artifact atomically:
    ```bash
-   python skills/rebeca_tooling/scripts/artifact_writer.py \
+   python <scripts>/artifact_writer.py \
      --rule-id <source_file_path> --step step02_triage \
      --data '<output_contract_json>' [--base-dir output]
    ```
@@ -59,7 +59,7 @@ If any step fails, emit the **Error Envelope** to stdout and exit 1.
 ## CLI
 
 ```bash
-python skills/rebeca_tooling/scripts/triage_agent.py \
+python <scripts>/triage_agent.py \
   --rule-id     Rule-22 \
   --legata-path input/Rule-22.legata \
   [--colreg-text "Every vessel shall exhibit lights..."]
@@ -110,7 +110,7 @@ When `path == colreg-fallback`, `routing.fallback_mapping` is populated:
 
 ## Error Envelope (failure)
 
-Conforms to the canonical Error Envelope defined in `skills/rebeca_tooling/scripts/legata_to_rebeca.md`:
+Conforms to the canonical Error Envelope defined in `<agents>/legata_to_rebeca.md`:
 
 ```json
 {
@@ -132,7 +132,7 @@ Conforms to the canonical Error Envelope defined in `skills/rebeca_tooling/scrip
 
 ## Implementation Notes
 
-- Uses `skills/rebeca_tooling/scripts/` via `__init__.py` exports only.
+- Uses `<scripts>/` via `__init__.py` exports only.
 - Schema validated with `jsonschema` if installed; logged as warning if unavailable.
 - `RuleStatusClassifier.classify()` handles `FileNotFoundError` internally and returns
   `status: not-formalized` — no special-casing needed in the agent wrapper.

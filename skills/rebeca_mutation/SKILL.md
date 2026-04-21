@@ -22,7 +22,7 @@ description: |
 ## Mutation Strategies
 
 Eight strategies are implemented in
-`~/.agents/skills/rebeca_tooling/scripts/mutation_engine.py`:
+`<scripts>/mutation_engine.py`:
 
 | ID | Target | What changes | Expected outcome |
 |----|--------|-------------|-----------------|
@@ -102,7 +102,7 @@ from scripts import MutationEngine, Mutation, check_vacuity, run_rmc
 from pathlib import Path
 import json, os, tempfile
 
-JAR    = "~/.agents/skills/rebeca_tooling/bin/rmc.jar"
+JAR    = "<jar>"
 MODEL  = "models/rule22.rebeca"
 PROP   = "models/rule22.property"
 OUTDIR = "output/rule22"
@@ -177,8 +177,8 @@ print(json.dumps(report, indent=2))
 Run the vacuity checker standalone:
 
 ```bash
-python3 ~/.agents/skills/rebeca_tooling/scripts/vacuity_checker.py \
-  --jar      ~/.agents/skills/rebeca_tooling/bin/rmc.jar \
+python3 <scripts>/vacuity_checker.py \
+  --jar      <jar> \
   --model    models/rule22.rebeca \
   --property models/rule22.property \
   --output-dir output/rule22 \
@@ -188,7 +188,7 @@ python3 ~/.agents/skills/rebeca_tooling/scripts/vacuity_checker.py \
 Generate mutations and print JSON (no RMC run — catalog mode):
 
 ```bash
-python3 ~/.agents/skills/rebeca_tooling/scripts/mutation_engine.py \
+python3 <scripts>/mutation_engine.py \
   --rule-id   Rule22 \
   --model     models/rule22.rebeca \
   --property  models/rule22.property \
@@ -199,7 +199,7 @@ python3 ~/.agents/skills/rebeca_tooling/scripts/mutation_engine.py \
 Run single strategy only:
 
 ```bash
-python3 ~/.agents/skills/rebeca_tooling/scripts/mutation_engine.py \
+python3 <scripts>/mutation_engine.py \
   --rule-id   Rule22 \
   --model     models/rule22.rebeca \
   --property  models/rule22.property \
@@ -209,11 +209,11 @@ python3 ~/.agents/skills/rebeca_tooling/scripts/mutation_engine.py \
 Run kill-run mode (executes sampled mutants with baseline semantic comparison):
 
 ```bash
-python3 ~/.agents/skills/rebeca_tooling/scripts/mutation_engine.py \
+python3 <scripts>/mutation_engine.py \
   --rule-id Rule22 \
   --model models/rule22.rebeca \
   --property models/rule22.property \
-  --run-with-jar ~/.agents/rmc/rmc.jar \
+  --run-with-jar <jar> \
   --run-with-model models/rule22.rebeca \
   --run-with-property models/rule22.property \
   --run-timeout 60 \

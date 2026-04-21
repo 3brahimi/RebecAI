@@ -37,7 +37,13 @@ _CLASSIFIER_STATUS_TO_ROUTE: Dict[str, str] = {
 def run_triage(data: Dict[str, Any]) -> Dict[str, Any]:
     RuleStatusClassifier = _load_symbol("classify_rule_status.py", "RuleStatusClassifier")
     classifier = RuleStatusClassifier()
-    result = classifier.classify(data["source_file_path"])
+    legata_path = data.get("legata_path") or data.get("source_file_path")
+    if not legata_path:
+        return {
+            "status": "error",
+            "message": "Missing required field: legata_path or source_file_path",
+        }
+    result = classifier.classify(legata_path)
     classifier_status = result["status"]
     route = _CLASSIFIER_STATUS_TO_ROUTE.get(classifier_status, "skip")
     # evidence may be a string or list depending on classifier version — normalise to list
@@ -45,9 +51,10 @@ def run_triage(data: Dict[str, Any]) -> Dict[str, Any]:
     evidence = raw_evidence if isinstance(raw_evidence, list) else [raw_evidence]
     return {
         "status": "ok",
-        "source_file_path": data["source_file_path"],
+        "source_file_path": legata_path,
         "classification": {
             "status": classifier_status,
+            "clause_count": result.get("clause_count", 0),
             "evidence": evidence,
             "defects": result.get("defects", []),
             "next_action": result.get("next_action", ""),

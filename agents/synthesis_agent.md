@@ -5,7 +5,7 @@ description: |
   Runs in parallel with Step04 (mapping_agent) after Step03 completes.
   ALL outputs are tagged is_candidate=true, mapping_path=synthesis-agent, and
   MUST be routed to Step06 (verification_agent) before any downstream use.
-schema: skills/rebeca_tooling/schemas/synthesis-agent.schema.json
+schema: <skills>/rebeca_tooling/schemas/synthesis-agent.schema.json
 skills:
   - rebeca_tooling
   - rebeca_handbook
@@ -125,7 +125,7 @@ failure, schema validation violation.
 After all candidate artifacts are written and the output contract is assembled, persist the canonical step artifact atomically **before** returning output to the coordinator:
 
 ```bash
-python skills/rebeca_tooling/scripts/artifact_writer.py \
+python <scripts>/artifact_writer.py \
   --rule-id <source_file_path> --step step05_candidates \
   --data '<output_contract_json>' [--base-dir output]
 ```

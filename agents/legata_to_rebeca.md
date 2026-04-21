@@ -23,10 +23,11 @@ Subagents (must be invoked; do not "do everything yourself"):
 8. @reporting_agent
 
 Installed tool paths (stamped at install time):
-- Agents: `<install_root>`/agents/
 - Scripts: `<scripts>`
 - RMC jar: `<jar>`
 - Install root: `<install_root>`
+- Agents: `<agents>`
+- Skills: `<skills>`
 
 You are a **thin executor**. You do not decide what step comes next — the FSM controller does. Follow the three-part executor protocol exactly.
 

@@ -307,35 +307,48 @@ def patch_agent_placeholders(
     install_root: Path = None,
 ) -> None:
     """
-    Replace <install_root>, <scripts>, and <jar> placeholders in installed
-    agent markdown files with the absolute paths resolved at install time.
+    Replace <install_root>, <scripts>, <jar>, <agents>, and <skills> placeholders
+    in installed agent and skill markdown files with absolute paths resolved at
+    install time.
+
+    Placeholders:
+      <install_root> — primary installation root
+      <scripts>      — rebeca_tooling/scripts directory
+      <jar>          — rmc.jar file
+      <agents>       — agents directory (<install_root>/agents)
+      <skills>       — skills directory (<install_root>/skills)
 
     install_root overrides target_root for the <install_root> replacement only.
     Use this for Gemini: scripts live under .gemini/skills/ but <install_root>
     must still point to the primary truth (.agents/) where RMC jar resides.
 
-    Only rewrites files under target_root/agents/ — never touches skills or
-    Python source.
+    Rewrites files under target_root/agents/ and target_root/skills/ — never
+    touches Python source.
     """
-    agents_dir = target_root / "agents"
-    if not agents_dir.is_dir():
-        return
-
     root_str = str((install_root if install_root is not None else target_root).absolute())
     scripts_str = str(scripts_path.absolute())
     jar_str = str(jar_path.absolute())
+    agents_str = str((target_root / "agents").absolute())
+    skills_str = str((target_root / "skills").absolute())
 
-    for f in agents_dir.rglob("*.md"):
-        try:
-            content = f.read_text(encoding="utf-8")
-            new_content = (content
-                .replace("<install_root>", root_str)
-                .replace("<scripts>", scripts_str)
-                .replace("<jar>", jar_str))
-            if new_content != content:
-                f.write_text(new_content, encoding="utf-8")
-        except Exception:
-            pass
+    # Process both agents/ and skills/ directories
+    for base_dir in [target_root / "agents", target_root / "skills"]:
+        if not base_dir.is_dir():
+            continue
+        
+        for f in base_dir.rglob("*.md"):
+            try:
+                content = f.read_text(encoding="utf-8")
+                new_content = (content
+                    .replace("<install_root>", root_str)
+                    .replace("<scripts>", scripts_str)
+                    .replace("<jar>", jar_str)
+                    .replace("<agents>", agents_str)
+                    .replace("<skills>", skills_str))
+                if new_content != content:
+                    f.write_text(new_content, encoding="utf-8")
+            except Exception:
+                pass
 
 
 def patch_rmc_paths(target_root: Path, rmc_jar_path: Path):
@@ -564,14 +577,13 @@ def main():
 
     # Gemini installs physical copies that cannot follow symlinks back to the
     # patched primary truth — patch them separately using Gemini-rooted paths
-    # so the agent sees consistent installation-relative paths (e.g.
-    # .gemini/skills/... rather than .agents/skills/...).
+    # for <scripts> but primary_target paths for <install_root>, <agents>, <skills>.
     # Skills are symlinked under .gemini/skills/ so Python resolves them fine.
     # RMC jar lives only under primary_target/rmc/ — reuse that path.
     if not args.target_root:
         gemini_root = GEMINI_ROOT_LOCAL if args.mode == "local" else GEMINI_ROOT_GLOBAL
         gemini_scripts = gemini_root / "skills" / "rebeca_tooling" / "scripts"
-        patch_agent_placeholders(gemini_root, gemini_scripts, jar_for_patch)
+        patch_agent_placeholders(gemini_root, gemini_scripts, jar_for_patch, install_root=primary_target)
         print(f"  ✓ Gemini agent paths stamped: {gemini_root / 'agents'}")
 
     print("\n✅ Setup Complete!")

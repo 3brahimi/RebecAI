@@ -4,7 +4,7 @@ description: |
   Step06 specialist for RMC verification, vacuity checking, and mutation scoring.
   Runs three sequential phases: Phase0 (syntax via RMC), Phase1 (semantics via
   mutation→RMC), Phase2 (vacuity via RMC). Scoring is only valid after all phases complete.
-schema: skills/rebeca_tooling/schemas/verification-agent.schema.json
+schema: <skills>/rebeca_tooling/schemas/verification-agent.schema.json
 skills:
   - rebeca_tooling
   - rebeca_mutation
@@ -276,7 +276,7 @@ that directory is the synthesis scratch space for Steps 04/05, not for verificat
 After all verification phases complete and the output contract is assembled, persist the canonical gate artifact atomically **before** returning output to the coordinator:
 
 ```bash
-python skills/rebeca_tooling/scripts/artifact_writer.py \
+python <scripts>/artifact_writer.py \
   --rule-id <source_file_path> --step step06_verification_gate \
   --data '<output_contract_json>' [--base-dir output]
 ```

@@ -5,7 +5,7 @@ description: |
   generation. Extracts actors and conditions from Legata, applies deterministic
   naming conventions, discretizes to Rebeca-compatible types, and emits a
   JSON contract into coordinator shared_state.step03.
-schema: skills/rebeca_tooling/schemas/abstraction-agent.schema.json
+schema: <skills>/rebeca_tooling/schemas/abstraction-agent.schema.json
 skills:
   - rebeca_tooling
   - rebeca_handbook
@@ -28,7 +28,7 @@ Operates on one `source_file_path` per invocation.
 | `snapshot_path` | string | no       | Step01 snapshot JSON; seeds variable_map when present     |
 | `colreg_text`   | string | no       | Supplementary COLREG text for actor/condition extraction |
 
-Schema: `skills/rebeca_tooling/schemas/abstraction-agent.schema.json` → `input` block.
+Schema: `<skills>/rebeca_tooling/schemas/abstraction-agent.schema.json` → `input` block.
 
 ## Tasks (in order)
 
@@ -41,7 +41,7 @@ Schema: `skills/rebeca_tooling/schemas/abstraction-agent.schema.json` → `input
 7. Validate output against schema.
 8. Persist the canonical step artifact atomically:
    ```bash
-   python skills/rebeca_tooling/scripts/artifact_writer.py \
+   python <scripts>/artifact_writer.py \
      --rule-id <source_file_path> --step step03_abstraction \
      --data '<output_contract_json>' [--base-dir output]
    ```
@@ -69,7 +69,7 @@ Schema: `skills/rebeca_tooling/schemas/abstraction-agent.schema.json` → `input
 ## CLI
 
 ```bash
-python skills/rebeca_tooling/scripts/abstraction_agent.py \
+python <scripts>/abstraction_agent.py \
   --rule-id       Rule-22 \
   --legata-path   input/Rule-22.legata \
   [--snapshot-path output/snapshots/Rule-22.snapshot.json] \

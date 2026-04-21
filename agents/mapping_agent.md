@@ -4,7 +4,7 @@ description: |
   Step04 specialist: generates canonical Legata→Rebeca transformation artifacts.
   Consumes the Step03 abstraction summary and produces a pair of files —
   a .rebeca actor model and a .property assertion file — for each rule.
-schema: skills/rebeca_tooling/schemas/mapping-agent.schema.json
+schema: <skills>/rebeca_tooling/schemas/mapping-agent.schema.json
 skills:
   - rebeca_tooling
   - rebeca_handbook
@@ -27,7 +27,7 @@ RMC can verify: a Timed Rebeca model file and a property file. Operates on one
 | `abstraction_summary`| object | yes      | Step03 output (`actor_map`, `variable_map`, `naming_contract`) |
 | `output_dir`         | string | yes      | Directory where `.rebeca` and `.property` are written |
 
-Schema: `skills/rebeca_tooling/schemas/mapping-agent.schema.json` → `input` block.
+Schema: `<skills>/rebeca_tooling/schemas/mapping-agent.schema.json` → `input` block.
 
 ## Tasks (in order)
 
@@ -39,7 +39,7 @@ Schema: `skills/rebeca_tooling/schemas/mapping-agent.schema.json` → `input` bl
 6. Validate output against schema.
 7. Persist the canonical step artifact atomically:
    ```bash
-   python skills/rebeca_tooling/scripts/artifact_writer.py \
+   python <scripts>/artifact_writer.py \
      --rule-id <source_file_path> --step step04_mapping \
      --data '<output_contract_json>' [--base-dir output]
    ```
@@ -107,7 +107,7 @@ extracted from the Legata section text. Operator is inferred from `>=`, `>`, `<=
 ## CLI
 
 ```bash
-python skills/rebeca_tooling/scripts/mapping_agent.py \
+python <scripts>/mapping_agent.py \
   --rule-id            Rule-22 \
   --legata-path        input/Rule-22.legata \
   --abstraction-json   '{"naming_contract":{...},"actor_map":[...],"variable_map":[...]}' \

@@ -3,7 +3,7 @@ name: packaging_agent
 description: |
   Step07 specialist for collecting pipeline artifacts, building a finalized
   manifest, and emitting a per-artifact installation report.
-schema: skills/rebeca_tooling/schemas/packaging-agent.schema.json
+schema: <skills>/rebeca_tooling/schemas/packaging-agent.schema.json
 skills:
   - rebeca_tooling
 ---
@@ -109,7 +109,7 @@ an error envelope — they produce `status: "failed"` entries in the report.
 After all files are promoted and the output contract is assembled, persist the canonical manifest artifact atomically **before** returning output to the coordinator:
 
 ```bash
-python skills/rebeca_tooling/scripts/artifact_writer.py \
+python <scripts>/artifact_writer.py \
   --rule-id <source_file_path> --step step07_packaging_manifest \
   --data '<output_contract_json>' [--base-dir output]
 ```
