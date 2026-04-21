@@ -56,6 +56,20 @@ def verify_installation(target_root: str) -> int:
     else:
         print("✓ Required skills found")
 
+    # FSM config check — warn mode (not a hard failure yet)
+    config_path = target_path / "configs" / "rmc_defaults.json"
+    if not config_path.exists():
+        print("⚠ FSM config not found: configs/rmc_defaults.json (FSM budget enforcement will use hardcoded defaults)")
+    else:
+        print("✓ FSM config found: configs/rmc_defaults.json")
+
+    # FSM controller check — warn mode
+    fsm_script = target_path / "skills" / "rebeca_tooling" / "scripts" / "workflow_fsm.py"
+    if not fsm_script.exists():
+        print("⚠ FSM controller not found: skills/rebeca_tooling/scripts/workflow_fsm.py")
+    else:
+        print("✓ FSM controller found")
+
     if missing == 0:
         print("✓ All artifacts verified")
         return 0

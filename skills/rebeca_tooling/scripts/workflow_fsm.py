@@ -24,7 +24,20 @@ from output_policy import report_paths, step_artifact_path  # noqa: E402
 from step_schemas import validate_step_output  # noqa: E402
 
 _MUTATION_SCORE_THRESHOLD = 80.0
-_DEFAULT_CONFIG = Path(__file__).parent.parent.parent.parent / "configs" / "rmc_defaults.json"
+
+
+def _find_default_config() -> Path:
+    scripts = Path(__file__).parent
+    repo_root = scripts.parent.parent.parent.parent   # skills/rebeca_tooling/scripts/ → repo root
+    install_root = scripts.parent.parent.parent       # <install_root>/skills/rebeca_tooling/scripts/
+    for root in (repo_root, install_root):
+        candidate = root / "configs" / "rmc_defaults.json"
+        if candidate.exists():
+            return candidate
+    return repo_root / "configs" / "rmc_defaults.json"
+
+
+_DEFAULT_CONFIG = _find_default_config()
 
 
 @dataclass(frozen=True)

@@ -148,10 +148,23 @@ def _find_coordinator_file(agents_dir: Path) -> Optional[Path]:
 
 
 def _extract_subagents_from_coordinator(coordinator_file: Path) -> Set[str]:
-    """Parse @sub_agent mentions from coordinator markdown."""
-    text = coordinator_file.read_text(encoding="utf-8")
-    refs = set(re.findall(r"@([A-Za-z0-9_]+)", text))
-    return {f"{name}.md" for name in refs if name}
+    """Parse @agent_name mentions from coordinator markdown.
+
+    Only collects refs from lines whose entire content is @name tokens
+    (the explicit subagent listing line).  Prose lines that contain a
+    single @name alongside other words are ignored to prevent false
+    positives from placeholder text like 'the mapped @sub_agent'.
+    """
+    refs: Set[str] = set()
+    for line in coordinator_file.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        tokens = stripped.split()
+        if all(re.match(r"^@[A-Za-z0-9_]+$", tok) for tok in tokens):
+            for tok in tokens:
+                refs.add(tok[1:])  # strip leading @
+    return {f"{name}.md" for name in refs}
 
 
 def validate_design_coverage(root: Path, strict: bool = True) -> Tuple[bool, List[str]]:
@@ -473,6 +486,20 @@ def main():
                 shutil.copytree(entry, dest_entry, ignore=_ignore)
             elif entry.is_file():
                 shutil.copy2(entry, dest_entry)
+
+    # configs/ — FSM-required runtime configuration (minimum: rmc_defaults.json)
+    configs_src = src_root / "configs"
+    if configs_src.exists():
+        configs_dest = primary_target / "configs"
+        configs_dest.mkdir(parents=True, exist_ok=True)
+        n_copied = 0
+        for entry in configs_src.iterdir():
+            if entry.is_file():
+                shutil.copy2(entry, configs_dest / entry.name)
+                n_copied += 1
+        print(f"    ✓ Installed configs/ ({n_copied} file(s))")
+    else:
+        print("    ⚠ configs/ not found in source — FSM budget enforcement will use hardcoded defaults")
 
     # Validate installed target as well (defensive completeness check).
     ok, coverage_msgs = validate_design_coverage(primary_target, strict=True)

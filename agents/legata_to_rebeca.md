@@ -84,7 +84,7 @@ Repeat until a terminal action is received:
    - `action.inputs` — pass **verbatim** as the agent's input context
 
 3. **If `action.type` is `run_step` or `refine_step`:**
-   a. Invoke the mapped `@sub_agent` (see Step Bindings) with `action.inputs` verbatim.
+   a. Invoke the mapped subagent (see Step Bindings) with `action.inputs` verbatim.
    b. Persist the agent's JSON output as the canonical step artifact:
       ```bash
       python skills/rebeca_tooling/scripts/artifact_writer.py \
