@@ -50,6 +50,7 @@ def discover_owned_items_local() -> List[str]:
     owned: Set[str] = {
         "rmc",
         "rmc_path",
+        "configs",       # FSM runtime configuration files
         "docs",          # primary truth copy (used as source for .github/instructions symlink)
         "instructions",  # .github/instructions link
     }
@@ -93,6 +94,7 @@ def _build_owned_from_file_list(file_paths: List[str]) -> List[str]:
     owned: Set[str] = {
         "rmc",
         "rmc_path",
+        "configs",
         "docs",
         "instructions",
     }
