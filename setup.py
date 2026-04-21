@@ -21,6 +21,12 @@ from typing import List, Tuple, Optional, Set
 # Configuration
 GITHUB_REPO = "3brahimi/RebecAI"
 ZIP_URL = f"https://github.com/{GITHUB_REPO}/archive/refs/heads/main.zip"
+
+
+def _zip_url(commit: str | None) -> str:
+    if commit:
+        return f"https://github.com/{GITHUB_REPO}/archive/{commit}.zip"
+    return ZIP_URL
 RMC_LATEST_URL = "https://github.com/rebeca-lang/org.rebecalang.rmc/releases/latest"
 
 # Coordinator/sub-agent design contract
@@ -351,6 +357,7 @@ def main():
     parser = argparse.ArgumentParser(description="Standalone Maritime Agent Installer")
     parser.add_argument("--mode", choices=["local", "global"], default="local")
     parser.add_argument("--target-root", help="Custom installation root (overrides --mode)")
+    parser.add_argument("--commit", help="Git commit hash or branch to install (default: main)")
     parser.add_argument("--rmc-tag", help="Optional RMC release tag (e.g., v2.13)")
     parser.add_argument("--no-rmc", action="store_true")
     parser.add_argument("--dry-run", action="store_true",
@@ -379,6 +386,7 @@ def main():
 
         print("🔍 DRY RUN — no files will be written")
         print(f"  source      : {src_mode}")
+        print(f"  commit      : {args.commit or 'main (latest)'}")
         print(f"  mode        : {args.mode}")
         print(f"  rmc-tag     : {args.rmc_tag or 'latest'}")
         print(f"  no-rmc      : {args.no_rmc}")
@@ -437,7 +445,7 @@ def main():
         print("  ☁ Running in Remote-Bootstrap mode")
         tmp_dir = Path(tempfile.mkdtemp())
         zip_path = tmp_dir / "repo.zip"
-        if not download_file(ZIP_URL, zip_path): return 1
+        if not download_file(_zip_url(args.commit), zip_path): return 1
 
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
             zip_ref.extractall(tmp_dir)
