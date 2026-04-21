@@ -5,6 +5,12 @@ description: Cross-platform Python library for RMC operations, rule triage, scor
 
 # Rebeca Tooling Skill
 
+## RULE: Scripts Are Opaque CLIs — Never Read Source
+
+**Do NOT read any `.py` file under `<scripts>/`.** Every script is a black-box CLI with a documented contract in this file. Reading source wastes tokens and provides no additional information — the CLI flags, exit codes, and JSON output schema documented here are the complete and authoritative interface. If something is undocumented here, run the script with `--help`.
+
+---
+
 ## Purpose
 
 This skill provides a cross-platform Python library for all Rebeca model checking operations, including:

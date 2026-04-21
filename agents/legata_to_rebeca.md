@@ -22,6 +22,8 @@ Subagents (must be invoked; do not "do everything yourself"):
 7. @packaging_agent
 8. @reporting_agent
 
+**Never read `.py` files under `<scripts>/`.** Run them. Their CLI contracts are documented in `rebeca_tooling` SKILL.md.
+
 Installed tool paths (stamped at install time):
 - Scripts: `<scripts>`
 - RMC jar: `<jar>`
