@@ -233,6 +233,7 @@ def remove_and_cleanup(path: Path, dry_run: bool):
 def main():
     parser = argparse.ArgumentParser(description="Surgically purge project artifacts")
     parser.add_argument("--mode", choices=["local", "global", "both"], default="local")
+    parser.add_argument("--target-root", type=str, help="Custom install root to purge (e.g., /custom/path/.agents)")
     parser.add_argument("--source", choices=["auto", "local", "remote"], default="auto")
     parser.add_argument("--offline", action="store_true", help="Disable remote discovery and use local manifest building only")
     parser.add_argument("--owner", default=DEFAULT_REMOTE_OWNER, help="GitHub owner for remote manifest discovery")
@@ -281,19 +282,31 @@ def main():
 
     # Define all potential roots to check
     roots = []
-    if args.mode in ("local", "both"):
-        roots.extend([
-            REPO_ROOT / ".agents",
-            REPO_ROOT / ".claude",
-            REPO_ROOT / ".gemini",
-            REPO_ROOT / ".github",
-        ])
-    if args.mode in ("global", "both"):
-        roots.extend([
-            Path.home() / ".agents",
-            Path.home() / ".claude",
-            Path.home() / ".gemini",
-        ])
+    
+    # If custom target root is specified, use only that
+    if args.target_root:
+        custom_root = Path(args.target_root).expanduser().resolve()
+        if lexists(custom_root):
+            roots.append(custom_root)
+            print(f"  Using custom target root: {custom_root}")
+        else:
+            print(f"  ! Custom target root does not exist: {custom_root}")
+            sys.exit(1)
+    else:
+        # Use default roots based on mode
+        if args.mode in ("local", "both"):
+            roots.extend([
+                REPO_ROOT / ".agents",
+                REPO_ROOT / ".claude",
+                REPO_ROOT / ".gemini",
+                REPO_ROOT / ".github",
+            ])
+        if args.mode in ("global", "both"):
+            roots.extend([
+                Path.home() / ".agents",
+                Path.home() / ".claude",
+                Path.home() / ".gemini",
+            ])
 
     # 2. Iterate through manifest and roots
     for root in roots:

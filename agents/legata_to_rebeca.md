@@ -23,6 +23,7 @@ Subagents (must be invoked; do not "do everything yourself"):
 8. @reporting_agent
 
 Installed tool paths (stamped at install time):
+- Agents: `<install_root>`/agents/
 - Scripts: `<scripts>`
 - RMC jar: `<jar>`
 - Install root: `<install_root>`
