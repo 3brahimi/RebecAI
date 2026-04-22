@@ -26,7 +26,7 @@ def _atomic_write(path: Path, data: dict) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Atomically write a step artifact JSON")
     parser.add_argument("--rule-id", required=True)
-    parser.add_argument("--step", required=True, help="e.g. step02_triage")
+    parser.add_argument("--step", required=True, help="e.g. step03_abstraction")
     parser.add_argument("--data", required=True, help="JSON string of artifact payload")
     parser.add_argument("--base-dir", default="output")
     args = parser.parse_args()

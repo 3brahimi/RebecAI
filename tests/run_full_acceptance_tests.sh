@@ -91,8 +91,6 @@ fi
 # AT-003: Agent workflow explicitly covers canonical step enums (Step Bindings)
 echo -n "AT-003 (Agent Workflow Phases): "
 if check_grep "## Step Bindings" "$AGENT_FILE" && \
-  check_grep "step01_init" "$AGENT_FILE" && \
-  check_grep "step02_triage" "$AGENT_FILE" && \
   check_grep "step03_abstraction" "$AGENT_FILE" && \
   check_grep "step04_mapping" "$AGENT_FILE" && \
   check_grep "step05_synthesis" "$AGENT_FILE" && \
@@ -233,17 +231,6 @@ else
   echo "FAIL"
   ((FAILED++))
   FAILED_TESTS+=("AT-016")
-fi
-
-# AT-017: Rule-status triage exists
-echo -n "AT-017 (Rule Status Triage): "
-if check_file "$ARTIFACT_ROOT/skills/rebeca_tooling/scripts/classify_rule_status.py"; then
-  echo "PASS"
-  ((PASSED++))
-else
-  echo "FAIL"
-  ((FAILED++))
-  FAILED_TESTS+=("AT-017")
 fi
 
 # AT-019: Incorrect/incomplete handling documented

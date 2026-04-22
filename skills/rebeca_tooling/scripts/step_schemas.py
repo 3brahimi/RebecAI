@@ -20,49 +20,6 @@ except ImportError:  # pragma: no cover - exercised by fallback tests if depende
 
 
 STEP_OUTPUT_SCHEMAS: dict[str, dict[str, Any]] = {
-    # Step01: init — toolchain bootstrap
-    "step01": {
-        "type": "object",
-        "required": ["status", "source_file_path", "snapshot_path", "rmc"],
-        "properties": {
-            "status": {"type": "string"},
-            "source_file_path": {"type": "string"},
-            "snapshot_path": {"type": "string"},
-            "rmc": {
-                "type": "object",
-                "required": ["jar"],
-                "properties": {
-                    "jar": {"type": "string"},
-                    "version": {"type": "string"},
-                },
-            },
-        },
-    },
-    # Step02: triage — clause eligibility classification + routing
-    "step02": {
-        "type": "object",
-        "required": ["status", "routing", "classification"],
-        "properties": {
-            "status": {"type": "string"},
-            "routing": {
-                "type": "object",
-                "required": ["path", "eligible_for_mapping"],
-                "properties": {
-                    "path": {"type": "string"},
-                    "eligible_for_mapping": {"type": "boolean"},
-                },
-            },
-            "classification": {
-                "type": "object",
-                "required": ["status", "evidence", "defects"],
-                "properties": {
-                    "status": {"type": "string"},
-                    "evidence": {"type": "array"},
-                    "defects": {"type": "array"},
-                },
-            },
-        },
-    },
     # Step03: abstraction — actor/variable namespace lock
     "step03": {
         "type": "object",
@@ -212,8 +169,6 @@ STEP_OUTPUT_SCHEMAS: dict[str, dict[str, Any]] = {
                     "step": {
                         "type": "string",
                         "enum": [
-                            "step01_init",
-                            "step02_triage",
                             "step03_abstraction",
                             "step04_mapping",
                             "step05_synthesis",
@@ -226,8 +181,6 @@ STEP_OUTPUT_SCHEMAS: dict[str, dict[str, Any]] = {
                     "agent": {
                         "type": "string",
                         "enum": [
-                            "init_exec",
-                            "triage_exec",
                             "abstraction_agent",
                             "mapping_agent",
                             "synthesis_agent",

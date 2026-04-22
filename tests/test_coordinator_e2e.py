@@ -111,52 +111,6 @@ def pipeline(work_dir: Path) -> Dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# Step 01 — init_agent: pre-run check + verify installation
-# ---------------------------------------------------------------------------
-
-class TestStep01Init:
-    def test_classify_rule_status_formalized(self, pipeline: Dict[str, Any]) -> None:
-        """IT-E2E-01b: Rule22 classifies as 'formalized' (has clause/condition/assure)."""
-        result = _run([
-            sys.executable, str(_SCRIPTS / "classify_rule_status.py"),
-            "--legata-path", pipeline["source_file_path"],
-        ])
-        assert result.returncode == 0, f"classify_rule_status.py failed: {result.stderr}"
-        data = _json(result, context="Step01/classify_rule_status")
-        assert data["status"] == "formalized", (
-            f"Expected formalized, got {data['status']!r}. Evidence: {data.get('evidence')}"
-        )
-        pipeline["phase_results"]["step01"] = {"status": "ok", "classification": data}
-        pipeline["execution_path"].append("step01:classify_rule_status")
-
-
-# ---------------------------------------------------------------------------
-# Step 02 — triage_agent: routing decision
-# ---------------------------------------------------------------------------
-
-class TestStep02Triage:
-    def test_routing_normal_path(self, pipeline: Dict[str, Any]) -> None:
-        """IT-E2E-02: Rule22 routes to normal (not skip/repair/colreg-fallback)."""
-        # classify_rule_status already confirmed formalized in Step01
-        step01 = pipeline["phase_results"].get("step01")
-        assert step01 is not None, "Step01 must complete before Step02"
-
-        classification = step01["classification"]["status"]
-        assert classification in ("formalized", "not-formalized"), (
-            f"Unexpected classification {classification!r} — should route to normal"
-        )
-
-        pipeline["phase_results"]["step02"] = {
-            "status": "ok",
-            "classification": {"status": classification},
-            "routing": {"path": "normal", "eligible_for_mapping": True},
-        }
-        pipeline["execution_path"].append("step02")
-
-
-
-
-# ---------------------------------------------------------------------------
 # Step 03 — abstraction_agent (LLM-only): fixture
 # ---------------------------------------------------------------------------
 

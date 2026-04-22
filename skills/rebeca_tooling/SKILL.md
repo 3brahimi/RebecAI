@@ -1,6 +1,6 @@
 ---
 name: rebeca-tooling
-description: Cross-platform Python library for RMC operations, rule triage, scoring, and reporting
+description: Cross-platform Python library for RMC operations, scoring, and reporting
 ---
 
 # Rebeca Tooling Skill
@@ -16,7 +16,6 @@ description: Cross-platform Python library for RMC operations, rule triage, scor
 This skill provides a cross-platform Python library for all Rebeca model checking operations, including:
 - RMC download and execution
 - Shared RMC jar path resolution (`rmc_resolver`)
-- Rule status classification and triage
 - COLREG fallback mapping
 - Single-call verification gate: RMC → vacuity → mutation (`verify_gate`)
 - Single-rule scoring and aggregate reporting
@@ -90,24 +89,6 @@ result = run_rmc(
 # - model_out.outcome (runtime executable outcome)
 # - result_artifact.outcome (parsed from exported result file when available)
 # - verification_outcome (resolved semantic verdict)
-```
-
-### Rule Triage
-
-#### Classify Rule Status
-
-```python
-from scripts import RuleStatusClassifier
-
-classifier = RuleStatusClassifier()
-result = classifier.classify("path/to/rule.legata")
-
-# Returns dict with:
-# - status: formalized|incomplete|incorrect|not-formalized|todo-placeholder
-# - clause_count: number of clauses
-# - evidence: list of findings
-# - defects: list of defects
-# - next_action: recommended action
 ```
 
 ### Scoring and Reporting
@@ -286,7 +267,6 @@ def verify_rule(rule_id: str, model_path: str, property_path: str) -> dict:
 | Module | Purpose | CLI |
 |--------|---------|-----|
 | `run_rmc.py` | Execute RMC model checker | ✓ |
-| `classify_rule_status.py` | Rule status classification — triage step | ✓ |
 | `verify_gate.py` | Single-call gate: RMC → vacuity → mutation; outputs `passes_gate` | ✓ |
 | `snapshotter.py` | Capture model/property snapshots and metadata | ✓ |
 | `score_single_rule.py` | 100-point scoring rubric; `--rmc-exit-code`, `--is-vacuous`, `--mutation-score` | ✓ |

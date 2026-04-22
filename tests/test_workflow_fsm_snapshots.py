@@ -35,18 +35,6 @@ _UPDATE = os.environ.get("UPDATE_FSM_SNAPSHOTS") == "1"
 _ROOT_CONFIG = str(Path(__file__).parent.parent / "configs" / "rmc_defaults.json")
 
 STEP_PAYLOADS: dict[str, dict] = {
-    "step01_init": {
-        "status": "ok",
-        "source_file_path": RULE_ID,
-        "snapshot_path": "/tmp/snapshot.json",
-        "rmc": {"jar": "/tmp/rmc.jar", "version": "2.14"},
-    },
-    "step02_triage": {
-        "status": "ok",
-        "source_file_path": RULE_ID,
-        "routing": {"path": "normal", "eligible_for_mapping": True},
-        "classification": {"status": "formalized", "evidence": ["clause present"], "defects": []},
-    },
     "step03_abstraction": {
         "status": "ok",
         "source_file_path": RULE_ID,
@@ -173,23 +161,8 @@ def _assert_snapshot(name: str, actual: dict, base_dir: Path) -> None:
 # ---------------------------------------------------------------------------
 
 class TestHappyPathSnapshots:
-    def test_snap_no_artifacts_run_step01(self, tmp_path: Path) -> None:
-        action = _run_fsm(tmp_path)
-        _assert_snapshot("run_step01_init", action, tmp_path)
-
-    def test_snap_step01_present_run_step02(self, tmp_path: Path) -> None:
-        _write_artifact("step01_init", STEP_PAYLOADS["step01_init"], tmp_path)
-        action = _run_fsm(tmp_path)
-        _assert_snapshot("run_step02_triage", action, tmp_path)
-
-    def test_snap_steps_1_2_run_step03(self, tmp_path: Path) -> None:
-        for s in ("step01_init", "step02_triage"):
-            _write_artifact(s, STEP_PAYLOADS[s], tmp_path)
-        action = _run_fsm(tmp_path)
-        _assert_snapshot("run_step03_abstraction", action, tmp_path)
-
     def test_snap_steps_1_3_run_step04(self, tmp_path: Path) -> None:
-        for s in ("step01_init", "step02_triage", "step03_abstraction"):
+        for s in ("step03_abstraction"):
             _write_artifact(s, STEP_PAYLOADS[s], tmp_path)
         action = _run_fsm(tmp_path)
         _assert_snapshot("run_step04_mapping", action, tmp_path)

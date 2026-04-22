@@ -17,21 +17,6 @@ with SCHEMA_PATH.open("r", encoding="utf-8") as f:
 
 # Representative valid/invalid payloads
 PAYLOADS = [
-    # 0: Valid run_step
-    {
-        "status": "ok",
-        "current_state": "initialized",
-        "next_state": "triaged",
-        "action": {
-            "type": "run_step",
-            "step": "step02_triage",
-            "agent": "triage_exec",
-            "inputs": {"rule_id": "Rule-22"}
-        },
-        "reason_code": "artifact_missing",
-        "required_artifacts": ["step02_triage.json"],
-        "missing_artifacts": ["step02_triage.json"]
-    },
     # 1: Valid refine_step
     {
         "status": "retry",

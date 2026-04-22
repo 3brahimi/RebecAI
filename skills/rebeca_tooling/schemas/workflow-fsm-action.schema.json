@@ -21,7 +21,7 @@
     },
     "current_state": {
       "type": "string",
-      "description": "State identifier (e.g., 'initialized', 'triaged', 'abstracted')."
+      "description": "State identifier (e.g., 'abstracted')."
     },
     "next_state": {
       "type": "string",
@@ -40,8 +40,6 @@
         "step": {
           "type": "string",
           "enum": [
-            "step01_init",
-            "step02_triage",
             "step03_abstraction",
             "step04_mapping",
             "step05_synthesis",
@@ -55,8 +53,6 @@
         "agent": {
           "type": "string",
           "enum": [
-            "init_exec",
-            "triage_exec",
             "abstraction_agent",
             "mapping_agent",
             "synthesis_agent",

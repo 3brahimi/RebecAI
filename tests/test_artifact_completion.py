@@ -34,22 +34,6 @@ RULE_ID = "PhaseB-TestRule"
 
 # Minimal valid payload per step — matches Phase A frozen contract
 STEP_PAYLOADS: dict[str, dict] = {
-    "step01_init": {
-        "status": "ok",
-        "source_file_path": RULE_ID,
-        "snapshot_path": "/tmp/snapshot.json",
-        "rmc": {"jar": "/tmp/rmc.jar", "version": "2.14"},
-    },
-    "step02_triage": {
-        "status": "ok",
-        "source_file_path": RULE_ID,
-        "routing": {"path": "normal", "eligible_for_mapping": True},
-        "classification": {
-            "status": "formalized",
-            "evidence": ["clause present"],
-            "defects": [],
-        },
-    },
     "step03_abstraction": {
         "status": "ok",
         "source_file_path": RULE_ID,
@@ -120,8 +104,6 @@ STEP_PAYLOADS: dict[str, dict] = {
 
 # Map step artifact name → schema key
 _STEP_SCHEMA_KEY = {
-    "step01_init": "step01",
-    "step02_triage": "step02",
     "step03_abstraction": "step03",
     "step04_mapping": "step04",
     "step05_candidates": "step05",
@@ -151,20 +133,6 @@ def _run_artifact_writer(rule_id: str, step: str, data: dict, base_dir: Path) ->
 # ---------------------------------------------------------------------------
 
 class TestArtifactWriterAtomicity:
-    def test_writes_file_to_canonical_location(self, tmp_path: Path) -> None:
-        data = STEP_PAYLOADS["step01_init"]
-        result = _run_artifact_writer(RULE_ID, "step01_init", data, tmp_path)
-        assert result.returncode == 0, result.stderr
-        expected = step_artifact_path(RULE_ID, "step01_init", tmp_path)
-        assert expected.exists()
-
-    def test_written_file_is_valid_json(self, tmp_path: Path) -> None:
-        data = STEP_PAYLOADS["step02_triage"]
-        _run_artifact_writer(RULE_ID, "step02_triage", data, tmp_path)
-        path = step_artifact_path(RULE_ID, "step02_triage", tmp_path)
-        parsed = json.loads(path.read_text())
-        assert parsed["status"] == "ok"
-
     def test_no_tmp_file_left_behind(self, tmp_path: Path) -> None:
         data = STEP_PAYLOADS["step03_abstraction"]
         _run_artifact_writer(RULE_ID, "step03_abstraction", data, tmp_path)

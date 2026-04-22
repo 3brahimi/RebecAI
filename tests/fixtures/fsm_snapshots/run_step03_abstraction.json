@@ -7,7 +7,7 @@
     "step": "step03_abstraction",
     "type": "run_step"
   },
-  "current_state": "triaged",
+  "current_state": "start",
   "missing_artifacts": [
     "step03_abstraction.json"
   ],

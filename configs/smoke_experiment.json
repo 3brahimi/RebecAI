@@ -14,7 +14,6 @@
     "rmc_scripts": true,
     "install_scripts": true,
     "scoring_pipeline": true,
-    "triage_scripts": true,
     "test_suite": true,
     "documentation": true
   },

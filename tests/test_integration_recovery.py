@@ -36,8 +36,6 @@ _ROOT_CONFIG = str(Path(__file__).parent.parent / "configs" / "rmc_defaults.json
 # Map FSM action.step enum → artifact_writer --step argument
 # (diverges for step05 and step07)
 _STEP_ENUM_TO_ARTIFACT: dict[str, str] = {
-    "step01_init":              "step01_init",
-    "step02_triage":            "step02_triage",
     "step03_abstraction":       "step03_abstraction",
     "step04_mapping":           "step04_mapping",
     "step05_synthesis":         "step05_candidates",
@@ -48,8 +46,6 @@ _STEP_ENUM_TO_ARTIFACT: dict[str, str] = {
 
 # Map FSM action.step enum → schema validation key
 _STEP_ENUM_TO_SCHEMA: dict[str, str] = {
-    "step01_init":              "step01",
-    "step02_triage":            "step02",
     "step03_abstraction":       "step03",
     "step04_mapping":           "step04",
     "step05_synthesis":         "step05",
@@ -59,18 +55,6 @@ _STEP_ENUM_TO_SCHEMA: dict[str, str] = {
 }
 
 MOCK_PAYLOADS: dict[str, dict] = {
-    "step01_init": {
-        "status": "ok",
-        "source_file_path": RULE_ID,
-        "snapshot_path": "/tmp/snapshot.json",
-        "rmc": {"jar": "/tmp/rmc.jar", "version": "2.14"},
-    },
-    "step02_triage": {
-        "status": "ok",
-        "source_file_path": RULE_ID,
-        "routing": {"path": "normal", "eligible_for_mapping": True},
-        "classification": {"status": "formalized", "evidence": ["clause present"], "defects": []},
-    },
     "step03_abstraction": {
         "status": "ok",
         "source_file_path": RULE_ID,
@@ -264,8 +248,7 @@ class TestPipelineIntegration:
         sim = _make_simulator(tmp_path)
         sim.run()
         expected_agents = [
-            "init_exec", "triage_exec", "abstraction_agent", "mapping_agent",
-            "synthesis_agent", "verification_exec", "packaging_exec", "reporting_exec",
+            "abstraction_agent", "mapping_agent", "synthesis_agent", "verification_exec", "packaging_exec", "reporting_exec",
         ]
         actual_agents = [inv.agent for inv in sim.invocations]
         assert actual_agents == expected_agents
@@ -330,8 +313,8 @@ class TestFsmAdvancement:
 
 class TestPipelineRecovery:
     def test_resume_from_partial_run_without_reset(self, tmp_path: Path) -> None:
-        """Write steps 1–4, then run simulator; it should only call steps 5–8."""
-        partial_steps = ("step01_init", "step02_triage", "step03_abstraction", "step04_mapping")
+        """Write steps 3–4, then run simulator; it should only call steps 5–8."""
+        partial_steps = ("step03_abstraction", "step04_mapping")
         for step_enum in partial_steps:
             artifact_step = _STEP_ENUM_TO_ARTIFACT[step_enum]
             path = step_artifact_path(RULE_ID, artifact_step, tmp_path)
@@ -427,28 +410,6 @@ class TestPipelineRecovery:
 
         action = _decide(RULE_ID, tmp_path, config)
         assert action["action"]["step"] == "step05_synthesis"
-
-    def test_partial_run_state_without_fsm_state_file_uses_disk(self, tmp_path: Path) -> None:
-        """No fsm_state.json present → simulator must call --reset; FSM derives state from disk."""
-        # Write steps 1-2 directly (no FSM state file)
-        for step_enum in ("step01_init", "step02_triage"):
-            artifact_step = _STEP_ENUM_TO_ARTIFACT[step_enum]
-            path = step_artifact_path(RULE_ID, artifact_step, tmp_path)
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(json.dumps(MOCK_PAYLOADS[step_enum]))
-
-        state_path = tmp_path / "work" / RULE_ID / "fsm_state.json"
-        assert not state_path.exists()
-
-        sim = _make_simulator(tmp_path)
-        final = sim.run()
-        assert final["action"]["type"] == "finish"
-
-        invoked = [inv.step_enum for inv in sim.invocations]
-        assert "step01_init" not in invoked
-        assert "step02_triage" not in invoked
-        assert "step03_abstraction" in invoked
-
 
 # ---------------------------------------------------------------------------
 # Tests: coordinator compliance
@@ -593,49 +554,6 @@ class TestCoordinatorCompliance:
         final = sim.run()
         assert final["action"]["type"] == "block"
         assert sim.invocations == []
-
-    def test_wrong_agent_is_never_called(self, tmp_path: Path) -> None:
-        """FSM says triage_exec; compliance requires ONLY triage_exec is called, not others."""
-        action_sequence = [
-            {
-                "status": "ok",
-                "current_state": "initialized",
-                "next_state": "triaged",
-                "action": {"type": "run_step", "step": "step02_triage",
-                           "agent": "triage_exec", "inputs": {"rule_id": RULE_ID}},
-                "reason_code": "artifact_missing",
-                "required_artifacts": ["step02_triage.json"],
-                "missing_artifacts": ["step02_triage.json"],
-            },
-            {
-                "status": "ok",
-                "current_state": "reported",
-                "next_state": "reported",
-                "action": {"type": "finish", "step": "none", "agent": "none", "inputs": {}},
-                "reason_code": "all_artifacts_complete",
-                "required_artifacts": [],
-                "missing_artifacts": [],
-            },
-        ]
-        call_count = [0]
-
-        def mock_fsm(reset: bool = False) -> dict:
-            idx = min(call_count[0], len(action_sequence) - 1)
-            call_count[0] += 1
-            return action_sequence[idx]
-
-        sim = ProtocolSimulator(
-            rule_id=RULE_ID,
-            base_dir=tmp_path,
-            agent_responses={"step02_triage": MOCK_PAYLOADS["step02_triage"]},
-            fsm_callable=mock_fsm,
-        )
-        sim.run()
-
-        agents_called = {inv.agent for inv in sim.invocations}
-        assert agents_called == {"triage_exec"}
-        assert "mapping_agent" not in agents_called
-        assert "init_exec" not in agents_called
 
     def test_refine_step_inputs_contain_feedback_fields(self, tmp_path: Path) -> None:
         """For refine_step actions, action.inputs must include FSM feedback fields verbatim."""

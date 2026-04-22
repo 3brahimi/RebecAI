@@ -24,21 +24,6 @@ SCHEMA_PATH = Path("skills/rebeca_tooling/schemas/workflow-fsm-action.schema.jso
 with SCHEMA_PATH.open("r", encoding="utf-8") as f:
     FSM_SCHEMA = json.load(f)
 
-VALID_RUN_STEP = {
-    "status": "ok",
-    "current_state": "initialized",
-    "next_state": "triaged",
-    "action": {
-        "type": "run_step",
-        "step": "step02_triage",
-        "agent": "triage_exec",
-        "inputs": {"rule_id": "Rule-22"}
-    },
-    "reason_code": "artifact_missing",
-    "required_artifacts": ["step02_triage.json"],
-    "missing_artifacts": ["step02_triage.json"]
-}
-
 VALID_REFINE_STEP = {
     "status": "retry",
     "current_state": "abstracted",
@@ -75,9 +60,6 @@ VALID_FINISH = {
     "required_artifacts": ["step08_reporting.json"],
     "missing_artifacts": []
 }
-
-def test_valid_run_step():
-    validate(instance=VALID_RUN_STEP, schema=FSM_SCHEMA)
 
 def test_valid_refine_step():
     validate(instance=VALID_REFINE_STEP, schema=FSM_SCHEMA)

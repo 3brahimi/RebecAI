@@ -43,18 +43,6 @@ _CONFIG = {
 }
 
 STEP_PAYLOADS: dict[str, dict] = {
-    "step01_init": {
-        "status": "ok",
-        "source_file_path": RULE_ID,
-        "snapshot_path": "/tmp/snapshot.json",
-        "rmc": {"jar": "/tmp/rmc.jar", "version": "2.14"},
-    },
-    "step02_triage": {
-        "status": "ok",
-        "source_file_path": RULE_ID,
-        "routing": {"path": "normal", "eligible_for_mapping": True},
-        "classification": {"status": "formalized", "evidence": ["clause present"], "defects": []},
-    },
     "step03_abstraction": {
         "status": "ok",
         "source_file_path": RULE_ID,
@@ -174,19 +162,6 @@ class TestFreshStart:
 
 
 class TestIncrementalAdvancement:
-    def test_step01_present_emits_step02(self, tmp_path: Path) -> None:
-        _write_artifact(RULE_ID, "step01_init", STEP_PAYLOADS["step01_init"], tmp_path)
-        action = _decide(RULE_ID, tmp_path, _CONFIG)
-        assert action["action"]["step"] == "step02_triage"
-        assert action["current_state"] == "initialized"
-
-    def test_steps_1_2_present_emits_step03(self, tmp_path: Path) -> None:
-        for s in ("step01_init", "step02_triage"):
-            _write_artifact(RULE_ID, s, STEP_PAYLOADS[s], tmp_path)
-        action = _decide(RULE_ID, tmp_path, _CONFIG)
-        assert action["action"]["step"] == "step03_abstraction"
-        assert action["current_state"] == "triaged"
-
     def test_steps_1_through_7_emits_step08(self, tmp_path: Path) -> None:
         for s in list(STEP_PAYLOADS)[:-1]:
             _write_artifact(RULE_ID, s, STEP_PAYLOADS[s], tmp_path)

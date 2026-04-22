@@ -162,8 +162,6 @@ Terminal actions end the executor loop and MUST NOT invoke another step agent. E
   → Return success; surface `output/reports/<rule_id>/summary.json`.
 - **`block`** — Refinement budget exhausted.
   → Emit partial report if `step08_reporting.json` exists; surface `reason_code` and `missing_artifacts[]`.
-- **`skip`** — Unused (triage step removed).
-  → Should not occur; treat as error if encountered.
 - **`error`** — Unrecoverable failure from a step agent.
   → Propagate the agent's error envelope; do not retry.
 

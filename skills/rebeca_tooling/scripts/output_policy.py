@@ -296,7 +296,7 @@ def step_artifact_path(rule_id: str, step: str, base_dir: Path = Path("output"))
     """Return canonical path for a step's durable artifact JSON.
 
     Convention: output/work/<rule_id>/<step>.json
-    e.g. output/work/Rule-22/step02_triage.json
+    e.g. output/work/Rule-22/step03_abstraction.json
     """
     _validate_rule_id(rule_id)
     allowed = {
