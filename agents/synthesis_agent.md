@@ -8,7 +8,6 @@ description: |
   ALL outputs are tagged is_candidate=true and MUST pass Step06 (verification_exec) before promotion.
 schema: <skills>/rebeca_tooling/schemas/synthesis-agent.schema.json
 skills:
-  - rebeca_tooling
   - rebeca_handbook
 ---
 
@@ -31,7 +30,7 @@ Step05 (synthesis_agent)     — THIS AGENT: applies the mapping as surgical pat
 Step06 (verification_exec)   — MANDATORY before any candidate is promoted
 ```
 
-**Strict prerequisite:** The FSM will only dispatch this agent after `step03_abstraction` and `step04_mapping` artifacts are both confirmed present on disk. If either is missing when you are invoked, emit an Error Envelope immediately — do not attempt any file modification or candidate generation.
+**Strict prerequisite:** The FSM will only dispatch this agent after `step02_abstraction` and `step03_mapping` artifacts are both confirmed present on disk. If either is missing when you are invoked, emit an Error Envelope immediately — do not attempt any file modification or candidate generation.
 
 ## Input Schema
 
@@ -43,7 +42,7 @@ Step06 (verification_exec)   — MANDATORY before any candidate is promoted
 | `legata_text`        | string | no       | Raw Legata source (for enriching heuristics on alternative candidates)           |
 | `output_dir`         | string | yes      | Base output directory                                                            |
 
-**Prerequisite check (REQUIRED before any work):** Verify that both `step03_abstraction.json` and `step04_mapping.json` exist under `<output_dir>/work/<rule_id>/`. If either is missing, emit an Error Envelope: `"Prerequisites not met: <missing artifact> must exist before synthesis"`.
+**Prerequisite check (REQUIRED before any work):** Verify that both `step02_abstraction.json` and `step03_mapping.json` exist under `<output_dir>/work/<rule_id>/`. If either is missing, emit an Error Envelope: `"Prerequisites not met: <missing artifact> must exist before synthesis"`.
 
 ## Tasks (in order)
 
@@ -63,6 +62,9 @@ Step06 (verification_exec)   — MANDATORY before any candidate is promoted
 10. On any failure emit the Error Envelope.
 
 ## Surgical Patch Rules (CRITICAL)
+
+**Before writing any Rebeca syntax, consult `rebeca_handbook` for correct actor model patterns, property structure, forbidden operators, and RMC pitfalls.**
+
 
 - **Read first, patch second.** Never generate any file from scratch.
 - **Touch only what the mapping specifies.** Sections not listed in `concept_mapping` are copied unchanged: class names, message server bodies, `main { }` block, `LTL { }` blocks, comments, imports.

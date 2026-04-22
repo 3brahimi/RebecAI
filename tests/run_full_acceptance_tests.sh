@@ -66,7 +66,7 @@ echo -n "AT-001 (Prescribed Workflow Artifact): "
 if check_file "$AGENT_FILE" && \
   check_grep "## Step Bindings" "$AGENT_FILE" && \
   check_grep "step01_init" "$AGENT_FILE" && \
-  check_grep "step08_reporting" "$AGENT_FILE"; then
+  check_grep "step07_reporting" "$AGENT_FILE"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -91,12 +91,12 @@ fi
 # AT-003: Agent workflow explicitly covers canonical step enums (Step Bindings)
 echo -n "AT-003 (Agent Workflow Phases): "
 if check_grep "## Step Bindings" "$AGENT_FILE" && \
-  check_grep "step03_abstraction" "$AGENT_FILE" && \
-  check_grep "step04_mapping" "$AGENT_FILE" && \
+  check_grep "step02_abstraction" "$AGENT_FILE" && \
+  check_grep "step03_mapping" "$AGENT_FILE" && \
   check_grep "step05_synthesis" "$AGENT_FILE" && \
-  check_grep "step06_verification_gate" "$AGENT_FILE" && \
+  check_grep "step05_verification_gate" "$AGENT_FILE" && \
   check_grep "step07_packaging" "$AGENT_FILE" && \
-  check_grep "step08_reporting" "$AGENT_FILE"; then
+  check_grep "step07_reporting" "$AGENT_FILE"; then
   echo "PASS"
   ((PASSED++))
 else

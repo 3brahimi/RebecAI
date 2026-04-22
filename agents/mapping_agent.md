@@ -8,8 +8,7 @@ description: |
   the actual surgical refinements.
 schema: <skills>/rebeca_tooling/schemas/mapping-agent.schema.json
 skills:
-  - rebeca_tooling
-  - rebeca_handbook
+  - legata_to_rebeca
 ---
 
 # mapping_agent: Legata → Rebeca Concept Mapping
@@ -34,11 +33,11 @@ Analyse the Step03 abstraction summary alongside the existing `.rebeca` and `.pr
 1. **Read existing files** (read-only): Load `<output_dir>/<rule_id>.rebeca` and `<output_dir>/<rule_id>.property` to understand the current model structure — which actors exist, which statevars are declared, which `define` aliases are already present.
 2. Validate `<legata_input>` and `<output_dir>` (schema + `safe_path`).
 3. Parse the Legata file: extract condition/assurance/exclusion clauses and numeric thresholds.
-4. Using `abstraction_summary.variable_map` and `abstraction_summary.actor_map`, derive:
-   - Which **new statevars** need to be added (or existing ones updated) in which `reactiveclass`.
-   - Which **`define` aliases** need to be added/updated in the `.property` file.
+4. Using `abstraction_summary.actor_map` (object keyed by class name → `{queue_size, source}`) and `abstraction_summary.variable_map` (object keyed by camelCase var name → `{type, default, source}`), derive:
+   - Which **new statevars** need to be added (or existing ones updated) in which `reactiveclass` (keys of `actor_map`).
+   - Which **`define` aliases** need to be added/updated in the `.property` file (keys of `variable_map`).
    - The **canonical assertion line** for this rule.
-   - The **queue size** each `reactiveclass` should have (number of statevars it owns).
+   - The **queue size** for each `reactiveclass` (from `actor_map[className].queue_size`).
 5. Assemble the `concept_mapping` output contract and return it to the coordinator.
 6. Do **NOT** write or modify any file on disk.
 7. On any failure emit the Error Envelope.

@@ -35,15 +35,15 @@ RULE_ID = "FsmTest-Rule"
 
 _CONFIG = {
     "max_refinement_attempts": {
-        "step04_mapping": 3,
-        "step05_candidates": 3,
-        "step06_verification_gate": 2,
+        "step03_mapping": 3,
+        "step04_candidates": 3,
+        "step05_verification_gate": 2,
         "default": 2,
     }
 }
 
 STEP_PAYLOADS: dict[str, dict] = {
-    "step03_abstraction": {
+    "step02_abstraction": {
         "status": "ok",
         "source_file_path": RULE_ID,
         "abstraction_summary": {
@@ -52,13 +52,13 @@ STEP_PAYLOADS: dict[str, dict] = {
             "naming_contract": {},
         },
     },
-    "step04_mapping": {
+    "step03_mapping": {
         "status": "ok",
         "source_file_path": RULE_ID,
         "model_artifact": {"path": f"output/work/{RULE_ID}/candidates/model.rebeca"},
         "property_artifact": {"path": f"output/work/{RULE_ID}/candidates/model.property"},
     },
-    "step05_candidates": {
+    "step04_candidates": {
         "status": "ok",
         "source_file_path": RULE_ID,
         "candidate_artifacts": [{
@@ -71,7 +71,7 @@ STEP_PAYLOADS: dict[str, dict] = {
             "mapping_path": "synthesis-agent",
         }],
     },
-    "step06_verification_gate": {
+    "step05_verification_gate": {
         "status": "ok",
         "source_file_path": RULE_ID,
         "verified": True,
@@ -80,7 +80,7 @@ STEP_PAYLOADS: dict[str, dict] = {
         "vacuity_status": {"is_vacuous": False},
         "mutation_score": 90.0,
     },
-    "step07_packaging_manifest": {
+    "step06_packaging_manifest": {
         "status": "ok",
         "source_file_path": RULE_ID,
         "installation_report": [{
@@ -92,7 +92,7 @@ STEP_PAYLOADS: dict[str, dict] = {
             "reason": None,
         }],
     },
-    "step08_reporting": {
+    "step07_reporting": {
         "status": "ok",
         "source_file_path": RULE_ID,
         "summary_path": f"output/reports/{RULE_ID}/summary.json",
@@ -166,7 +166,7 @@ class TestIncrementalAdvancement:
         for s in list(STEP_PAYLOADS)[:-1]:
             _write_artifact(RULE_ID, s, STEP_PAYLOADS[s], tmp_path)
         action = _decide(RULE_ID, tmp_path, _CONFIG)
-        assert action["action"]["step"] == "step08_reporting"
+        assert action["action"]["step"] == "step07_reporting"
         assert action["current_state"] == "packaged"
 
     def test_all_artifacts_and_reports_emits_finish(self, tmp_path: Path) -> None:
@@ -256,7 +256,7 @@ class TestBudgetExhaustion:
         for s in list(STEP_PAYLOADS)[:5]:
             _write_artifact(RULE_ID, s, STEP_PAYLOADS[s], tmp_path)
         # step06 budget is 2 in our test config
-        budget = _CONFIG["max_refinement_attempts"]["step06_verification_gate"]
+        budget = _CONFIG["max_refinement_attempts"]["step05_verification_gate"]
         for _ in range(budget):
             _decide(RULE_ID, tmp_path, _CONFIG)
         action = _decide(RULE_ID, tmp_path, _CONFIG)
@@ -364,46 +364,46 @@ class TestStep06Predicates:
 
     def test_verified_false_fails_check(self, tmp_path: Path) -> None:
         self._setup(tmp_path)
-        failing = copy.deepcopy(STEP_PAYLOADS["step06_verification_gate"])
+        failing = copy.deepcopy(STEP_PAYLOADS["step05_verification_gate"])
         failing["verified"] = False
-        _write_artifact(RULE_ID, "step06_verification_gate", failing, tmp_path)
-        step = next(s for s in _PIPELINE if s.artifact == "step06_verification_gate")
+        _write_artifact(RULE_ID, "step05_verification_gate", failing, tmp_path)
+        step = next(s for s in _PIPELINE if s.artifact == "step05_verification_gate")
         ok, issue_class, _ = _check_step(RULE_ID, step, tmp_path)
         assert not ok
         assert issue_class == "verification_failed"
 
     def test_vacuous_fails_check(self, tmp_path: Path) -> None:
         self._setup(tmp_path)
-        vacuous = copy.deepcopy(STEP_PAYLOADS["step06_verification_gate"])
+        vacuous = copy.deepcopy(STEP_PAYLOADS["step05_verification_gate"])
         vacuous["vacuity_status"] = {"is_vacuous": True}
-        _write_artifact(RULE_ID, "step06_verification_gate", vacuous, tmp_path)
-        step = next(s for s in _PIPELINE if s.artifact == "step06_verification_gate")
+        _write_artifact(RULE_ID, "step05_verification_gate", vacuous, tmp_path)
+        step = next(s for s in _PIPELINE if s.artifact == "step05_verification_gate")
         ok, issue_class, _ = _check_step(RULE_ID, step, tmp_path)
         assert not ok
         assert issue_class == "vacuous_property"
 
     def test_low_mutation_score_fails_check(self, tmp_path: Path) -> None:
         self._setup(tmp_path)
-        low = copy.deepcopy(STEP_PAYLOADS["step06_verification_gate"])
+        low = copy.deepcopy(STEP_PAYLOADS["step05_verification_gate"])
         low["mutation_score"] = 40.0
-        _write_artifact(RULE_ID, "step06_verification_gate", low, tmp_path)
-        step = next(s for s in _PIPELINE if s.artifact == "step06_verification_gate")
+        _write_artifact(RULE_ID, "step05_verification_gate", low, tmp_path)
+        step = next(s for s in _PIPELINE if s.artifact == "step05_verification_gate")
         ok, issue_class, _ = _check_step(RULE_ID, step, tmp_path)
         assert not ok
         assert issue_class == "mutation_score_low"
 
     def test_step06_passes_with_good_artifact(self, tmp_path: Path) -> None:
         self._setup(tmp_path)
-        _write_artifact(RULE_ID, "step06_verification_gate", STEP_PAYLOADS["step06_verification_gate"], tmp_path)
-        step = next(s for s in _PIPELINE if s.artifact == "step06_verification_gate")
+        _write_artifact(RULE_ID, "step05_verification_gate", STEP_PAYLOADS["step05_verification_gate"], tmp_path)
+        step = next(s for s in _PIPELINE if s.artifact == "step05_verification_gate")
         ok, _, _ = _check_step(RULE_ID, step, tmp_path)
         assert ok
 
     def test_fsm_emits_refine_for_vacuous(self, tmp_path: Path) -> None:
         self._setup(tmp_path)
-        vacuous = copy.deepcopy(STEP_PAYLOADS["step06_verification_gate"])
+        vacuous = copy.deepcopy(STEP_PAYLOADS["step05_verification_gate"])
         vacuous["vacuity_status"] = {"is_vacuous": True}
-        _write_artifact(RULE_ID, "step06_verification_gate", vacuous, tmp_path)
+        _write_artifact(RULE_ID, "step05_verification_gate", vacuous, tmp_path)
         _decide(RULE_ID, tmp_path, _CONFIG)  # run_step attempt 1
         action = _decide(RULE_ID, tmp_path, _CONFIG)  # refine
         assert action["action"]["type"] == "refine_step"
@@ -418,7 +418,7 @@ class TestStep08Predicate:
     def test_step08_artifact_present_but_no_reports_fails(self, tmp_path: Path) -> None:
         _write_all_artifacts(tmp_path)
         # Deliberately no report files
-        step = next(s for s in _PIPELINE if s.artifact == "step08_reporting")
+        step = next(s for s in _PIPELINE if s.artifact == "step07_reporting")
         ok, issue_class, _ = _check_step(RULE_ID, step, tmp_path)
         assert not ok
         assert issue_class == "report_incomplete"
@@ -426,14 +426,14 @@ class TestStep08Predicate:
     def test_step08_passes_with_all_report_files(self, tmp_path: Path) -> None:
         _write_all_artifacts(tmp_path)
         _create_report_files(tmp_path)
-        step = next(s for s in _PIPELINE if s.artifact == "step08_reporting")
+        step = next(s for s in _PIPELINE if s.artifact == "step07_reporting")
         ok, _, _ = _check_step(RULE_ID, step, tmp_path)
         assert ok
 
     def test_fsm_emits_run_step08_when_report_missing(self, tmp_path: Path) -> None:
         _write_all_artifacts(tmp_path)
         action = _decide(RULE_ID, tmp_path, _CONFIG)
-        assert action["action"]["step"] == "step08_reporting"
+        assert action["action"]["step"] == "step07_reporting"
 
 
 # ---------------------------------------------------------------------------
@@ -547,10 +547,10 @@ class TestDefaultConfigPath:
         assert "max_refinement_attempts" in data
 
     def test_step06_budget_consumed_from_root_config(self, tmp_path: Path) -> None:
-        """FSM must consume step06_verification_gate budget from root configs/rmc_defaults.json."""
+        """FSM must consume step05_verification_gate budget from root configs/rmc_defaults.json."""
         from workflow_fsm import _DEFAULT_CONFIG, _load_config, _get_budget
         config = _load_config(_DEFAULT_CONFIG)
-        budget = _get_budget(config, "step06_verification_gate")
+        budget = _get_budget(config, "step05_verification_gate")
         # root config has step06: 2; default: 2 — either way must be > 0
         assert budget > 0, "Budget must come from real config, not fallback empty dict"
 

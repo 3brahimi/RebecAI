@@ -30,11 +30,11 @@ VALID_REFINE_STEP = {
     "next_state": "abstracted",
     "action": {
         "type": "refine_step",
-        "step": "step03_abstraction",
+        "step": "step02_abstraction",
         "agent": "abstraction_agent",
         "inputs": {
             "rule_id": "Rule-22",
-            "prior_artifact_path": "output/work/Rule-22/step03_abstraction.json",
+            "prior_artifact_path": "output/work/Rule-22/step02_abstraction.json",
             "issue_class": "missing_actors",
             "issue_detail": "LLM failed to extract OwnShip",
             "attempt_index": 2,
@@ -42,7 +42,7 @@ VALID_REFINE_STEP = {
         }
     },
     "reason_code": "abstraction_incomplete",
-    "required_artifacts": ["step03_abstraction.json"],
+    "required_artifacts": ["step02_abstraction.json"],
     "missing_artifacts": []
 }
 
@@ -57,7 +57,7 @@ VALID_FINISH = {
         "inputs": {}
     },
     "reason_code": "pipeline_complete",
-    "required_artifacts": ["step08_reporting.json"],
+    "required_artifacts": ["step07_reporting.json"],
     "missing_artifacts": []
 }
 
@@ -80,7 +80,7 @@ def test_refine_step_missing_inputs():
 def test_finish_requires_none_step_agent():
     """If action.type is finish, step and agent MUST be 'none'."""
     invalid = copy.deepcopy(VALID_FINISH)
-    invalid["action"]["step"] = "step08_reporting"
+    invalid["action"]["step"] = "step07_reporting"
 
     with pytest.raises(ValidationError) as exc_info:
         validate(instance=invalid, schema=FSM_SCHEMA)
@@ -185,7 +185,7 @@ class TestSchemaReferenceAlignment:
                 "next_state": "none",
                 "action": {
                     "type": action_type,
-                    "step": "step08_reporting",  # wrong — should be "none"
+                    "step": "step07_reporting",  # wrong — should be "none"
                     "agent": "none",
                     "inputs": {},
                 },
@@ -206,7 +206,7 @@ class TestSchemaReferenceAlignment:
                 "next_state": "none",
                 "action": {
                     "type": action_type,
-                    "step": "step08_reporting",  # wrong
+                    "step": "step07_reporting",  # wrong
                     "agent": "none",
                     "inputs": {},
                 },

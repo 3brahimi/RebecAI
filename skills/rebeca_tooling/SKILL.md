@@ -273,14 +273,12 @@ def verify_rule(rule_id: str, model_path: str, property_path: str) -> dict:
 | `generate_report.py` | Aggregate report from scorecards; pipe from `score_single_rule.py` | ✓ |
 | `output_policy.py` | Canonical path policy — the only permitted source of artifact paths | ✗ |
 | `artifact_writer.py` | Atomically persist a step artifact (tmp→rename) | ✓ |
-| `step_schemas.py` | Step output schema validation | ✗ |
-| `workflow_fsm.py` | FSM controller — reads artifacts, emits one JSON action to stdout | ✓ |
 
 ### Direct Exec Step CLIs (Coordinator Reference)
 
 These CLIs are used by the coordinator for the deterministic pipeline steps.
 
-#### `step06_verification_gate` (`verification_exec`) — RMC + vacuity + mutation
+#### `step05_verification_gate` (`verification_exec`) — RMC + vacuity + mutation
 
 ```bash
 python3 <scripts>/verify_gate.py \
@@ -302,7 +300,7 @@ Key output fields in `gate_result.json`:
 | `vacuity_status.is_vacuous` | `true` = assertion trivially satisfied     |
 | `mutation_score`            | kill rate 0–100; threshold is 80           |
 
-#### `step08_reporting` (`reporting_exec`) — Score and report
+#### `step07_reporting` (`reporting_exec`) — Score and report
 
 ```bash
 python3 <scripts>/score_single_rule.py \

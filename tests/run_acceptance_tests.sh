@@ -20,7 +20,7 @@ echo -n "AT-001 (Prescribed Workflow): "
 if [[ -f "$AGENT_FILE" ]] && \
    grep -q "## Step Bindings" "$AGENT_FILE" && \
    grep -q "step01_init" "$AGENT_FILE" && \
-   grep -q "step08_reporting" "$AGENT_FILE"; then
+   grep -q "step07_reporting" "$AGENT_FILE"; then
   echo "PASS"
   ((PASSED++))
 else

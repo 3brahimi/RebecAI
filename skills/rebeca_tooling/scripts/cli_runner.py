@@ -34,7 +34,7 @@ def run_verification(data: Dict[str, Any]) -> Dict[str, Any]:
 
 
 _TOOL_TO_STEP: Dict[str, str] = {
-    "verification": "step06_verification_gate",
+    "verification": "step05_verification_gate",
 }
 
 

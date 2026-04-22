@@ -39,7 +39,7 @@ _ROOT = Path(__file__).parent.parent
 _SCRIPTS = _ROOT / "skills" / "rebeca_tooling" / "scripts"
 _FIXTURES = Path(__file__).parent / "fixtures"
 _RULE22_LEGATA = _FIXTURES / "Rule22.legata"
-_STEP03_FIXTURE = _FIXTURES / "step03_abstraction.json"
+_STEP03_FIXTURE = _FIXTURES / "step02_abstraction.json"
 
 _ENV = {**os.environ, "PYTHONPATH": str(_SCRIPTS)}
 

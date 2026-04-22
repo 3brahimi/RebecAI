@@ -68,46 +68,35 @@ Schema: `<skills>/rebeca_tooling/schemas/abstraction-agent.schema.json` → `inp
 
 ## Output Contract (success)
 
-Merged into coordinator `phase_results.step03`:
-
 ```json
 {
   "status": "ok",
-  "rule_id": "Rule-22",
   "abstraction_summary": {
-    "naming_contract": {
-      "reactive_class_style": "PascalCase",
-      "state_var_style": "camelCase",
-      "instance_style": "lowerCamelCase",
-      "define_alias_style": "camelCase",
-      "assertion_name_style": "PascalCase"
-    },
-    "actor_map": [
-      { "legata_actor": "vessel", "rebeca_class": "Vessel", "rebeca_instance": "vessel" }
-    ],
-    "variable_map": [
-      {
-        "legata_concept": "vessel exhibits lights",
-        "rebeca_name": "hasLight",
-        "rebeca_type": "boolean",
-        "define_alias": "isLightOn",
-        "source": "condition"
-      },
-      {
-        "legata_concept": "light range",
-        "rebeca_name": "lightRange",
-        "rebeca_type": "int",
-        "bounds": { "min": 0, "max": 30 },
-        "define_alias": "lightRangeOk",
-        "source": "assurance"
+    "actor_map": {
+      "OwnShip": {
+        "queue_size": 5,
+        "source": "Rule22"
       }
-    ]
-  },
-  "open_assumptions": [
-    "Default integer bounds [0, 30] applied to 'lightRange' — refine manually"
-  ]
+    },
+    "variable_map": {
+      "mastheadLightRange": {
+        "type": "int",
+        "default": 6,
+        "source": "Rule22"
+      },
+      "sideLightRange": {
+        "type": "int",
+        "default": 3,
+        "source": "Rule22"
+      }
+    }
+  }
 }
 ```
+
+- `actor_map`: object keyed by Rebeca class name → `{queue_size, source}`
+- `variable_map`: object keyed by camelCase state variable name → `{type, default, source}`
+- No `rule_id` or `naming_contract` at the top level.
 
 ## Error Envelope (failure)
 

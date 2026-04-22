@@ -296,12 +296,12 @@ def step_artifact_path(rule_id: str, step: str, base_dir: Path = Path("output"))
     """Return canonical path for a step's durable artifact JSON.
 
     Convention: output/work/<rule_id>/<step>.json
-    e.g. output/work/Rule-22/step03_abstraction.json
+    e.g. output/work/Rule-22/step02_abstraction.json
     """
     _validate_rule_id(rule_id)
     allowed = {
-        "step03_abstraction", "step04_mapping", "step05_candidates",
-        "step06_verification_gate", "step07_packaging_manifest", "step08_reporting",
+        "step02_abstraction", "step03_mapping", "step04_candidates",
+        "step05_verification_gate", "step06_packaging_manifest", "step07_reporting",
     }
     if step not in allowed:
         raise ValueError(f"Unknown step artifact name: {step!r}. Must be one of {sorted(allowed)}")

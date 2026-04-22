@@ -35,18 +35,18 @@ _UPDATE = os.environ.get("UPDATE_FSM_SNAPSHOTS") == "1"
 _ROOT_CONFIG = str(Path(__file__).parent.parent / "configs" / "rmc_defaults.json")
 
 STEP_PAYLOADS: dict[str, dict] = {
-    "step03_abstraction": {
+    "step02_abstraction": {
         "status": "ok",
         "source_file_path": RULE_ID,
         "abstraction_summary": {"actor_map": ["Ship"], "variable_map": ["speed"], "naming_contract": {}},
     },
-    "step04_mapping": {
+    "step03_mapping": {
         "status": "ok",
         "source_file_path": RULE_ID,
         "model_artifact": {"path": f"output/work/{RULE_ID}/candidates/model.rebeca"},
         "property_artifact": {"path": f"output/work/{RULE_ID}/candidates/model.property"},
     },
-    "step05_candidates": {
+    "step04_candidates": {
         "status": "ok",
         "source_file_path": RULE_ID,
         "candidate_artifacts": [{
@@ -59,7 +59,7 @@ STEP_PAYLOADS: dict[str, dict] = {
             "mapping_path": "synthesis-agent",
         }],
     },
-    "step06_verification_gate": {
+    "step05_verification_gate": {
         "status": "ok",
         "source_file_path": RULE_ID,
         "verified": True,
@@ -68,7 +68,7 @@ STEP_PAYLOADS: dict[str, dict] = {
         "vacuity_status": {"is_vacuous": False},
         "mutation_score": 90.0,
     },
-    "step07_packaging_manifest": {
+    "step06_packaging_manifest": {
         "status": "ok",
         "source_file_path": RULE_ID,
         "installation_report": [{
@@ -80,7 +80,7 @@ STEP_PAYLOADS: dict[str, dict] = {
             "reason": None,
         }],
     },
-    "step08_reporting": {
+    "step07_reporting": {
         "status": "ok",
         "source_file_path": RULE_ID,
         "summary_path": f"output/reports/{RULE_ID}/summary.json",
@@ -162,10 +162,10 @@ def _assert_snapshot(name: str, actual: dict, base_dir: Path) -> None:
 
 class TestHappyPathSnapshots:
     def test_snap_steps_1_3_run_step04(self, tmp_path: Path) -> None:
-        for s in ("step03_abstraction"):
+        for s in ("step02_abstraction"):
             _write_artifact(s, STEP_PAYLOADS[s], tmp_path)
         action = _run_fsm(tmp_path)
-        _assert_snapshot("run_step04_mapping", action, tmp_path)
+        _assert_snapshot("run_step03_mapping", action, tmp_path)
 
     def test_snap_steps_1_4_run_step05(self, tmp_path: Path) -> None:
         for s in list(STEP_PAYLOADS)[:4]:
@@ -177,7 +177,7 @@ class TestHappyPathSnapshots:
         for s in list(STEP_PAYLOADS)[:5]:
             _write_artifact(s, STEP_PAYLOADS[s], tmp_path)
         action = _run_fsm(tmp_path)
-        _assert_snapshot("run_step06_verification_gate", action, tmp_path)
+        _assert_snapshot("run_step05_verification_gate", action, tmp_path)
 
     def test_snap_steps_1_6_run_step07(self, tmp_path: Path) -> None:
         for s in list(STEP_PAYLOADS)[:6]:
@@ -189,7 +189,7 @@ class TestHappyPathSnapshots:
         for s in list(STEP_PAYLOADS)[:7]:
             _write_artifact(s, STEP_PAYLOADS[s], tmp_path)
         action = _run_fsm(tmp_path)
-        _assert_snapshot("run_step08_reporting", action, tmp_path)
+        _assert_snapshot("run_step07_reporting", action, tmp_path)
 
     def test_snap_all_complete_finish(self, tmp_path: Path) -> None:
         for s, d in STEP_PAYLOADS.items():
@@ -212,9 +212,9 @@ class TestRefineSnapshots:
     def test_snap_step06_refine_vacuous(self, tmp_path: Path) -> None:
         for s in list(STEP_PAYLOADS)[:5]:
             _write_artifact(s, STEP_PAYLOADS[s], tmp_path)
-        vacuous = copy.deepcopy(STEP_PAYLOADS["step06_verification_gate"])
+        vacuous = copy.deepcopy(STEP_PAYLOADS["step05_verification_gate"])
         vacuous["vacuity_status"] = {"is_vacuous": True}
-        _write_artifact("step06_verification_gate", vacuous, tmp_path)
+        _write_artifact("step05_verification_gate", vacuous, tmp_path)
         _run_fsm(tmp_path)  # attempt 1 → run_step (vacuous artifact is "present but invalid")
         action = _run_fsm(tmp_path)  # attempt 2 → refine_step
         _assert_snapshot("refine_step06_vacuous", action, tmp_path)

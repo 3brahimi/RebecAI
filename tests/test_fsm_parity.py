@@ -24,7 +24,7 @@ PAYLOADS = [
         "next_state": "abstracted",
         "action": {
             "type": "refine_step",
-            "step": "step03_abstraction",
+            "step": "step02_abstraction",
             "agent": "abstraction_agent",
             "inputs": {
                 "prior_artifact_path": "path/to/art.json",
@@ -35,7 +35,7 @@ PAYLOADS = [
             }
         },
         "reason_code": "fix_logic",
-        "required_artifacts": ["step03_abstraction.json"],
+        "required_artifacts": ["step02_abstraction.json"],
         "missing_artifacts": []
     },
     # 2: Invalid status
@@ -65,7 +65,7 @@ PAYLOADS = [
         "next_state": "x",
         "action": {
             "type": "refine_step",
-            "step": "step03_abstraction",
+            "step": "step02_abstraction",
             "agent": "abstraction_agent",
             "inputs": {
                 "prior_artifact_path": "path/to/art.json",
@@ -101,7 +101,7 @@ PAYLOADS = [
         "next_state": "none",
         "action": {
             "type": "finish",
-            "step": "step08_reporting",
+            "step": "step07_reporting",
             "agent": "none",
             "inputs": {}
         },

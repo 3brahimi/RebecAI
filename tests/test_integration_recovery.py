@@ -36,31 +36,31 @@ _ROOT_CONFIG = str(Path(__file__).parent.parent / "configs" / "rmc_defaults.json
 # Map FSM action.step enum → artifact_writer --step argument
 # (diverges for step05 and step07)
 _STEP_ENUM_TO_ARTIFACT: dict[str, str] = {
-    "step03_abstraction":       "step03_abstraction",
-    "step04_mapping":           "step04_mapping",
-    "step05_synthesis":         "step05_candidates",
-    "step06_verification_gate": "step06_verification_gate",
-    "step07_packaging":         "step07_packaging_manifest",
-    "step08_reporting":         "step08_reporting",
+    "step02_abstraction":       "step02_abstraction",
+    "step03_mapping":           "step03_mapping",
+    "step05_synthesis":         "step04_candidates",
+    "step05_verification_gate": "step05_verification_gate",
+    "step07_packaging":         "step06_packaging_manifest",
+    "step07_reporting":         "step07_reporting",
 }
 
 # Map FSM action.step enum → schema validation key
 _STEP_ENUM_TO_SCHEMA: dict[str, str] = {
-    "step03_abstraction":       "step03",
-    "step04_mapping":           "step04",
+    "step02_abstraction":       "step03",
+    "step03_mapping":           "step04",
     "step05_synthesis":         "step05",
-    "step06_verification_gate": "step06",
+    "step05_verification_gate": "step06",
     "step07_packaging":         "step07",
-    "step08_reporting":         "step08",
+    "step07_reporting":         "step08",
 }
 
 MOCK_PAYLOADS: dict[str, dict] = {
-    "step03_abstraction": {
+    "step02_abstraction": {
         "status": "ok",
         "source_file_path": RULE_ID,
         "abstraction_summary": {"actor_map": ["Ship"], "variable_map": ["speed"], "naming_contract": {}},
     },
-    "step04_mapping": {
+    "step03_mapping": {
         "status": "ok",
         "source_file_path": RULE_ID,
         "model_artifact": {"path": f"output/work/{RULE_ID}/candidates/model.rebeca"},
@@ -79,7 +79,7 @@ MOCK_PAYLOADS: dict[str, dict] = {
             "mapping_path": "synthesis-agent",
         }],
     },
-    "step06_verification_gate": {
+    "step05_verification_gate": {
         "status": "ok",
         "source_file_path": RULE_ID,
         "verified": True,
@@ -100,7 +100,7 @@ MOCK_PAYLOADS: dict[str, dict] = {
             "reason": None,
         }],
     },
-    "step08_reporting": {
+    "step07_reporting": {
         "status": "ok",
         "source_file_path": RULE_ID,
         "summary_path": f"output/reports/{RULE_ID}/summary.json",
@@ -168,7 +168,7 @@ class ProtocolSimulator:
             self._write_artifact(artifact_step, payload)
 
             # step08 also needs report files to let FSM advance past it
-            if step_enum == "step08_reporting":
+            if step_enum == "step07_reporting":
                 self._create_report_files()
 
             action = self._call_fsm(reset=False)
@@ -283,7 +283,7 @@ class TestFsmAdvancement:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(json.dumps(payload), encoding="utf-8")
 
-            if step_enum == "step08_reporting":
+            if step_enum == "step07_reporting":
                 rp = report_paths(RULE_ID, tmp_path)
                 rp.report_dir.mkdir(parents=True, exist_ok=True)
                 for fname in ("summary.json", "summary.md", "verification.json", "quality_gates.json"):
@@ -314,7 +314,7 @@ class TestFsmAdvancement:
 class TestPipelineRecovery:
     def test_resume_from_partial_run_without_reset(self, tmp_path: Path) -> None:
         """Write steps 3–4, then run simulator; it should only call steps 5–8."""
-        partial_steps = ("step03_abstraction", "step04_mapping")
+        partial_steps = ("step02_abstraction", "step03_mapping")
         for step_enum in partial_steps:
             artifact_step = _STEP_ENUM_TO_ARTIFACT[step_enum]
             path = step_artifact_path(RULE_ID, artifact_step, tmp_path)
@@ -331,8 +331,8 @@ class TestPipelineRecovery:
                 f"Step {already_done} was re-run despite artifact already existing"
             )
         assert invoked_steps == [
-            "step05_synthesis", "step06_verification_gate",
-            "step07_packaging", "step08_reporting",
+            "step05_synthesis", "step05_verification_gate",
+            "step07_packaging", "step07_reporting",
         ]
 
     def test_fsm_identifies_single_deleted_artifact(self, tmp_path: Path) -> None:
@@ -344,13 +344,13 @@ class TestPipelineRecovery:
         sim.run()
 
         # Delete step04 artifact and reset FSM so it re-evaluates
-        step04_path = step_artifact_path(RULE_ID, "step04_mapping", tmp_path)
+        step04_path = step_artifact_path(RULE_ID, "step03_mapping", tmp_path)
         step04_path.unlink()
         _reset(RULE_ID, tmp_path, config)
 
         action = _decide(RULE_ID, tmp_path, config)
-        assert action["action"]["step"] == "step04_mapping", (
-            f"Expected step04_mapping after deletion, got: {action['action']['step']}"
+        assert action["action"]["step"] == "step03_mapping", (
+            f"Expected step03_mapping after deletion, got: {action['action']['step']}"
         )
         assert action["current_state"] == "abstracted"
 
@@ -362,12 +362,12 @@ class TestPipelineRecovery:
         sim = _make_simulator(tmp_path)
         sim.run()
 
-        step04_path = step_artifact_path(RULE_ID, "step04_mapping", tmp_path)
+        step04_path = step_artifact_path(RULE_ID, "step03_mapping", tmp_path)
         step04_path.unlink()
         _reset(RULE_ID, tmp_path, config)
 
         # Restore the artifact
-        step04_path.write_text(json.dumps(MOCK_PAYLOADS["step04_mapping"]))
+        step04_path.write_text(json.dumps(MOCK_PAYLOADS["step03_mapping"]))
 
         # FSM should now skip step04 and ask for the next missing step
         # (step05 was present, step06 was present, etc. — so should be finish)
@@ -386,12 +386,12 @@ class TestPipelineRecovery:
         sim.run()
 
         # Corrupt step03 then reset — _reset internally calls _decide once (attempt 1)
-        step03_path = step_artifact_path(RULE_ID, "step03_abstraction", tmp_path)
+        step03_path = step_artifact_path(RULE_ID, "step02_abstraction", tmp_path)
         step03_path.write_text("{ not valid json !!!")
         action = _reset(RULE_ID, tmp_path, config)
 
         # _reset's internal _decide is attempt 1 → run_step (no issue_class in inputs)
-        assert action["action"]["step"] == "step03_abstraction"
+        assert action["action"]["step"] == "step02_abstraction"
         assert action["action"]["type"] == "run_step"
         assert "issue_class" not in action["action"]["inputs"]
 
@@ -404,7 +404,7 @@ class TestPipelineRecovery:
         sim.run()
 
         # Replace step05 with a skeleton (missing required candidate_artifacts)
-        step05_path = step_artifact_path(RULE_ID, "step05_candidates", tmp_path)
+        step05_path = step_artifact_path(RULE_ID, "step04_candidates", tmp_path)
         step05_path.write_text(json.dumps({"status": "ok"}))
         _reset(RULE_ID, tmp_path, config)
 
@@ -430,11 +430,11 @@ class TestCoordinatorCompliance:
                 "status": "ok",
                 "current_state": "abstracted",
                 "next_state": "mapped",
-                "action": {"type": "run_step", "step": "step04_mapping",
+                "action": {"type": "run_step", "step": "step03_mapping",
                            "agent": "mapping_agent", "inputs": {"rule_id": RULE_ID}},
                 "reason_code": "artifact_missing",
-                "required_artifacts": ["step04_mapping.json"],
-                "missing_artifacts": ["step04_mapping.json"],
+                "required_artifacts": ["step03_mapping.json"],
+                "missing_artifacts": ["step03_mapping.json"],
             },
             {
                 "status": "ok",
@@ -456,7 +456,7 @@ class TestCoordinatorCompliance:
         sim = ProtocolSimulator(
             rule_id=RULE_ID,
             base_dir=tmp_path,
-            agent_responses={"step04_mapping": MOCK_PAYLOADS["step04_mapping"]},
+            agent_responses={"step03_mapping": MOCK_PAYLOADS["step03_mapping"]},
             fsm_callable=mock_fsm,
         )
         final = sim.run()
@@ -464,7 +464,7 @@ class TestCoordinatorCompliance:
         assert final["action"]["type"] == "finish"
         assert len(sim.invocations) == 1
         assert sim.invocations[0].agent == "mapping_agent"
-        assert sim.invocations[0].step_enum == "step04_mapping"
+        assert sim.invocations[0].step_enum == "step03_mapping"
 
     def test_simulator_passes_inputs_verbatim(self, tmp_path: Path) -> None:
         """action.inputs must reach the agent call unchanged — no key stripping or adding."""
@@ -559,7 +559,7 @@ class TestCoordinatorCompliance:
         """For refine_step actions, action.inputs must include FSM feedback fields verbatim."""
         refine_inputs = {
             "rule_id": RULE_ID,
-            "prior_artifact_path": f"<BASE_DIR>/work/{RULE_ID}/step04_mapping.json",
+            "prior_artifact_path": f"<BASE_DIR>/work/{RULE_ID}/step03_mapping.json",
             "issue_class": "schema_invalid",
             "issue_detail": "missing required key: model_artifact",
             "attempt_index": 2,
@@ -570,11 +570,11 @@ class TestCoordinatorCompliance:
                 "status": "ok",
                 "current_state": "abstracted",
                 "next_state": "mapped",
-                "action": {"type": "refine_step", "step": "step04_mapping",
+                "action": {"type": "refine_step", "step": "step03_mapping",
                            "agent": "mapping_agent", "inputs": refine_inputs},
                 "reason_code": "schema_invalid",
-                "required_artifacts": ["step04_mapping.json"],
-                "missing_artifacts": ["step04_mapping.json"],
+                "required_artifacts": ["step03_mapping.json"],
+                "missing_artifacts": ["step03_mapping.json"],
             },
             {
                 "status": "ok",
@@ -596,7 +596,7 @@ class TestCoordinatorCompliance:
         sim = ProtocolSimulator(
             rule_id=RULE_ID,
             base_dir=tmp_path,
-            agent_responses={"step04_mapping": MOCK_PAYLOADS["step04_mapping"]},
+            agent_responses={"step03_mapping": MOCK_PAYLOADS["step03_mapping"]},
             fsm_callable=mock_fsm,
         )
         sim.run()

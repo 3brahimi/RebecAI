@@ -34,7 +34,7 @@ RULE_ID = "PhaseB-TestRule"
 
 # Minimal valid payload per step — matches Phase A frozen contract
 STEP_PAYLOADS: dict[str, dict] = {
-    "step03_abstraction": {
+    "step02_abstraction": {
         "status": "ok",
         "source_file_path": RULE_ID,
         "abstraction_summary": {
@@ -44,13 +44,13 @@ STEP_PAYLOADS: dict[str, dict] = {
         },
         "open_assumptions": [],
     },
-    "step04_mapping": {
+    "step03_mapping": {
         "status": "ok",
         "source_file_path": RULE_ID,
         "model_artifact": {"path": f"output/work/{RULE_ID}/candidates/model.rebeca"},
         "property_artifact": {"path": f"output/work/{RULE_ID}/candidates/model.property"},
     },
-    "step05_candidates": {
+    "step04_candidates": {
         "status": "ok",
         "source_file_path": RULE_ID,
         "candidate_artifacts": [
@@ -65,7 +65,7 @@ STEP_PAYLOADS: dict[str, dict] = {
             },
         ],
     },
-    "step06_verification_gate": {
+    "step05_verification_gate": {
         "status": "ok",
         "source_file_path": RULE_ID,
         "verified": True,
@@ -74,7 +74,7 @@ STEP_PAYLOADS: dict[str, dict] = {
         "vacuity_status": {"is_vacuous": False},
         "mutation_score": 90.0,
     },
-    "step07_packaging_manifest": {
+    "step06_packaging_manifest": {
         "status": "ok",
         "source_file_path": RULE_ID,
         "installation_report": [
@@ -88,7 +88,7 @@ STEP_PAYLOADS: dict[str, dict] = {
             },
         ],
     },
-    "step08_reporting": {
+    "step07_reporting": {
         "status": "ok",
         "source_file_path": RULE_ID,
         "summary_path": f"output/reports/{RULE_ID}/summary.json",
@@ -104,12 +104,12 @@ STEP_PAYLOADS: dict[str, dict] = {
 
 # Map step artifact name → schema key
 _STEP_SCHEMA_KEY = {
-    "step03_abstraction": "step03",
-    "step04_mapping": "step04",
-    "step05_candidates": "step05",
-    "step06_verification_gate": "step06",
-    "step07_packaging_manifest": "step07",
-    "step08_reporting": "step08",
+    "step02_abstraction": "step03",
+    "step03_mapping": "step04",
+    "step04_candidates": "step05",
+    "step05_verification_gate": "step06",
+    "step06_packaging_manifest": "step07",
+    "step07_reporting": "step08",
 }
 
 
@@ -134,20 +134,20 @@ def _run_artifact_writer(rule_id: str, step: str, data: dict, base_dir: Path) ->
 
 class TestArtifactWriterAtomicity:
     def test_no_tmp_file_left_behind(self, tmp_path: Path) -> None:
-        data = STEP_PAYLOADS["step03_abstraction"]
-        _run_artifact_writer(RULE_ID, "step03_abstraction", data, tmp_path)
+        data = STEP_PAYLOADS["step02_abstraction"]
+        _run_artifact_writer(RULE_ID, "step02_abstraction", data, tmp_path)
         work_dir = tmp_path / "work" / RULE_ID
         tmp_files = list(work_dir.glob("*.tmp"))
         assert tmp_files == [], f"Leftover .tmp files: {tmp_files}"
 
     def test_idempotent_rewrite(self, tmp_path: Path) -> None:
         """Running artifact_writer twice with same data produces identical output."""
-        data = STEP_PAYLOADS["step04_mapping"]
-        _run_artifact_writer(RULE_ID, "step04_mapping", data, tmp_path)
-        path = step_artifact_path(RULE_ID, "step04_mapping", tmp_path)
+        data = STEP_PAYLOADS["step03_mapping"]
+        _run_artifact_writer(RULE_ID, "step03_mapping", data, tmp_path)
+        path = step_artifact_path(RULE_ID, "step03_mapping", tmp_path)
         content_first = path.read_text()
 
-        _run_artifact_writer(RULE_ID, "step04_mapping", data, tmp_path)
+        _run_artifact_writer(RULE_ID, "step03_mapping", data, tmp_path)
         content_second = path.read_text()
 
         assert json.loads(content_first) == json.loads(content_second)
@@ -189,12 +189,12 @@ def test_artifact_written_and_read_back_passes_schema(
 # ---------------------------------------------------------------------------
 
 class TestStep06FsmGuardFields:
-    """step06_verification_gate.json must support all three FSM transition predicates."""
+    """step05_verification_gate.json must support all three FSM transition predicates."""
 
     def test_all_fsm_guard_fields_present(self, tmp_path: Path) -> None:
-        data = STEP_PAYLOADS["step06_verification_gate"]
-        _run_artifact_writer(RULE_ID, "step06_verification_gate", data, tmp_path)
-        path = step_artifact_path(RULE_ID, "step06_verification_gate", tmp_path)
+        data = STEP_PAYLOADS["step05_verification_gate"]
+        _run_artifact_writer(RULE_ID, "step05_verification_gate", data, tmp_path)
+        path = step_artifact_path(RULE_ID, "step05_verification_gate", tmp_path)
         on_disk = json.loads(path.read_text())
         assert "verified" in on_disk
         assert "vacuity_status" in on_disk and "is_vacuous" in on_disk["vacuity_status"]
