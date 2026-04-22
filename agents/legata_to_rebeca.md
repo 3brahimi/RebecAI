@@ -164,7 +164,7 @@ python <scripts>/verify_gate.py \
   --rule-id    <rule_id> \
   --model      <output_dir>/<rule_id>/<rule_id>.rebeca \
   --property   <output_dir>/<rule_id>/<rule_id>.property \
-  --rmc-jar    <jar> \
+  --jar    <jar> \
   --output-dir <output_dir>/verification/<rule_id>
 ```
 
