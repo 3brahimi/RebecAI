@@ -152,7 +152,6 @@ legata_to_rebeca (coordinator)
 | `rebeca_handbook` | abstraction, mapping, synthesis, verification, reporting | Modeling best practices |
 | `legata_to_rebeca` | Coordinator | Workflow guidance |
 | `rebeca_mutation` | verification_exec | Mutation testing patterns |
-| `rebeca_hallucination` | verification_exec, reporting_exec | Hallucination detection patterns |
 
 ## Installation Details
 

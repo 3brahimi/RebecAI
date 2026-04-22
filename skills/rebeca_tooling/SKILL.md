@@ -110,7 +110,7 @@ scorecard = scorer.score_rule(
 
 # Returns dict with:
 # - score_total: 0-100
-# - score_breakdown: {syntax:10, semantic_alignment:55, verification_outcome:25, hallucination_penalty:10}
+# - score_breakdown: {syntax:10, semantic_alignment:55, verification_outcome:25, integrity:10}
 # - status: Pass|Fail|Conditional|Blocked|Unknown
 #   NOTE: a vacuous pass (is_vacuous=True) yields status=Conditional and score=85
 # - confidence: 0.0-1.0
@@ -268,7 +268,6 @@ def verify_rule(rule_id: str, model_path: str, property_path: str) -> dict:
 |--------|---------|-----|
 | `run_rmc.py` | Execute RMC model checker | ✓ |
 | `verify_gate.py` | Single-call gate: RMC → vacuity → mutation; outputs `passes_gate` | ✓ |
-| `snapshotter.py` | Capture model/property snapshots and metadata | ✓ |
 | `score_single_rule.py` | 100-point scoring rubric; `--rmc-exit-code`, `--is-vacuous`, `--mutation-score` | ✓ |
 | `generate_report.py` | Aggregate report from scorecards; pipe from `score_single_rule.py` | ✓ |
 | `output_policy.py` | Canonical path policy — the only permitted source of artifact paths | ✗ |
