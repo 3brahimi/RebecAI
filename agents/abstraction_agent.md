@@ -21,31 +21,36 @@ Operates on one `source_file_path` per invocation.
 
 ## Inputs (from coordinator `shared_state`)
 
-| Field           | Type   | Required | Description                                              |
-|-----------------|--------|----------|----------------------------------------------------------|
-| `source_file_path`       | string | yes      | Rule identifier, e.g. `Rule-22`                          |
-| `legata_path`   | string | yes      | Path to the `.legata` source file                        |
-| `snapshot_path` | string | no       | Step01 snapshot JSON; seeds variable_map when present     |
-| `colreg_text`   | string | no       | Supplementary COLREG text for actor/condition extraction |
+| Field                | Type   | Required | Description                                         |
+|----------------------|--------|----------|-----------------------------------------------------|
+| `rule_id`            | string | yes      | Rule identifier, e.g. `Rule-22`                     |
+| `legata_input`        | string | yes      | Path to the `.legata` source file                   |
+| `output_dir`         | string | yes      | Directory containing reference `.rebeca` and `.property` files |
+| `snapshot_path`      | string | no       | Step01 snapshot JSON; seeds variable_map when present     |
+| `colreg_text`        | string | no       | Supplementary COLREG text for actor/condition extraction |
+
+**Note:** The reference files `<output_dir>/<rule_id>.rebeca` and `<output_dir>/<rule_id>.property` (copied in Step01) should be read to extract existing symbols and structure. This ensures the abstraction aligns with what's already present.
 
 Schema: `<skills>/rebeca_tooling/schemas/abstraction-agent.schema.json` → `input` block.
 
 ## Tasks (in order)
 
-1. Validate `legata_path` (schema + `safe_path`).
-2. Read Legata content; extract actors and section-labelled conditions.
-3. Supplement with `snapshot_path` state variables (when provided).
-4. Supplement with `colreg_text` keyword corpus (when provided).
-5. Apply naming conventions deterministically (see table below).
-6. Map each concept to a Rebeca type and bounds.
-7. Validate output against schema.
-8. Persist the canonical step artifact atomically:
+1. Validate `<legata_input>` and `<output_dir>` (schema + `safe_path`).
+2. **Read existing reference files**: Load `<output_dir>/<rule_id>.rebeca` and `<output_dir>/<rule_id>.property` to extract existing actors, statevars, and property definitions.
+3. Read Legata content; extract actors and section-labelled conditions.
+4. Supplement with existing symbols from reference files (Step 2).
+5. Supplement with `<snapshot_path>` state variables (when provided).
+6. Supplement with `<colreg_text>` keyword corpus (when provided).
+7. Apply naming conventions deterministically (see table below).
+8. Map each concept to a Rebeca type and bounds.
+9. Validate output against schema.
+10. Persist the canonical step artifact atomically:
    ```bash
    python <scripts>/artifact_writer.py \
-     --rule-id <source_file_path> --step step03_abstraction \
+     --rule-id <rule_id> --step step03_abstraction \
      --data '<output_contract_json>' [--base-dir output]
    ```
-9. Emit success contract; exit 0. On any failure emit Error Envelope; exit 1.
+11. Emit success contract; exit 0. On any failure emit Error Envelope; exit 1.
 
 ## Naming Contract (fixed — never changes between runs)
 
@@ -73,7 +78,7 @@ Merged into coordinator `phase_results.step03`:
 ```json
 {
   "status": "ok",
-  "source_file_path": "Rule-22",
+  "rule_id": "Rule-22",
   "abstraction_summary": {
     "naming_contract": {
       "reactive_class_style": "PascalCase",
@@ -124,7 +129,7 @@ Merged into coordinator `phase_results.step03`:
 
 | Condition                            | `message` prefix                          |
 |--------------------------------------|-------------------------------------------|
-| `legata_path` escapes `~`            | `"Invalid path: …"`                       |
+| `<legata_input>` escapes `~`          | `"Invalid path: …"`                       |
 | Legata file unreadable               | `"Failed to read legata file: …"`         |
 | Snapshot JSON malformed              | `"Invalid snapshot JSON: …"`              |
 | Empty abstraction (no actors/vars)   | `"Abstraction produced no symbols: …"`    |

@@ -12,6 +12,20 @@ skills:
 
 # Legata → Rebeca Coordinator
 
+## Required Inputs
+
+The coordinator expects these inputs when invoked:
+
+```
+rule_id:            <rule identifier, e.g. Rule-22>
+legata_input:       <path to .legata source file>
+reference_model:    <path to existing .rebeca file to start from>
+reference_property: <path to existing .property file to start from>
+output_dir:         <output directory, e.g. output/Rule-22>
+```
+
+**Critical workflow invariant:** The `<reference_model>` and `<reference_property>` are the **starting points** for refinement. Step01 copies them to `<output_dir>/<rule_id>.rebeca` and `<output_dir>/<rule_id>.property`, and all subsequent steps refine these files **in place** until they pass verification.
+
 Subagents (LLM agents; invoked only for Steps 03, 04, 05):
 1. @abstraction_agent
 2. @mapping_agent
@@ -74,9 +88,17 @@ Check `output/work/<RULE_ID>/fsm_state.json`:
 - If the file does **not exist**, or `terminal_status` is not `null`:
 
 ```bash
+# CRITICAL: Copy reference files to output_dir as starting points for refinement
+mkdir -p <output_dir>
+cp <reference_model> <output_dir>/<rule_id>.rebeca
+cp <reference_property> <output_dir>/<rule_id>.property
+
+# Then reset FSM
 python <scripts>/workflow_fsm.py \
   --rule-id <RULE_ID> --base-dir output --reset
 ```
+
+**Important:** The reference files MUST be copied before the first FSM call. All subsequent steps (abstraction, mapping, synthesis, verification) will refine these files in place.
 
 Parse the JSON action from stdout and proceed to Part 2 with that action (do not call the FSM a second time).
 

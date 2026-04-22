@@ -36,10 +36,12 @@ Step03 (abstraction_agent)
 
 | Field                | Type            | Required | Description                              |
 |----------------------|-----------------|----------|------------------------------------------|
-| `source_file_path`            | string          | yes      | Rule identifier (e.g. `Rule-22`)         |
+| `rule_id`            | string          | yes      | Rule identifier (e.g. `Rule-22`)         |
 | `abstraction_summary`| object          | yes      | Step03 output: `actor_map`, `variable_map` |
 | `legata_text`        | string          | no       | Raw Legata source (enriches heuristics)  |
-| `output_dir`         | string          | yes      | Directory to write candidate artifacts   |
+| `output_dir`         | string          | yes      | Directory containing reference files and where candidates are written |
+
+**Note:** The reference files `<output_dir>/<rule_id>.rebeca` and `<output_dir>/<rule_id>.property` (copied in Step01, potentially refined by Step04) should be read as a baseline for generating alternative candidates.
 
 ## Generation Strategies
 
@@ -75,7 +77,7 @@ to `generated_files` — this is the mandatory verification gate.
 ```json
 {
   "status": "ok",
-  "source_file_path": "Rule-22",
+  "rule_id": "Rule-22",
   "candidate_artifacts": [
     {
       "artifact_id":      "Rule-22_synth_base",
@@ -126,7 +128,7 @@ After all candidate artifacts are written and the output contract is assembled, 
 
 ```bash
 python <scripts>/artifact_writer.py \
-  --rule-id <source_file_path> --step step05_candidates \
+  --rule-id <rule_id> --step step05_candidates \
   --data '<output_contract_json>' [--base-dir output]
 ```
 

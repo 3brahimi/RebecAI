@@ -384,7 +384,7 @@ These CLIs are used by the coordinator for the deterministic pipeline steps.
 
 ```bash
 python3 <scripts>/classify_rule_status.py \
-  --legata-path <legata_path> \
+  --legata-path <legata_input> \
   --output-json
 ```
 

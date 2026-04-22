@@ -10,40 +10,41 @@ skills:
   - rebeca_handbook
 ---
 
-# mapping_agent (Step04): Manual Mapping Core
+# mapping_agent (Step04): Refine Existing Model and Property
 
 ## Goal
 
-Translate the locked symbol namespace from Step03 into two concrete artifacts that
-RMC can verify: a Timed Rebeca model file and a property file. Operates on one
-`source_file_path` per invocation.
+Refine the existing `.rebeca` model and `.property` file (copied from reference files in Step01) to align with the Legata semantics. Uses the locked symbol namespace from Step03 to ensure consistency. Operates on files already present in `output_dir`.
 
 ## Inputs (from coordinator `shared_state`)
 
 | Field                | Type   | Required | Description                                         |
 |----------------------|--------|----------|-----------------------------------------------------|
-| `source_file_path`            | string | yes      | Rule identifier, e.g. `Rule-22`                     |
-| `legata_path`        | string | yes      | Path to the `.legata` source file                   |
+| `rule_id`            | string | yes      | Rule identifier, e.g. `Rule-22`                     |
+| `legata_input`        | string | yes      | Path to the `.legata` source file                   |
 | `abstraction_summary`| object | yes      | Step03 output (`actor_map`, `variable_map`, `naming_contract`) |
-| `output_dir`         | string | yes      | Directory where `.rebeca` and `.property` are written |
+| `output_dir`         | string | yes      | Directory containing existing `.rebeca` and `.property` files |
+
+**Critical:** The files `<output_dir>/<rule_id>.rebeca` and `<output_dir>/<rule_id>.property` MUST already exist (copied from reference files in Step01). This agent refines them in place.
 
 Schema: `<skills>/rebeca_tooling/schemas/mapping-agent.schema.json` → `input` block.
 
 ## Tasks (in order)
 
-1. Validate `legata_path` and `output_dir` (schema + `safe_path`).
-2. Parse the Legata file for numeric thresholds in condition/assurance lines.
-3. Generate the `.rebeca` model using the `actor_map` and `variable_map`.
-4. Generate the `.property` file using the canonical assertion pattern.
-5. Write both files to `output_dir`.
-6. Validate output against schema.
-7. Persist the canonical step artifact atomically:
+1. **Read existing files**: Load `<output_dir>/<rule_id>.rebeca` and `<output_dir>/<rule_id>.property` (these were copied from reference files in Step01).
+2. Validate `<legata_input>` and `<output_dir>` (schema + `safe_path`).
+3. Parse the Legata file for numeric thresholds in condition/assurance lines.
+4. **Refine the `.rebeca` model** using the `actor_map` and `variable_map` from Step03, preserving structure where possible.
+5. **Refine the `.property` file** using the canonical assertion pattern, updating the `define` block and `Assertion` to match Legata semantics.
+6. Write both refined files back to `<output_dir>` (overwrite in place).
+7. Validate output against schema.
+8. Persist the canonical step artifact atomically:
    ```bash
    python <scripts>/artifact_writer.py \
-     --rule-id <source_file_path> --step step04_mapping \
+     --rule-id <rule_id> --step step04_mapping \
      --data '<output_contract_json>' [--base-dir output]
    ```
-8. Emit success contract; exit 0. On any failure emit Error Envelope; exit 1.
+9. Emit success contract; exit 0. On any failure emit Error Envelope; exit 1.
 
 ## Canonical Assertion Pattern
 
@@ -111,7 +112,7 @@ Merged into coordinator `phase_results.step04`:
 ```json
 {
   "status": "ok",
-  "source_file_path": "Rule-22",
+  "rule_id": "Rule-22",
   "model_artifact": {
     "path": "/abs/output/Rule-22/Rule-22.rebeca",
     "content": "reactiveclass Vessel(10) { ... }"
@@ -141,8 +142,8 @@ Merged into coordinator `phase_results.step04`:
 
 | Condition                              | `message` prefix                            |
 |----------------------------------------|---------------------------------------------|
-| `legata_path` / `output_dir` escapes ~ | `"Invalid path: …"`                         |
-| `abstraction_summary` missing fields   | `"Invalid abstraction_summary: …"`          |
+| `<legata_input>` / `<output_dir>` escapes ~ | `"Invalid path: …"`                         |
+| `<abstraction_summary>` missing fields   | `"Invalid abstraction_summary: …"`          |
 | No assertion terms could be built      | `"Cannot build assertion: no condition …"`  |
 | File write failure                     | `"Failed to write artifact: …"`             |
 | Output schema violation                | `"Output schema validation failed: …"`      |
@@ -150,6 +151,7 @@ Merged into coordinator `phase_results.step04`:
 ## Implementation Notes
 
 - No new tooling scripts: uses `safe_path` from `utils.py` only.
+- **Refinement strategy**: Read existing files first, then update specific sections (statevars, define block, assertion) while preserving overall structure.
 - Numeric threshold extraction is a pure-regex pass over the Legata condition text;
   does not invoke RMC.
 - All generated Rebeca identifiers come directly from the Step03 `variable_map` —

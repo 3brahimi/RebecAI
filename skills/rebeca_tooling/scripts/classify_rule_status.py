@@ -21,4 +21,4 @@ if __name__ == "__main__":
     parser.add_argument("--output-json", action="store_true")
     args = parser.parse_args()
     classifier = RuleStatusClassifier()
-    print(json.dumps(classifier.classify(args.legata_path)))
+    print(json.dumps(classifier.classify(args.legata_input)))
