@@ -29,7 +29,6 @@ CORE_SKILLS = {
     "rebeca_handbook",
     "rebeca_tooling",
     "rebeca_mutation",
-    "rebeca_hallucination",
 }
 
 def lexists(path: Path) -> bool:
@@ -282,7 +281,7 @@ def main():
 
     # Define all potential roots to check
     roots = []
-    
+
     # If custom target root is specified, use only that
     if args.target_root:
         custom_root = Path(args.target_root).expanduser().resolve()

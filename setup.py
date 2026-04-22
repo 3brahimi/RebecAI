@@ -35,7 +35,6 @@ REQUIRED_SKILLS: Set[str] = {
     "rebeca_tooling",
     "rebeca_handbook",
     "rebeca_mutation",
-    "rebeca_hallucination",
 }
 
 # Target Conventions
