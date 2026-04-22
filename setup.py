@@ -233,7 +233,8 @@ def create_surgical_symlink(src: Path, link: Path):
 
 # Keys that Gemini CLI's local sub-agent loader does not recognise and will
 # reject with a "Validation failed: Unrecognized key(s)" error.
-_GEMINI_UNSUPPORTED_KEYS = {"version", "user-invocable", "schema", "skills"}
+# _GEMINI_UNSUPPORTED_KEYS = {"version", "user-invocable", "schema", "skills"}
+_GEMINI_UNSUPPORTED_KEYS = {"version", "user-invocable", "schema"}
 
 def _write_gemini_agent(src: Path, dest: Path) -> None:
     """Copy an agent .md file to dest, stripping Gemini-incompatible frontmatter keys."""
