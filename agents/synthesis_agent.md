@@ -38,7 +38,7 @@ Step06 (verification_exec)   — MANDATORY before any candidate is promoted
 |----------------------|--------|----------|----------------------------------------------------------------------------------|
 | `rule_id`            | string | yes      | Rule identifier (e.g. `Rule-22`)                                                 |
 | `abstraction_summary`| object | yes      | Step03 output: `actor_map`, `variable_map`, `naming_contract`                    |
-| `concept_mapping`    | object | yes      | Step04 output: `statevar_patches`, `queue_size_patches`, `define_patches`, `assertion_line` |
+| `concept_mapping`    | object | yes      | Step04 output: `statevar_patches`, `queue_size_patches`, `define_patches`, `assertion_lines` (array) |
 | `legata_text`        | string | no       | Raw Legata source (for enriching heuristics on alternative candidates)           |
 | `output_dir`         | string | yes      | Base output directory                                                            |
 
@@ -54,9 +54,15 @@ Step06 (verification_exec)   — MANDATORY before any candidate is promoted
    - Update the queue size integer in the `reactiveclass` declaration line only.
 5. Apply `concept_mapping.define_patches` to the `.property` file:
    - Add/update alias entries in the `define { }` block only.
-6. Apply `concept_mapping.assertion_line` to the `.property` file:
-   - Replace the assertion line for this rule in the `Assertion { }` block only.
+6. Apply `concept_mapping.assertion_lines` to the `.property` file:
+   - For each string in the array: add or replace the matching assertion entry (identified by the label before the colon) in the `Assertion { }` block only. All entries go in the single existing `Assertion { }` block.
 7. Write both patched files back in place. The output MUST be the original file with only the listed sections changed — every other line is preserved verbatim.
+
+**ABSOLUTE OUTPUT RULE — read this before writing any file:**
+- You write exactly TWO files: `<output_dir>/<rule_id>/<rule_id>.rebeca` and `<output_dir>/<rule_id>/<rule_id>.property`.
+- Do NOT create any other files, regardless of how many clauses the rule has.
+- Do NOT create clause-specific files (e.g. `Rule22b_Large.property` is WRONG).
+- All assertion lines from `assertion_lines` go into the single `<rule_id>.property` file.
 8. Generate two alternative candidate formulations from the patched baseline (see Generation Strategies below), writing each to `<output_dir>/work/<rule_id>/candidates/`.
 9. Assemble and return the output contract JSON to the coordinator (do not call artifact_writer — coordinator handles persistence).
 10. On any failure emit the Error Envelope.

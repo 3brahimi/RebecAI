@@ -105,9 +105,9 @@ Validate the output contains exactly this structure before persisting — if not
 - `concept_mapping.statevar_patches` — array of `{reactiveclass, add_statevars: [{type, name, default}]}`
 - `concept_mapping.queue_size_patches` — array of `{reactiveclass, queue_size}`
 - `concept_mapping.define_patches` — array of `{alias, expr}`
-- `concept_mapping.assertion_line` — string of the form `RuleN: !alias || alias;`
+- `concept_mapping.assertion_lines` — non-empty array of strings, each of the form `RuleN: !alias || alias;`
 
-If `concept_mapping` is a flat name→name dict or anything other than the above, it is wrong — stop with error `"mapping_agent returned wrong schema"`.
+If `concept_mapping` is a flat name→name dict, or has `assertion_line` (singular) instead of `assertion_lines` (array), or is missing any of the four keys, it is wrong — stop with error `"mapping_agent returned wrong schema"`.
 
 Persist the full JSON output regardless of status:
 ```bash

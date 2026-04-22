@@ -36,7 +36,7 @@ Analyse the Step03 abstraction summary alongside the existing `.rebeca` and `.pr
 4. Using `abstraction_summary.actor_map` (object keyed by class name → `{queue_size, source}`) and `abstraction_summary.variable_map` (object keyed by camelCase var name → `{type, default, source}`), derive:
    - Which **new statevars** need to be added (or existing ones updated) in which `reactiveclass` (keys of `actor_map`).
    - Which **`define` aliases** need to be added/updated in the `.property` file (keys of `variable_map`).
-   - The **canonical assertion line** for this rule.
+   - The **canonical assertion lines** for this rule — one entry per clause (e.g. Rule22.a, Rule22.b.Large, Rule22.b.Small, Rule22.c).
    - The **queue size** for each `reactiveclass` (from `actor_map[className].queue_size`).
 5. Assemble the `concept_mapping` output contract and return it to the coordinator.
 6. Do **NOT** write or modify any file on disk.
@@ -88,7 +88,10 @@ Forbidden operators: `->` and `=>` are never emitted; `||` and `&&` only.
       { "alias": "lightOn",      "expr": "vessel.isLightOn == true" },
       { "alias": "lightRangeOk", "expr": "vessel.lightRange >= 3"   }
     ],
-    "assertion_line": "Rule22: !lightOn || lightRangeOk;"
+    "assertion_lines": [
+      "Rule22a_s1: !ship1LongerThan50m || (ship1HasAllLights && ship1LightRangeOK);",
+      "Rule22a_s2: !ship2LongerThan50m || (ship2HasAllLights && ship2LightRangeOK);"
+    ]
   },
   "open_assumptions": [
     "Threshold for 'lightRange' defaulted to > 0 — verify against Legata source"
