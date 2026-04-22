@@ -4,6 +4,10 @@ description: |
   Coordinator for the Legata→Rebeca pipeline.
   Runs a fixed linear sequence of steps: abstraction → mapping → synthesis → verification → packaging → reporting.
   Fail-fast: any step failure stops the pipeline immediately.
+tools:
+  - abstraction_agent
+  - mapping_agent
+  - synthesis_agent
 skills:
   - legata_to_rebeca
   - rebeca_tooling
@@ -66,6 +70,11 @@ legata_input:  <legata_input>
 output_dir:    <output_dir>
 ```
 
+Validate the output contains exactly this structure before persisting — if not, treat as error:
+- `status: "ok"`
+- `abstraction_summary.actor_map` — object keyed by class name, each value has `queue_size` (int) and `source` (string)
+- `abstraction_summary.variable_map` — object keyed by camelCase var name, each value has `type`, `default`, `source`
+
 Persist the full JSON output regardless of status:
 ```bash
 python <scripts>/artifact_writer.py \
@@ -75,7 +84,7 @@ python <scripts>/artifact_writer.py \
   --base-dir <output_dir>
 ```
 
-On `status: error` → stop and return the persisted error to the caller.
+On `status: error` or schema mismatch → stop and return the persisted error to the caller.
 On `status: ok` → keep `abstraction_summary` in memory for Step 03.
 
 ---
@@ -91,6 +100,15 @@ output_dir:           <output_dir>
 abstraction_summary:  <step02_abstraction.abstraction_summary>
 ```
 
+Validate the output contains exactly this structure before persisting — if not, treat as error:
+- `status: "ok"`
+- `concept_mapping.statevar_patches` — array of `{reactiveclass, add_statevars: [{type, name, default}]}`
+- `concept_mapping.queue_size_patches` — array of `{reactiveclass, queue_size}`
+- `concept_mapping.define_patches` — array of `{alias, expr}`
+- `concept_mapping.assertion_line` — string of the form `RuleN: !alias || alias;`
+
+If `concept_mapping` is a flat name→name dict or anything other than the above, it is wrong — stop with error `"mapping_agent returned wrong schema"`.
+
 Persist the full JSON output regardless of status:
 ```bash
 python <scripts>/artifact_writer.py \
@@ -100,7 +118,7 @@ python <scripts>/artifact_writer.py \
   --base-dir <output_dir>
 ```
 
-On `status: error` → stop and return the persisted error to the caller.
+On `status: error` or schema mismatch → stop and return the persisted error to the caller.
 On `status: ok` → keep `concept_mapping` in memory for Step 04.
 
 ---
@@ -117,6 +135,14 @@ concept_mapping:      <step03_mapping.concept_mapping>
 legata_text:          <raw content of legata_input file>
 ```
 
+Validate the output contains exactly this structure before persisting — if not, treat as error:
+- `status: "ok"`
+- `patched_files.model_path` — path string ending in `.rebeca`
+- `patched_files.property_path` — path string ending in `.property`
+- `candidate_artifacts` — array (may be empty but the key must exist)
+
+If the output has `candidates` instead of `candidate_artifacts`, or is missing `patched_files`, it is wrong — stop with error `"synthesis_agent returned wrong schema"`.
+
 Persist the full JSON output regardless of status:
 ```bash
 python <scripts>/artifact_writer.py \
@@ -126,7 +152,7 @@ python <scripts>/artifact_writer.py \
   --base-dir <output_dir>
 ```
 
-On `status: error` → stop and return the persisted error to the caller.
+On `status: error` or schema mismatch → stop and return the persisted error to the caller.
 On `status: ok` → the synthesis_agent writes the patched `<output_dir>/<rule_id>/<rule_id>.rebeca` and `.property` directly. Proceed to Step 05.
 
 ---
