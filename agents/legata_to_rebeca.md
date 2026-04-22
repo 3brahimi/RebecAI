@@ -152,14 +152,14 @@ Terminal actions end the executor loop and MUST NOT invoke another step agent. E
 The FSM `action.step` field identifies the step enum, and `action.agent` specifies execution mode. Direct steps run a script; LLM
 steps invoke a subagent specified in `action.agent`. Do not remap.
 
-- Step01 / `step01_init` → `init_exec` (direct: `init_agent.py`; see <skills>/rebeca_tooling/SKILL.md for CLI contract)
-- Step02 / `step02_triage` → `triage_exec` (direct: `triage_agent.py`; see <skills>/rebeca_tooling/SKILL.md for CLI contract)
-- Step03 / `step03_abstraction` → `abstraction_agent` (LLM subagent)
-- Step04 / `step04_mapping` → `mapping_agent` (LLM subagent)
-- Step05 / `step05_synthesis` → `synthesis_agent` (LLM subagent; artifact name: `step05_candidates` ≠ enum)
-- Step06 / `step06_verification_gate` → `verification_exec` (direct: 4-phase script pipeline; see <skills>/rebeca_tooling/SKILL.md for CLI contract)
-- Step07 / `step07_packaging` → `packaging_exec` (direct: `packaging_agent.py`; see <skills>/rebeca_tooling/SKILL.md for CLI contract)
-- Step08 / `step08_reporting` → `reporting_exec` (direct: `generate_report.py` + `generate_rule_report.py`; see <skills>/rebeca_tooling/SKILL.md for CLI contract)
+- `step01_init` → `init_exec` (direct: `init_agent.py`; see <skills>/rebeca_tooling/SKILL.md for CLI contract)
+- `step02_triage` → `triage_exec` (direct: `triage_agent.py`; see <skills>/rebeca_tooling/SKILL.md for CLI contract)
+- `step03_abstraction` → `abstraction_agent` (LLM subagent)
+- `step04_mapping` → `mapping_agent` (LLM subagent)
+- `step05_synthesis` → `synthesis_agent` (LLM subagent; artifact name: `step05_candidates` ≠ enum)
+- `step06_verification_gate` → `verification_exec` (direct: 4-phase script pipeline; see <skills>/rebeca_tooling/SKILL.md for CLI contract)
+- `step07_packaging` → `packaging_exec` (direct: `packaging_agent.py`; see <skills>/rebeca_tooling/SKILL.md for CLI contract)
+- `step08_reporting` → `reporting_exec` (direct: `generate_report.py` + `generate_rule_report.py`; see <skills>/rebeca_tooling/SKILL.md for CLI contract)
 
 ## Canonical Artifact Persistence
 
@@ -182,11 +182,11 @@ python <scripts>/artifact_writer.py \
 Write is atomic (tmp→rename).
 
 Gate 0 machine-check (run before first FSM call if resuming an interrupted run):
-Installed checker path (repo): `skills/rebeca_tooling/scripts/check_artifact_gaps.py`
+Installed checker path (repo): `<scripts>/check_artifact_gaps.py`
 ```bash
 python3 <scripts>/check_artifact_gaps.py --rule-id <RULE_ID> --base-dir output
 # (equivalently, from repo root)
-python3 skills/rebeca_tooling/scripts/check_artifact_gaps.py --rule-id <RULE_ID> --base-dir output
+python3 <scripts>/check_artifact_gaps.py --rule-id <RULE_ID> --base-dir output
 ```
 
 ## issue_class Reference

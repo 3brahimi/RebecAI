@@ -61,11 +61,12 @@ check_grep_not() {
   fi
 }
 
-# AT-001: Prescribed workflow artifact exists with Step01..Step08
+# AT-001: Prescribed workflow artifact exists with canonical step enums
 echo -n "AT-001 (Prescribed Workflow Artifact): "
 if check_file "$AGENT_FILE" && \
-  check_grep "Step01" "$AGENT_FILE" && \
-  check_grep "Step08" "$AGENT_FILE"; then
+  check_grep "## Step Bindings" "$AGENT_FILE" && \
+  check_grep "step01_init" "$AGENT_FILE" && \
+  check_grep "step08_reporting" "$AGENT_FILE"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -87,11 +88,17 @@ else
   FAILED_TESTS+=("AT-002")
 fi
 
-# AT-003: Agent workflow explicitly covers Step01..Step08 with status
+# AT-003: Agent workflow explicitly covers canonical step enums (Step Bindings)
 echo -n "AT-003 (Agent Workflow Phases): "
-if check_grep "Step01" "$AGENT_FILE" && \
-  check_grep "Step02" "$AGENT_FILE" && \
-  check_grep "Step08" "$AGENT_FILE"; then
+if check_grep "## Step Bindings" "$AGENT_FILE" && \
+  check_grep "step01_init" "$AGENT_FILE" && \
+  check_grep "step02_triage" "$AGENT_FILE" && \
+  check_grep "step03_abstraction" "$AGENT_FILE" && \
+  check_grep "step04_mapping" "$AGENT_FILE" && \
+  check_grep "step05_synthesis" "$AGENT_FILE" && \
+  check_grep "step06_verification_gate" "$AGENT_FILE" && \
+  check_grep "step07_packaging" "$AGENT_FILE" && \
+  check_grep "step08_reporting" "$AGENT_FILE"; then
   echo "PASS"
   ((PASSED++))
 else
@@ -182,10 +189,9 @@ else
   FAILED_TESTS+=("AT-009")
 fi
 
-# AT-010: Agent and skill reference script interfaces
+# AT-010: Tooling skill documents script interfaces
 echo -n "AT-010 (Script Interfaces): "
-if check_grep_ci "download[_ -]rmc\|run[_ -]rmc\|Run RMC" "$AGENT_FILE" || \
-  check_grep_ci "download[_ -]rmc\|run[_ -]rmc\|Run RMC" "$ARTIFACT_ROOT/skills/legata_to_rebeca/SKILL.md"; then
+if check_grep_ci "download[_ -]rmc\|run[_ -]rmc\|Run RMC" "$ARTIFACT_ROOT/skills/rebeca_tooling/SKILL.md"; then
   echo "PASS"
   ((PASSED++))
 else

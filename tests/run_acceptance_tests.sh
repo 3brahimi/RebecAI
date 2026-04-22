@@ -17,14 +17,12 @@ FAILED=0
 
 # AT-001: Prescribed Workflow
 echo -n "AT-001 (Prescribed Workflow): "
-if [[ -f "$AGENT_FILE" ]]; then
-  if grep -q "Step01" "$AGENT_FILE"; then
-    echo "PASS"
-    ((PASSED++))
-  else
-    echo "FAIL"
-    ((FAILED++))
-  fi
+if [[ -f "$AGENT_FILE" ]] && \
+   grep -q "## Step Bindings" "$AGENT_FILE" && \
+   grep -q "step01_init" "$AGENT_FILE" && \
+   grep -q "step08_reporting" "$AGENT_FILE"; then
+  echo "PASS"
+  ((PASSED++))
 else
   echo "FAIL"
   ((FAILED++))
