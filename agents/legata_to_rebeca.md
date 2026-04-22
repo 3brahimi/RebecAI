@@ -26,10 +26,12 @@ output_dir:         <base output directory, e.g. output>
 
 **Critical workflow invariant:** The `<reference_model>` and `<reference_property>` are the **starting points** for refinement. Part 1 copies them to `<output_dir>/<rule_id>/<rule_id>.rebeca` and `<output_dir>/<rule_id>/<rule_id>.property`, and all subsequent steps refine these files **in place** until they pass verification.
 
-Subagents (LLM agents; invoked only for Steps 03, 04, 05):
-1. @abstraction_agent
-2. @mapping_agent
-3. @synthesis_agent
+**Subagents** (LLM agents; invoked only for Steps 03, 04, 05):
+- `abstraction_agent`
+- `mapping_agent`
+- `synthesis_agent`
+
+To invoke a subagent, use `@agent_name` syntax (e.g., `@abstraction_agent`) with the inputs from `action.inputs`.
 
 **Never read `.py` files under `<scripts>/`.** Run them. Their CLI contracts are documented in `rebeca_tooling` SKILL.md.
 
@@ -133,8 +135,9 @@ Repeat until a terminal action is received:
   # Step 1: Call FSM
   FSM returns: {"action": {"type": "run_step", "agent": "abstraction_agent", "inputs": {"rule_id": "Rule-22", ...}}}
   
-  # Step 2: Invoke the subagent
+  # Step 2: Invoke the subagent using @agent_name (this is an agent call, NOT a shell command)
   @abstraction_agent
+  
   rule_id: Rule-22
   legata_input: colreg/Rule22.txt
   output_dir: output
@@ -158,20 +161,15 @@ Repeat until a terminal action is received:
 
   **Branch B — LLM subagent steps** (`action.agent` ∈ {`abstraction_agent`,
   `mapping_agent`, `synthesis_agent`}):
-  a. Invoke the subagent by calling it with `@<agent_name>` and passing `action.inputs` as a formatted message:
+  a. Invoke the subagent using `@agent_name` syntax (NOT a shell command):
      ```
      @abstraction_agent
      
-     <pass all fields from action.inputs as key: value pairs>
+     rule_id: <value from action.inputs>
+     legata_input: <value from action.inputs>
+     output_dir: <value from action.inputs>
      ```
-     Example:
-     ```
-     @abstraction_agent
-     
-     rule_id: Rule-22
-     legata_input: colreg/Rule22.txt
-     output_dir: output
-     ```
+     Pass all fields from `action.inputs` as key-value pairs in the message.
   b. Capture the agent's JSON output as the step artifact JSON.
 
   **Both branches then:**
