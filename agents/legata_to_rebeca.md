@@ -126,6 +126,28 @@ Repeat until a terminal action is received:
 
 3. **If `action.type` is `run_step` or `refine_step`:**
 
+  **CRITICAL: You MUST execute the step agent before calling the FSM again. Do not skip this.**
+
+  **Example of a complete iteration:**
+  ```
+  # Step 1: Call FSM
+  FSM returns: {"action": {"type": "run_step", "agent": "abstraction_agent", "inputs": {"rule_id": "Rule-22", ...}}}
+  
+  # Step 2: Invoke the subagent
+  @abstraction_agent
+  rule_id: Rule-22
+  legata_input: colreg/Rule22.txt
+  output_dir: output
+  
+  # Step 3: Capture JSON output from subagent
+  subagent_output = {"status": "ok", "rule_id": "Rule-22", ...}
+  
+  # Step 4: Persist artifact
+  python <scripts>/artifact_writer.py --rule-id Rule-22 --step step03_abstraction --data '<subagent_output>' --base-dir output
+  
+  # Step 5: Loop back to Step 1 (call FSM again)
+  ```
+
   Dispatch on `action.agent`:
 
   **Branch A — Direct script steps** (`action.agent` ∈ {`verification_exec`, `packaging_exec`, `reporting_exec`}):
@@ -136,7 +158,20 @@ Repeat until a terminal action is received:
 
   **Branch B — LLM subagent steps** (`action.agent` ∈ {`abstraction_agent`,
   `mapping_agent`, `synthesis_agent`}):
-  a. Invoke the subagent specified in `action.agent` with `action.inputs` verbatim.
+  a. Invoke the subagent by calling it with `@<agent_name>` and passing `action.inputs` as a formatted message:
+     ```
+     @abstraction_agent
+     
+     <pass all fields from action.inputs as key: value pairs>
+     ```
+     Example:
+     ```
+     @abstraction_agent
+     
+     rule_id: Rule-22
+     legata_input: colreg/Rule22.txt
+     output_dir: output
+     ```
   b. Capture the agent's JSON output as the step artifact JSON.
 
   **Both branches then:**
