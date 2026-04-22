@@ -29,13 +29,15 @@ Installed tool paths (substituted by the harness at invocation time):
 
 CLI contracts for all scripts are in `rebeca_tooling` SKILL.md. **Never read `.py` files — run them.**
 
+## Subagent Invocation
+
+Steps 02, 03, and 04 delegate to named subagents using `@agent_name` syntax. **Never invent or simplify a subagent's output schema** — the exact JSON contract in each agent file is what downstream steps depend on.
+
 ---
 
 ## Pipeline
 
-Run these steps in order. On any failure: persist the error artifact (see each step), then stop and return the error to the caller.
-
-**CRITICAL: Steps 02, 03, and 04 MUST delegate to their named subagent using `@agent_name` syntax. Do NOT perform their work inline, do NOT simulate their output, and do NOT write JSON by hand. If a subagent cannot be invoked, stop the pipeline and report the failure — do not substitute.**
+Run these steps in order. On any failure: persist the error artifact, then stop and return the error to the caller.
 
 ---
 
@@ -54,9 +56,8 @@ Proceed directly to Step 02.
 
 ---
 
-### Step 02 — Abstraction (`@abstraction_agent`)
+### Step 02 — Abstraction (`abstraction_agent`)
 
-Invoke:
 ```
 @abstraction_agent
 
@@ -79,9 +80,8 @@ On `status: ok` → keep `abstraction_summary` in memory for Step 03.
 
 ---
 
-### Step 03 — Mapping (`@mapping_agent`)
+### Step 03 — Mapping (`mapping_agent`)
 
-Invoke:
 ```
 @mapping_agent
 
@@ -105,9 +105,8 @@ On `status: ok` → keep `concept_mapping` in memory for Step 04.
 
 ---
 
-### Step 04 — Synthesis (`@synthesis_agent`)
+### Step 04 — Synthesis (`synthesis_agent`)
 
-Invoke:
 ```
 @synthesis_agent
 
@@ -128,7 +127,7 @@ python <scripts>/artifact_writer.py \
 ```
 
 On `status: error` → stop and return the persisted error to the caller.
-On `status: ok` → the synthesis_agent writes the patched `<output_dir>/<rule_id>/<rule_id>.rebeca` and `.property` directly — no additional file copy needed.
+On `status: ok` → the synthesis_agent writes the patched `<output_dir>/<rule_id>/<rule_id>.rebeca` and `.property` directly. Proceed to Step 05.
 
 ---
 
@@ -152,14 +151,13 @@ python <scripts>/artifact_writer.py \
   --base-dir <output_dir>
 ```
 
-On non-zero exit or `passes_gate: false` → stop and return the persisted artifact to the caller. Do not continue.
-On `passes_gate: true` → keep `rmc_exit_code`, `vacuity_status.is_vacuous`, and `mutation_score` in memory for Step 07.
+On non-zero exit or `passes_gate: false` → stop and return the persisted artifact to the caller.
+On `passes_gate: true` → keep `rmc_exit_code`, `vacuity_status.is_vacuous`, `mutation_score` and proceed to Step 06.
 
 ---
 
 ### Step 06 — Packaging
 
-Assemble and persist the packaging manifest:
 ```bash
 python <scripts>/artifact_writer.py \
   --rule-id  <rule_id> \
@@ -216,5 +214,5 @@ Return `<output_dir>/reports/<rule_id>/summary.json` to the caller.
     step05_verification_gate.json
     step06_packaging_manifest.json
     step07_reporting.json
-    candidates/                 ← synthesis candidate scratch (written by synthesis_agent)
+    candidates/                 ← synthesis candidate scratch
 ```
