@@ -1,6 +1,6 @@
 {
   "action": {
-    "agent": "triage_agent",
+    "agent": "triage_exec",
     "inputs": {
       "rule_id": "SnapTest-Rule"
     },

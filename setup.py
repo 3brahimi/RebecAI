@@ -375,9 +375,39 @@ def main():
     parser.add_argument("--commit", help="Git commit hash or branch to install (default: main)")
     parser.add_argument("--rmc-tag", help="Optional RMC release tag (e.g., v2.13)")
     parser.add_argument("--no-rmc", action="store_true")
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help=(
+            "Validate repo-local installer invariants without writing files. "
+            "Exits 0 on success, non-zero on failure."
+        ),
+    )
     parser.add_argument("--dry-run", action="store_true",
                         help="Print what would be installed without writing anything")
     args = parser.parse_args()
+
+    if args.check:
+        local_src = Path(__file__).parent
+        if not (local_src / "agents").is_dir() or not (local_src / "skills").is_dir():
+            print("✗ --check requires repo-local layout (missing agents/ or skills/ next to setup.py)")
+            return 2
+
+        ok, msgs = validate_design_coverage(local_src, strict=True)
+        for msg in msgs:
+            prefix = "✓" if ok else "✗"
+            print(f"{prefix} {msg}")
+        if not ok:
+            return 1
+
+        # Minimal runtime config expected by workflow_fsm.py
+        cfg = local_src / "configs" / "rmc_defaults.json"
+        if not cfg.exists():
+            print(f"✗ Missing required config: {cfg}")
+            return 1
+
+        print("✓ Installer self-check passed")
+        return 0
 
     if args.dry_run:
         local_src = Path(__file__).parent

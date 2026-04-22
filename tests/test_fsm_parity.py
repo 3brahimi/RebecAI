@@ -25,7 +25,7 @@ PAYLOADS = [
         "action": {
             "type": "run_step",
             "step": "step02_triage",
-            "agent": "triage_agent",
+            "agent": "triage_exec",
             "inputs": {"rule_id": "Rule-22"}
         },
         "reason_code": "artifact_missing",
@@ -58,7 +58,7 @@ PAYLOADS = [
         "status": "invalid_status",
         "current_state": "x",
         "next_state": "y",
-        "action": {"type": "run_step", "step": "step01_init", "agent": "init_agent", "inputs": {}},
+        "action": {"type": "run_step", "step": "step01_init", "agent": "init_exec", "inputs": {}},
         "reason_code": "z",
         "required_artifacts": [],
         "missing_artifacts": []
@@ -68,7 +68,7 @@ PAYLOADS = [
         "status": "ok",
         "current_state": "x",
         "next_state": "y",
-        "action": {"type": "run_step", "step": "invalid_step", "agent": "init_agent", "inputs": {}},
+        "action": {"type": "run_step", "step": "invalid_step", "agent": "init_exec", "inputs": {}},
         "reason_code": "z",
         "required_artifacts": [],
         "missing_artifacts": []
@@ -130,7 +130,7 @@ PAYLOADS = [
 def test_validation_parity(payload):
     """
     Ensure validate_step_output results match jsonschema.validate results.
-    This proves that the embedded schema in step_schemas.py is functionally 
+    This proves that the embedded schema in step_schemas.py is functionally
     equivalent to the external JSON schema for these key constraints.
     """
     # 1. Run against ground-truth JSON schema

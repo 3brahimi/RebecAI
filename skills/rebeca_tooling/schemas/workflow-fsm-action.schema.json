@@ -55,14 +55,14 @@
         "agent": {
           "type": "string",
           "enum": [
-            "init_agent",
-            "triage_agent",
+            "init_exec",
+            "triage_exec",
             "abstraction_agent",
             "mapping_agent",
             "synthesis_agent",
-            "verification_agent",
-            "packaging_agent",
-            "reporting_agent",
+            "verification_exec",
+            "packaging_exec",
+            "reporting_exec",
             "none"
           ],
           "description": "Subagent to invoke."

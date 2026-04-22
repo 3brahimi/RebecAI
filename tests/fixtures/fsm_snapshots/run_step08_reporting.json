@@ -1,6 +1,6 @@
 {
   "action": {
-    "agent": "reporting_agent",
+    "agent": "reporting_exec",
     "inputs": {
       "rule_id": "SnapTest-Rule"
     },

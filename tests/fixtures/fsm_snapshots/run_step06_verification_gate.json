@@ -1,6 +1,6 @@
 {
   "action": {
-    "agent": "verification_agent",
+    "agent": "verification_exec",
     "inputs": {
       "rule_id": "SnapTest-Rule"
     },

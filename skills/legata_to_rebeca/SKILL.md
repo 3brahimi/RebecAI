@@ -9,6 +9,12 @@ Domain knowledge for agents working with Legata rules. Tooling reference, naming
 
 ---
 
+## When to use
+
+- Converting Legata maritime safety clauses into Rebeca models and `.property` assertions.
+- Checking clause structure (`Condition`, `Exclude`, `Assure`) and mapping it to Boolean form.
+- Looking up worked examples for common transformation patterns (single-ship, multi-actor, and LTL).
+
 ## Legata Clause Structure
 
 Every Legata rule is composed of up to three named sections:

@@ -51,14 +51,14 @@ class _PipelineStep:
 
 
 _PIPELINE: tuple[_PipelineStep, ...] = (
-    _PipelineStep("start",       "step01_init",               "step01", "step01_init",              "init_agent",         "initialized"),
-    _PipelineStep("initialized", "step02_triage",             "step02", "step02_triage",            "triage_agent",       "triaged"),
+    _PipelineStep("start",       "step01_init",               "step01", "step01_init",              "init_exec",          "initialized"),
+    _PipelineStep("initialized", "step02_triage",             "step02", "step02_triage",            "triage_exec",        "triaged"),
     _PipelineStep("triaged",     "step03_abstraction",        "step03", "step03_abstraction",       "abstraction_agent",  "abstracted"),
     _PipelineStep("abstracted",  "step04_mapping",            "step04", "step04_mapping",           "mapping_agent",      "mapped"),
     _PipelineStep("mapped",      "step05_candidates",         "step05", "step05_synthesis",         "synthesis_agent",    "synthesized"),
-    _PipelineStep("synthesized", "step06_verification_gate",  "step06", "step06_verification_gate", "verification_agent", "verified"),
-    _PipelineStep("verified",    "step07_packaging_manifest", "step07", "step07_packaging",         "packaging_agent",    "packaged"),
-    _PipelineStep("packaged",    "step08_reporting",          "step08", "step08_reporting",         "reporting_agent",    "reported"),
+    _PipelineStep("synthesized", "step06_verification_gate",  "step06", "step06_verification_gate", "verification_exec",  "verified"),
+    _PipelineStep("verified",    "step07_packaging_manifest", "step07", "step07_packaging",         "packaging_exec",     "packaged"),
+    _PipelineStep("packaged",    "step08_reporting",          "step08", "step08_reporting",         "reporting_exec",     "reported"),
 )
 
 

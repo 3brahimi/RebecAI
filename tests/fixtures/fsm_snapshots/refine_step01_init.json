@@ -1,6 +1,6 @@
 {
   "action": {
-    "agent": "init_agent",
+    "agent": "init_exec",
     "inputs": {
       "attempt_index": 2,
       "budget_remaining": 0,

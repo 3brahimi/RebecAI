@@ -4,7 +4,7 @@ description: |
   Step05 specialist for LLM-assisted candidate property generation.
   Runs in parallel with Step04 (mapping_agent) after Step03 completes.
   ALL outputs are tagged is_candidate=true, mapping_path=synthesis-agent, and
-  MUST be routed to Step06 (verification_agent) before any downstream use.
+  MUST be routed to Step06 (verification_exec) before any downstream use.
 schema: <skills>/rebeca_tooling/schemas/synthesis-agent.schema.json
 skills:
   - rebeca_tooling
@@ -18,7 +18,7 @@ skills:
 Generate alternative candidate Rebeca model+property pairs from the same
 Step03 abstraction summary that feeds Step04. Candidates explore formulations
 that the deterministic mapping_agent cannot produce. Every artifact is
-explicitly non-final and must pass Step05 verification before promotion.
+explicitly non-final and must pass Step06 verification before promotion.
 
 ## Position in Pipeline
 
@@ -29,7 +29,7 @@ Step03 (abstraction_agent)
          │
          └──► Step05 (synthesis_agent)    [candidate path ← THIS AGENT]
                         │
-                        └──► Step05 (verification_agent)  [MANDATORY]
+                        └──► Step06 (verification_exec)   [MANDATORY]
 ```
 
 ## Input Schema

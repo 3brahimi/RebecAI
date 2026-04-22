@@ -1,6 +1,6 @@
 {
   "action": {
-    "agent": "init_agent",
+    "agent": "init_exec",
     "inputs": {
       "rule_id": "SnapTest-Rule"
     },

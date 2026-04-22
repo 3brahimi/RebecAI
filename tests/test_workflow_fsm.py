@@ -148,7 +148,7 @@ class TestFreshStart:
         action = _decide(RULE_ID, tmp_path, _CONFIG)
         assert action["action"]["type"] == "run_step"
         assert action["action"]["step"] == "step01_init"
-        assert action["action"]["agent"] == "init_agent"
+        assert action["action"]["agent"] == "init_exec"
 
     def test_current_state_is_start(self, tmp_path: Path) -> None:
         action = _decide(RULE_ID, tmp_path, _CONFIG)

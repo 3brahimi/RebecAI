@@ -1,6 +1,6 @@
 {
   "action": {
-    "agent": "packaging_agent",
+    "agent": "packaging_exec",
     "inputs": {
       "rule_id": "SnapTest-Rule"
     },

@@ -264,8 +264,8 @@ class TestPipelineIntegration:
         sim = _make_simulator(tmp_path)
         sim.run()
         expected_agents = [
-            "init_agent", "triage_agent", "abstraction_agent", "mapping_agent",
-            "synthesis_agent", "verification_agent", "packaging_agent", "reporting_agent",
+            "init_exec", "triage_exec", "abstraction_agent", "mapping_agent",
+            "synthesis_agent", "verification_exec", "packaging_exec", "reporting_exec",
         ]
         actual_agents = [inv.agent for inv in sim.invocations]
         assert actual_agents == expected_agents
@@ -514,7 +514,7 @@ class TestCoordinatorCompliance:
                 "current_state": "start",
                 "next_state": "initialized",
                 "action": {"type": "run_step", "step": "step01_init",
-                           "agent": "init_agent", "inputs": custom_inputs},
+                           "agent": "init_exec", "inputs": custom_inputs},
                 "reason_code": "artifact_missing",
                 "required_artifacts": ["step01_init.json"],
                 "missing_artifacts": ["step01_init.json"],
@@ -595,14 +595,14 @@ class TestCoordinatorCompliance:
         assert sim.invocations == []
 
     def test_wrong_agent_is_never_called(self, tmp_path: Path) -> None:
-        """FSM says triage_agent; compliance requires ONLY triage_agent is called, not others."""
+        """FSM says triage_exec; compliance requires ONLY triage_exec is called, not others."""
         action_sequence = [
             {
                 "status": "ok",
                 "current_state": "initialized",
                 "next_state": "triaged",
                 "action": {"type": "run_step", "step": "step02_triage",
-                           "agent": "triage_agent", "inputs": {"rule_id": RULE_ID}},
+                           "agent": "triage_exec", "inputs": {"rule_id": RULE_ID}},
                 "reason_code": "artifact_missing",
                 "required_artifacts": ["step02_triage.json"],
                 "missing_artifacts": ["step02_triage.json"],
@@ -633,9 +633,9 @@ class TestCoordinatorCompliance:
         sim.run()
 
         agents_called = {inv.agent for inv in sim.invocations}
-        assert agents_called == {"triage_agent"}
+        assert agents_called == {"triage_exec"}
         assert "mapping_agent" not in agents_called
-        assert "init_agent" not in agents_called
+        assert "init_exec" not in agents_called
 
     def test_refine_step_inputs_contain_feedback_fields(self, tmp_path: Path) -> None:
         """For refine_step actions, action.inputs must include FSM feedback fields verbatim."""

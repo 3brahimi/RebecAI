@@ -67,7 +67,7 @@ def run_triage(data: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def run_verification(data: Dict[str, Any]) -> Dict[str, Any]:
-    # Placeholder — real verification is driven by verification_agent via coordinator.
+    # Placeholder — real verification is driven by verification_exec via coordinator.
     # This stub returns a structurally correct payload so integration tests can exercise
     # the artifact-write path without invoking RMC.
     return {

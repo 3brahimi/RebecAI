@@ -79,7 +79,7 @@ VALID_FIXTURES: dict[str, dict[str, object]] = {
         "action": {
             "type": "run_step",
             "step": "step02_triage",
-            "agent": "triage_agent",
+            "agent": "triage_exec",
             "inputs": {"rule_id": "Rule-22"},
         },
         "reason_code": "artifact_missing",

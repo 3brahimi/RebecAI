@@ -31,7 +31,7 @@ VALID_RUN_STEP = {
     "action": {
         "type": "run_step",
         "step": "step02_triage",
-        "agent": "triage_agent",
+        "agent": "triage_exec",
         "inputs": {"rule_id": "Rule-22"}
     },
     "reason_code": "artifact_missing",
@@ -90,7 +90,7 @@ def test_refine_step_missing_inputs():
     invalid = copy.deepcopy(VALID_REFINE_STEP)
     # Remove one required refinement field
     invalid["action"]["inputs"].pop("issue_class")
-    
+
     with pytest.raises(ValidationError) as exc_info:
         validate(instance=invalid, schema=FSM_SCHEMA)
     assert "'issue_class' is a required property" in str(exc_info.value)
@@ -99,7 +99,7 @@ def test_finish_requires_none_step_agent():
     """If action.type is finish, step and agent MUST be 'none'."""
     invalid = copy.deepcopy(VALID_FINISH)
     invalid["action"]["step"] = "step08_reporting"
-    
+
     with pytest.raises(ValidationError) as exc_info:
         validate(instance=invalid, schema=FSM_SCHEMA)
     assert "'none' was expected" in str(exc_info.value)

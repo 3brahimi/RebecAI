@@ -123,14 +123,14 @@ output_dir:         output/Rule-22
 
 ```
 legata_to_rebeca (coordinator)
-├── Step01 → init_agent           validate inputs, provision RMC, snapshot
-├── Step02 → triage_agent         classify rule formalization status
+├── Step01 → init_exec            validate inputs, provision RMC, snapshot
+├── Step02 → triage_exec          classify rule formalization status
 ├── Step03 → abstraction_agent    extract actors, discretize variables
 ├── Step04 → mapping_agent        generate .rebeca model + .property file
 ├── Step05 → synthesis_agent      LLM-assisted candidate generation (parallel)
-├── Step06 → verification_agent   RMC + vacuity check + mutation scoring
-├── Step07 → packaging_agent      collect and package artifacts
-└── Step08 → reporting_agent      score (100-point rubric) + reports
+├── Step06 → verification_exec    RMC + vacuity check + mutation scoring
+├── Step07 → packaging_exec       collect and package artifacts
+└── Step08 → reporting_exec       score (100-point rubric) + reports
 ```
 
 ## Agents & Skills
@@ -140,14 +140,14 @@ legata_to_rebeca (coordinator)
 | Agent | Step | Description |
 | :--- | :--- | :--- |
 | `legata_to_rebeca` | Coordinator | Orchestrates Step01–Step08, manages shared_state |
-| `init_agent` | Step01 | Validates inputs, provisions RMC, captures golden snapshot |
-| `triage_agent` | Step02 | Classifies rule status: formalized / incomplete / incorrect / not-formalized |
+| `init_exec` | Step01 | Validates inputs, provisions RMC, captures golden snapshot |
+| `triage_exec` | Step02 | Classifies rule status: formalized / incomplete / incorrect / not-formalized |
 | `abstraction_agent` | Step03 | Extracts actors, applies naming conventions, discretizes variables |
 | `mapping_agent` | Step04 | Generates `.rebeca` model and `.property` file |
 | `synthesis_agent` | Step05 | LLM-assisted candidate property generation (requires Step06 validation) |
-| `verification_agent` | Step06 | Runs RMC, vacuity check, mutation scoring |
-| `packaging_agent` | Step07 | Collects and packages pipeline artifacts |
-| `reporting_agent` | Step08 | Produces per-rule scorecards and aggregate reports |
+| `verification_exec` | Step06 | Runs RMC, vacuity check, mutation scoring |
+| `packaging_exec` | Step07 | Collects and packages pipeline artifacts |
+| `reporting_exec` | Step08 | Produces per-rule scorecards and aggregate reports |
 
 ### Skills
 
@@ -156,8 +156,8 @@ legata_to_rebeca (coordinator)
 | `rebeca_tooling` | All specialists | Schemas + script documentation; 14 Python dumb tools |
 | `rebeca_handbook` | abstraction, mapping, synthesis, verification, reporting | Modeling best practices |
 | `legata_to_rebeca` | Coordinator | Workflow guidance |
-| `rebeca_mutation` | verification_agent | Mutation testing patterns |
-| `rebeca_hallucination` | verification_agent, reporting_agent | Hallucination detection patterns |
+| `rebeca_mutation` | verification_exec | Mutation testing patterns |
+| `rebeca_hallucination` | verification_exec, reporting_exec | Hallucination detection patterns |
 
 ## Installation Details
 

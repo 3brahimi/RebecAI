@@ -549,6 +549,143 @@ def verify_rule(rule_id: str, model_path: str, property_path: str) -> dict:
 | `shadow_compare.py` | Parity comparison between two completed runs — artifact presence and schema validity | ✓ | ✓ | ✗ (use directly) |
 | `cleanup_outputs.py` | Remove scratch work directories while preserving promoted finals and reports | ✓ | ✓ | ✗ (use directly) |
 
+### Direct Exec Step CLIs (Coordinator Reference)
+
+These CLIs are used by the coordinator for the deterministic pipeline steps.
+
+**Naming rule:** reference steps by the `workflow_fsm.py` `action.step` enum and execution mode by the `action.agent` enum.
+
+- `step01_init` / `init_exec`
+- `step02_triage` / `triage_exec`
+- `step06_verification_gate` / `verification_exec`
+- `step07_packaging` / `packaging_exec`
+- `step08_reporting` / `reporting_exec`
+
+The coordinator must treat scripts as black-box CLIs:
+- Exit `0` = success; stdout contains the step artifact JSON.
+- Non-zero exit = failure; stdout is treated as an error envelope and propagated by the coordinator.
+
+#### `step01_init` (`init_exec`) — Init snapshot + toolchain stamp
+
+```bash
+python3 <scripts>/init_agent.py \
+  --rule-id      <rule_id> \
+  --model        <model_path> \
+  --property     <property_path> \
+  --snapshot-out <snapshot_out>
+```
+
+Notes:
+- `--snapshot-out` is a path to the canonical snapshot JSON (typically under `output/snapshots/`).
+- The coordinator persists the script's stdout as the `step01_init` artifact via `artifact_writer.py`.
+
+#### `step02_triage` (`triage_exec`) — Rule classification + routing
+
+```bash
+python3 <scripts>/triage_agent.py \
+  --rule-id     <rule_id> \
+  --legata-path <legata_path> \
+  [--colreg-text "<colreg_text>"]
+```
+
+Notes:
+- If `routing.path == "skip"` in the returned JSON, the coordinator must treat the run as a terminal `skip` (see coordinator terminal handling).
+
+#### `step06_verification_gate` (`verification_exec`) — Verification pipeline (4 phases)
+
+`step06` is implemented as a deterministic multi-script pipeline. The coordinator must run phases in order and assemble the output contract from phase outputs.
+
+Phase 0 — Syntax (RMC parse + C++ compile + model outcome):
+
+```bash
+python3 <scripts>/run_rmc.py \
+  --jar <jar> \
+  --model <model_path> \
+  --property <property_path> \
+  --output-dir <verification_run_dir>/rmc \
+  --timeout-seconds 120 \
+  --run-model-outcome \
+  --output-file <verification_run_dir>/rmc_details.json
+```
+
+Phase 1 — Mutation (only if Phase 0 exit_code == 0):
+
+```bash
+python3 <scripts>/mutation_engine.py \
+  --rule-id <rule_id> \
+  --model <model_path> \
+  --property <property_path> \
+  --strategy all \
+  --output-file <verification_run_dir>/mutation_candidates.json
+
+python3 <scripts>/mutation_engine.py \
+  --rule-id <rule_id> \
+  --model <model_path> \
+  --property <property_path> \
+  --strategy all \
+  --run-with-jar <jar> \
+  --run-with-model <model_path> \
+  --run-with-property <property_path> \
+  --run-timeout 60 \
+  --max-mutants 50 \
+  --total-timeout 600 \
+  --seed 42 \
+  --output-file <verification_run_dir>/mutation_killrun.json
+```
+
+Phase 2 — Vacuity (only if Phase 0 exit_code == 0):
+
+```bash
+python3 <scripts>/vacuity_checker.py \
+  --jar <jar> \
+  --model <model_path> \
+  --property <property_path> \
+  --output-dir <verification_run_dir> \
+  --timeout-seconds 60 \
+  --output-file <verification_run_dir>/vacuity_check.json \
+  --output-json
+```
+
+Phase 3 — Hallucination audit (always runs):
+
+```bash
+python3 <scripts>/symbol_differ.py \
+  --snapshot <snapshot_path> \
+  --model <model_path> \
+  --property <property_path> \
+  --rmc-exit-code <phase0_exit_code> \
+  --rmc-stderr-log <verification_run_dir>/rmc/rmc_stderr.log \
+  --output-json
+```
+
+Notes:
+- `<verification_run_dir>` must be derived via `output_policy.verification_paths(rule_id, run_id).run_dir`.
+- After a passing run, publish `<verification_run_dir>` to `output/verification/<rule_id>/current/`.
+
+#### `step07_packaging` (`packaging_exec`) — Promote/copy artifacts into final rule directory
+
+```bash
+python3 <scripts>/packaging_agent.py \
+  --rule-id        <rule_id> \
+  --model-path     <model_path> \
+  --property-path  <property_path> \
+  --rmc-output-dir <verification_run_dir> \
+  --dest-dir       output/<rule_id>
+```
+
+Notes:
+- The persisted artifact name differs from the step enum: `step07_packaging_manifest` (see `workflow_fsm.py` and `run_pipeline.py` mapping).
+
+#### `step08_reporting` (`reporting_exec`) — Aggregate + per-rule reports
+
+```bash
+python3 <scripts>/generate_report.py --output-dir output/reports
+python3 <scripts>/generate_rule_report.py --rule-dir output/reports/<rule_id>
+```
+
+Notes:
+- Reports must exist under `output/reports/<rule_id>/` (e.g. `summary.json`, `summary.md`, `verification.json`, `quality_gates.json`).
+
 ## JSON Output Purity Contract
 
 For every script supporting `--output-json`:
