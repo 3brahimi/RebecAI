@@ -38,13 +38,8 @@ Schema: `<skills>/rebeca_tooling/schemas/mapping-agent.schema.json` → `input` 
 5. **Refine the `.property` file** using the canonical assertion pattern, updating the `define` block and `Assertion` to match Legata semantics.
 6. Write both refined files back to `<output_dir>` (overwrite in place).
 7. Validate output against schema.
-8. Persist the canonical step artifact atomically:
-   ```bash
-   python <scripts>/artifact_writer.py \
-     --rule-id <rule_id> --step step04_mapping \
-     --data '<output_contract_json>' [--base-dir output]
-   ```
-9. Emit success contract; exit 0. On any failure emit Error Envelope; exit 1.
+8. Return the output contract JSON to the coordinator (do not call artifact_writer - coordinator handles persistence).
+9. On any failure emit Error Envelope.
 
 ## Canonical Assertion Pattern
 

@@ -124,15 +124,9 @@ failure, schema validation violation.
 
 ## Canonical Artifact Persistence (REQUIRED)
 
-After all candidate artifacts are written and the output contract is assembled, persist the canonical step artifact atomically **before** returning output to the coordinator:
+After all candidate artifacts are written and the output contract is assembled, return the output contract JSON to the coordinator (do not call artifact_writer - coordinator handles persistence).
 
-```bash
-python <scripts>/artifact_writer.py \
-  --rule-id <rule_id> --step step05_candidates \
-  --data '<output_contract_json>' [--base-dir output]
-```
-
-The `step05_candidates.json` artifact is required by Gate 0 and must contain `candidate_artifacts[]` with `model_path`, `property_path`, `is_candidate`, `confidence`, `mapping_path` per item.
+The output contract must contain `candidate_artifacts[]` with `model_path`, `property_path`, `is_candidate`, `confidence`, `mapping_path` per item.
 
 ## Output Patch (for coordinator)
 
