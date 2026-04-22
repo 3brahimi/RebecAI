@@ -24,7 +24,7 @@ Step03 (abstraction_agent)   — abstracts Legata/COLREG concrete values → sym
 Step04 (mapping_agent)       — maps Legata concepts → Rebeca concepts (JSON only, no file writes)
          │
          ▼
-Step05 (synthesis_agent)     — THIS AGENT: applies the mapping as surgical patches + generates candidates
+Step05 (synthesis_agent)     — THIS AGENT: applies the mapping as surgical patches
          │
          ▼
 Step06 (verification_exec)   — MANDATORY before any candidate is promoted
@@ -39,10 +39,18 @@ Step06 (verification_exec)   — MANDATORY before any candidate is promoted
 | `rule_id`            | string | yes      | Rule identifier (e.g. `Rule-22`)                                                 |
 | `abstraction_summary`| object | yes      | Step03 output: `actor_map`, `variable_map`, `naming_contract`                    |
 | `concept_mapping`    | object | yes      | Step04 output: `statevar_patches`, `queue_size_patches`, `define_patches`, `assertion_lines` (array) |
-| `legata_text`        | string | no       | Raw Legata source (for enriching heuristics on alternative candidates)           |
+| `legata_text`        | string | no       | Raw Legata source (for enriching heuristics)                                     |
 | `output_dir`         | string | yes      | Base output directory                                                            |
 
 **Prerequisite check (REQUIRED before any work):** Verify that both `step02_abstraction.json` and `step03_mapping.json` exist under `<output_dir>/work/<rule_id>/`. If either is missing, emit an Error Envelope: `"Prerequisites not met: <missing artifact> must exist before synthesis"`.
+
+
+## Output Rules
+**ABSOLUTE OUTPUT RULE — read this before writing any file:**
+- You write exactly TWO files: `<output_dir>/<rule_id>/<rule_id>.rebeca` and `<output_dir>/<rule_id>/<rule_id>.property`.
+- Do NOT create any other files, regardless of how many clauses the rule has.
+- Do NOT create clause-specific files (e.g. `Rule22b_Large.property` is WRONG).
+- All assertion lines from `assertion_lines` go into the single `<rule_id>.property` file.
 
 ## Tasks (in order)
 
@@ -57,15 +65,8 @@ Step06 (verification_exec)   — MANDATORY before any candidate is promoted
 6. Apply `concept_mapping.assertion_lines` to the `.property` file:
    - For each string in the array: add or replace the matching assertion entry (identified by the label before the colon) in the `Assertion { }` block only. All entries go in the single existing `Assertion { }` block.
 7. Write both patched files back in place. The output MUST be the original file with only the listed sections changed — every other line is preserved verbatim.
-
-**ABSOLUTE OUTPUT RULE — read this before writing any file:**
-- You write exactly TWO files: `<output_dir>/<rule_id>/<rule_id>.rebeca` and `<output_dir>/<rule_id>/<rule_id>.property`.
-- Do NOT create any other files, regardless of how many clauses the rule has.
-- Do NOT create clause-specific files (e.g. `Rule22b_Large.property` is WRONG).
-- All assertion lines from `assertion_lines` go into the single `<rule_id>.property` file.
-8. Generate two alternative candidate formulations from the patched baseline (see Generation Strategies below), writing each to `<output_dir>/work/<rule_id>/candidates/`.
-9. Assemble and return the output contract JSON to the coordinator (do not call artifact_writer — coordinator handles persistence).
-10. On any failure emit the Error Envelope.
+8. Assemble and return the output contract JSON to the coordinator (do not call artifact_writer — coordinator handles persistence).
+9.  On any failure emit the Error Envelope.
 
 ## Surgical Patch Rules (CRITICAL)
 

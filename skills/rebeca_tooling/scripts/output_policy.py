@@ -300,7 +300,7 @@ def step_artifact_path(rule_id: str, step: str, base_dir: Path = Path("output"))
     """
     _validate_rule_id(rule_id)
     allowed = {
-        "step02_abstraction", "step03_mapping", "step04_candidates",
+        "step02_abstraction", "step03_mapping", "step04_synthesis",
         "step05_verification_gate", "step06_packaging_manifest", "step07_reporting",
     }
     if step not in allowed:

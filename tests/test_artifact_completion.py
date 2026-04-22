@@ -50,7 +50,7 @@ STEP_PAYLOADS: dict[str, dict] = {
         "model_artifact": {"path": f"output/work/{RULE_ID}/candidates/model.rebeca"},
         "property_artifact": {"path": f"output/work/{RULE_ID}/candidates/model.property"},
     },
-    "step04_candidates": {
+    "step04_synthesis": {
         "status": "ok",
         "source_file_path": RULE_ID,
         "candidate_artifacts": [
@@ -106,7 +106,7 @@ STEP_PAYLOADS: dict[str, dict] = {
 _STEP_SCHEMA_KEY = {
     "step02_abstraction": "step03",
     "step03_mapping": "step04",
-    "step04_candidates": "step05",
+    "step04_synthesis": "step05",
     "step05_verification_gate": "step06",
     "step06_packaging_manifest": "step07",
     "step07_reporting": "step08",

@@ -139,15 +139,14 @@ Validate the output contains exactly this structure before persisting — if not
 - `status: "ok"`
 - `patched_files.model_path` — path string ending in `.rebeca`
 - `patched_files.property_path` — path string ending in `.property`
-- `candidate_artifacts` — array (may be empty but the key must exist)
 
-If the output has `candidates` instead of `candidate_artifacts`, or is missing `patched_files`, it is wrong — stop with error `"synthesis_agent returned wrong schema"`.
+If the output is missing `patched_files`, it is wrong — stop with error `"synthesis_agent returned wrong schema"`.
 
 Persist the full JSON output regardless of status:
 ```bash
 python <scripts>/artifact_writer.py \
   --rule-id  <rule_id> \
-  --step     step04_candidates \
+  --step     step04_synthesis \
   --data     '<full agent JSON output>' \
   --base-dir <output_dir>
 ```
@@ -236,9 +235,8 @@ Return `<output_dir>/reports/<rule_id>/summary.json` to the caller.
   work/<rule_id>/
     step02_abstraction.json
     step03_mapping.json
-    step04_candidates.json
+    step04_synthesis.json
     step05_verification_gate.json
     step06_packaging_manifest.json
     step07_reporting.json
-    candidates/                 ← synthesis candidate scratch
 ```

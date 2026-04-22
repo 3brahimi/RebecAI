@@ -256,7 +256,7 @@ class TestEnumToArtifactMapping:
         """Document the three intentional enum≠artifact cases and catch unexpected ones."""
         fsm = _import_from_scripts("workflow_fsm")
         expected_divergences = {
-            "step05_synthesis": "step04_candidates",
+            "step05_synthesis": "step04_synthesis",
             "step07_packaging": "step06_packaging_manifest",
         }
         actual_divergences = {
@@ -272,10 +272,10 @@ class TestEnumToArtifactMapping:
         )
 
     def test_coordinator_doc_lists_artifact_names_not_enums_for_divergent_steps(self):
-        """The doc mapping section must use artifact names (step04_candidates, not step05_synthesis)."""
+        """The doc mapping section must use artifact names (step04_synthesis, not step05_synthesis)."""
         text = COORDINATOR_MD.read_text(encoding="utf-8")
-        assert "step04_candidates" in text, (
-            "Coordinator doc must list artifact name 'step04_candidates', not enum 'step05_synthesis'"
+        assert "step04_synthesis" in text, (
+            "Coordinator doc must list artifact name 'step04_synthesis', not enum 'step05_synthesis'"
         )
         assert "step06_packaging_manifest" in text, (
             "Coordinator doc must list artifact name 'step06_packaging_manifest', not enum 'step07_packaging'"

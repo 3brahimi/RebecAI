@@ -38,7 +38,7 @@ _ROOT_CONFIG = str(Path(__file__).parent.parent / "configs" / "rmc_defaults.json
 _STEP_ENUM_TO_ARTIFACT: dict[str, str] = {
     "step02_abstraction":       "step02_abstraction",
     "step03_mapping":           "step03_mapping",
-    "step05_synthesis":         "step04_candidates",
+    "step05_synthesis":         "step04_synthesis",
     "step05_verification_gate": "step05_verification_gate",
     "step07_packaging":         "step06_packaging_manifest",
     "step07_reporting":         "step07_reporting",
@@ -404,7 +404,7 @@ class TestPipelineRecovery:
         sim.run()
 
         # Replace step05 with a skeleton (missing required candidate_artifacts)
-        step05_path = step_artifact_path(RULE_ID, "step04_candidates", tmp_path)
+        step05_path = step_artifact_path(RULE_ID, "step04_synthesis", tmp_path)
         step05_path.write_text(json.dumps({"status": "ok"}))
         _reset(RULE_ID, tmp_path, config)
 
