@@ -35,18 +35,11 @@ CLI contracts for all scripts are in `rebeca_tooling` SKILL.md. **Never read `.p
 
 Run these steps in order. Stop immediately on any failure and return the error to the caller.
 
-After each LLM step, persist the agent's JSON output atomically:
-```bash
-python <scripts>/artifact_writer.py \
-  --rule-id  <rule_id> \
-  --step     <artifact_name> \
-  --data     '<json_output>' \
-  --base-dir <output_dir>
-```
-
 ---
 
 ### Step 01 — Initialise
+
+**No artifact is written for this step.**
 
 ```bash
 mkdir -p <output_dir>/<rule_id>
@@ -69,8 +62,18 @@ legata_input:  <legata_input>
 output_dir:    <output_dir>
 ```
 
-On `status: ok` → persist as `step02_abstraction`; keep it for Step 03.
 On `status: error` → stop and propagate the agent's error envelope.
+
+On `status: ok` → persist the full JSON output:
+```bash
+python <scripts>/artifact_writer.py \
+  --rule-id  <rule_id> \
+  --step     step02_abstraction \
+  --data     '<full agent JSON output>' \
+  --base-dir <output_dir>
+```
+
+Keep `abstraction_summary` in memory for Step 03.
 
 ---
 
@@ -86,8 +89,18 @@ output_dir:           <output_dir>
 abstraction_summary:  <step02_abstraction.abstraction_summary>
 ```
 
-On `status: ok` → persist as `step03_mapping`; keep `result.concept_mapping` for Step 04.
 On `status: error` → stop and propagate.
+
+On `status: ok` → persist the full JSON output:
+```bash
+python <scripts>/artifact_writer.py \
+  --rule-id  <rule_id> \
+  --step     step03_mapping \
+  --data     '<full agent JSON output>' \
+  --base-dir <output_dir>
+```
+
+Keep `concept_mapping` in memory for Step 04.
 
 ---
 
@@ -104,10 +117,18 @@ concept_mapping:      <step03_mapping.concept_mapping>
 legata_text:          <raw content of legata_input file>
 ```
 
-On `status: ok` → persist as `step04_candidates`.
 On `status: error` → stop and propagate.
 
-The synthesis_agent writes the patched `<output_dir>/<rule_id>/<rule_id>.rebeca` and `.property` directly.
+On `status: ok` → persist the full JSON output:
+```bash
+python <scripts>/artifact_writer.py \
+  --rule-id  <rule_id> \
+  --step     step04_candidates \
+  --data     '<full agent JSON output>' \
+  --base-dir <output_dir>
+```
+
+The synthesis_agent writes the patched `<output_dir>/<rule_id>/<rule_id>.rebeca` and `.property` directly — no additional file copy needed.
 
 ---
 
@@ -122,23 +143,30 @@ python <scripts>/verify_gate.py \
   --output-dir <output_dir>/verification/<rule_id>
 ```
 
-On exit code 0 and `passes_gate: true` → persist stdout JSON as `step05_verification_gate`, continue.
-On any failure (non-zero exit, `passes_gate: false`, parse error) → stop immediately and surface the full stdout/stderr to the caller.
+On non-zero exit or `passes_gate: false` → stop immediately and surface the full stdout/stderr to the caller. Do not continue.
+
+On `passes_gate: true` → persist stdout JSON:
+```bash
+python <scripts>/artifact_writer.py \
+  --rule-id  <rule_id> \
+  --step     step05_verification_gate \
+  --data     '<verify_gate.py stdout>' \
+  --base-dir <output_dir>
+```
+
+Keep `rmc_exit_code`, `vacuity_status.is_vacuous`, and `mutation_score` in memory for Step 07.
 
 ---
 
 ### Step 06 — Packaging
 
-Write and persist as `step06_packaging_manifest`:
-```json
-{
-  "status": "ok",
-  "rule_id": "<rule_id>",
-  "finals": [
-    "<output_dir>/<rule_id>/<rule_id>.rebeca",
-    "<output_dir>/<rule_id>/<rule_id>.property"
-  ]
-}
+Assemble and persist the packaging manifest:
+```bash
+python <scripts>/artifact_writer.py \
+  --rule-id  <rule_id> \
+  --step     step06_packaging_manifest \
+  --data     '{"status":"ok","rule_id":"<rule_id>","finals":["<output_dir>/<rule_id>/<rule_id>.rebeca","<output_dir>/<rule_id>/<rule_id>.property"]}' \
+  --base-dir <output_dir>
 ```
 
 ---
@@ -158,8 +186,18 @@ python <scripts>/score_single_rule.py \
 
 CLI contract: `rebeca_tooling` SKILL.md → **Direct Exec Step CLIs**.
 
-On exit code 0 → persist stdout as `step07_reporting`; return `<output_dir>/reports/<rule_id>/summary.json` to the caller.
 On failure → stop and propagate stderr.
+
+On success → persist stdout:
+```bash
+python <scripts>/artifact_writer.py \
+  --rule-id  <rule_id> \
+  --step     step07_reporting \
+  --data     '<generate_report.py stdout>' \
+  --base-dir <output_dir>
+```
+
+Return `<output_dir>/reports/<rule_id>/summary.json` to the caller.
 
 ---
 
@@ -168,9 +206,16 @@ On failure → stop and propagate stderr.
 ```
 <output_dir>/
   <rule_id>/
-    <rule_id>.rebeca          ← final model
-    <rule_id>.property        ← final property
-  verification/<rule_id>/     ← verify_gate.py outputs
-  reports/<rule_id>/          ← summary.json, summary.md, verification.json, quality_gates.json
-  work/<rule_id>/candidates/  ← synthesis candidate scratch (written by synthesis_agent)
+    <rule_id>.rebeca            ← final model
+    <rule_id>.property          ← final property
+  verification/<rule_id>/       ← verify_gate.py outputs
+  reports/<rule_id>/            ← summary.json, summary.md, verification.json, quality_gates.json
+  work/<rule_id>/
+    step02_abstraction.json
+    step03_mapping.json
+    step04_candidates.json
+    step05_verification_gate.json
+    step06_packaging_manifest.json
+    step07_reporting.json
+    candidates/                 ← synthesis candidate scratch (written by synthesis_agent)
 ```
