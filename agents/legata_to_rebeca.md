@@ -161,16 +161,27 @@ Repeat until a terminal action is received:
 
   **Branch B — LLM subagent steps** (`action.agent` ∈ {`abstraction_agent`,
   `mapping_agent`, `synthesis_agent`}):
-  a. Invoke the subagent using `@agent_name` syntax (NOT a shell command):
+  a. **Enrich inputs** before invoking the subagent. The FSM only provides `rule_id` (and
+     refinement fields for `refine_step`); the coordinator must add prior artifacts:
+
+     | `action.agent`       | Extra fields to add to inputs                                                  |
+     |----------------------|--------------------------------------------------------------------------------|
+     | `abstraction_agent`  | `legata_input`, `output_dir` (from coordinator's own required inputs)          |
+     | `mapping_agent`      | `legata_input`, `output_dir`, `abstraction_summary` (from `step03_abstraction.json` `.abstraction_summary`) |
+     | `synthesis_agent`    | `output_dir`, `abstraction_summary` (from `step03_abstraction.json`), `concept_mapping` (from `step04_mapping.json` `.concept_mapping`), `legata_text` (raw content of `legata_input`) |
+
+  b. Invoke the subagent using `@agent_name` syntax (NOT a shell command), passing all
+     enriched fields as key-value pairs:
      ```
-     @abstraction_agent
-     
-     rule_id: <value from action.inputs>
-     legata_input: <value from action.inputs>
-     output_dir: <value from action.inputs>
+     @synthesis_agent
+
+     rule_id: <rule_id>
+     output_dir: <output_dir>
+     abstraction_summary: <step03_abstraction.json contents>
+     concept_mapping: <step04_mapping.json .concept_mapping>
+     legata_text: <raw legata file content>
      ```
-     Pass all fields from `action.inputs` as key-value pairs in the message.
-  b. Capture the agent's JSON output as the step artifact JSON.
+  c. Capture the agent's JSON output as the step artifact JSON.
 
   **Both branches then:**
   d. Persist the artifact:

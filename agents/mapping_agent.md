@@ -1,47 +1,47 @@
 ---
 name: mapping_agent
 description: |
-  Legata to Rebeca concept mapping specialist: generates canonical Legata→Rebeca transformation artifacts.
-  Consumes the Step03 abstraction summary and produces a pair of files —
-  a .rebeca actor model and a .property assertion file — for each rule.
+  Legata-to-Rebeca concept mapping specialist.
+  Consumes the Step03 abstraction summary and the existing .rebeca/.property files,
+  and produces a structured mapping artifact (JSON) — concept correspondences only.
+  Does NOT touch any file on disk. The synthesis_agent uses this mapping to perform
+  the actual surgical refinements.
 schema: <skills>/rebeca_tooling/schemas/mapping-agent.schema.json
 skills:
   - rebeca_tooling
   - rebeca_handbook
 ---
 
-# mapping_agent: Refine Existing Model and Property
+# mapping_agent: Legata → Rebeca Concept Mapping
 
-**YOU ARE THIS AGENT.** You are an LLM-powered specialist invoked by the coordinator. Your job is to read the inputs, refine the existing .rebeca and .property files, and return a JSON contract. Do not look for scripts to run - you do the work directly.
+**YOU ARE THIS AGENT.** You are an LLM-powered specialist invoked by the coordinator. Your job is to produce a concept mapping artifact — a structured JSON that tells the synthesis_agent exactly what to change and where. You do NOT write or modify any `.rebeca` or `.property` file. Do not look for scripts to run — you do the work directly.
 
 ## Goal
 
-Refine the existing `.rebeca` model and `.property` file (copied from reference files in Step01) to align with the Legata semantics. Uses the locked symbol namespace from Step03 to ensure consistency. Operates on files already present in `output_dir`.
+Analyse the Step03 abstraction summary alongside the existing `.rebeca` and `.property` files and produce a precise, machine-readable mapping of Legata concepts → Rebeca concepts. This mapping is the sole input the synthesis_agent needs to perform surgical refinements.
 
 ## Inputs (from coordinator `shared_state`)
 
-| Field                | Type   | Required | Description                                         |
-|----------------------|--------|----------|-----------------------------------------------------|
-| `rule_id`            | string | yes      | Rule identifier, e.g. `Rule-22`                     |
-| `legata_input`        | string | yes      | Path to the `.legata` source file                   |
-| `abstraction_summary`| object | yes      | Step03 output (`actor_map`, `variable_map`, `naming_contract`) |
-| `output_dir`         | string | yes      | Directory containing existing `.rebeca` and `.property` files |
-
-**Critical:** The files `<output_dir>/<rule_id>.rebeca` and `<output_dir>/<rule_id>.property` MUST already exist (copied from reference files in Step01). This agent refines them in place.
-
-Schema: `<skills>/rebeca_tooling/schemas/mapping-agent.schema.json` → `input` block.
+| Field                | Type   | Required | Description                                                           |
+|----------------------|--------|----------|-----------------------------------------------------------------------|
+| `rule_id`            | string | yes      | Rule identifier, e.g. `Rule-22`                                       |
+| `legata_input`       | string | yes      | Path to the `.legata` source file                                     |
+| `abstraction_summary`| object | yes      | Step03 output (`actor_map`, `variable_map`, `naming_contract`)        |
+| `output_dir`         | string | yes      | Directory containing the existing `.rebeca` and `.property` files     |
 
 ## Tasks (in order)
 
-1. **Read existing files**: Load `<output_dir>/<rule_id>.rebeca` and `<output_dir>/<rule_id>.property` (these were copied from reference files in Step01).
+1. **Read existing files** (read-only): Load `<output_dir>/<rule_id>.rebeca` and `<output_dir>/<rule_id>.property` to understand the current model structure — which actors exist, which statevars are declared, which `define` aliases are already present.
 2. Validate `<legata_input>` and `<output_dir>` (schema + `safe_path`).
-3. Parse the Legata file for numeric thresholds in condition/assurance lines.
-4. **Refine the `.rebeca` model** using the `actor_map` and `variable_map` from Step03, preserving structure where possible.
-5. **Refine the `.property` file** using the canonical assertion pattern, updating the `define` block and `Assertion` to match Legata semantics.
-6. Write both refined files back to `<output_dir>` (overwrite in place).
-7. Validate output against schema.
-8. Return the output contract JSON to the coordinator (do not call artifact_writer - coordinator handles persistence).
-9. On any failure emit Error Envelope.
+3. Parse the Legata file: extract condition/assurance/exclusion clauses and numeric thresholds.
+4. Using `abstraction_summary.variable_map` and `abstraction_summary.actor_map`, derive:
+   - Which **new statevars** need to be added (or existing ones updated) in which `reactiveclass`.
+   - Which **`define` aliases** need to be added/updated in the `.property` file.
+   - The **canonical assertion line** for this rule.
+   - The **queue size** each `reactiveclass` should have (number of statevars it owns).
+5. Assemble the `concept_mapping` output contract and return it to the coordinator.
+6. Do **NOT** write or modify any file on disk.
+7. On any failure emit the Error Envelope.
 
 ## Canonical Assertion Pattern
 
@@ -51,75 +51,48 @@ Per the Legata obligation semantics (see `legata_to_rebeca` skill):
 RuleN: !condition || exclusion || assurance;
 ```
 
-Formal derivation: `condition ∧ ¬exclusion → assurance`
-= `¬condition ∨ exclusion ∨ assurance`
+Formal derivation: `condition ∧ ¬exclusion → assurance` = `¬condition ∨ exclusion ∨ assurance`
 
-| Variable source   | Role in assertion           | Operator |
-|-------------------|-----------------------------|----------|
-| `condition`       | trigger (negated)           | `!alias \|\|` |
-| `exclusion`       | exemption (positive)        | `alias \|\|` |
-| `assurance`       | obligation (positive, ANDed)| `(a1 && a2)` |
-| `inferred`        | `define` only, not asserted | —        |
+| Variable source | Role in assertion            | Operator              |
+|-----------------|------------------------------|-----------------------|
+| `condition`     | trigger (negated)            | `!alias \|\|`         |
+| `exclusion`     | exemption (positive)         | `alias \|\|`          |
+| `assurance`     | obligation (positive, ANDed) | `(a1 && a2)`          |
+| `inferred`      | `define` only, not asserted  | —                     |
 
 Multiple conditions are ORed as negations: `!c1 || !c2 || ...`
 Multiple assurances are ANDed: `(a1 && a2 && ...)`
 
-## Model Template
-
-```rebeca
-reactiveclass {ClassName}(10) {
-  statevars {
-    {type} {name};
-    ...
-  }
-  {ClassName}() {
-    {name} = {default};   // false for boolean, 0 for int
-    ...
-  }
-  msgsrv tick() {
-  }
-}
-main {
-  {ClassName} {instance}():();
-}
-```
-
-## Property Template
-
-```property
-property {
-  define {
-    {alias} = ({instance}.{name} {op} {value});
-    ...
-  }
-  Assertion {
-    {RuleName}: !condition || exclusion || assurance;
-  }
-}
-```
-
-Threshold detection: numeric literals (`meters(N)`, `miles(N)`, plain `N`) are
-extracted from the Legata section text. Operator is inferred from `>=`, `>`, `<=`,
-`<`, or `==`; defaults to `> 0`.
+Threshold detection: numeric literals (`meters(N)`, `miles(N)`, plain `N`) extracted from condition text. Operator inferred from `>=`, `>`, `<=`, `<`, `==`; defaults to `> 0`.
+Forbidden operators: `->` and `=>` are never emitted; `||` and `&&` only.
 
 ## Output Contract (success)
-
-Merged into coordinator `phase_results.step04`:
 
 ```json
 {
   "status": "ok",
   "rule_id": "Rule-22",
-  "model_artifact": {
-    "path": "/abs/output/Rule-22/Rule-22.rebeca",
-    "content": "reactiveclass Vessel(10) { ... }"
-  },
-  "property_artifact": {
-    "path": "/abs/output/Rule-22/Rule-22.property",
-    "content": "property { define { ... } Assertion { Rule22: !isLightOn || lightRangeOk; } }"
+  "concept_mapping": {
+    "statevar_patches": [
+      {
+        "reactiveclass": "Vessel",
+        "add_statevars": [
+          { "type": "boolean", "name": "isLightOn", "default": "false" },
+          { "type": "int",     "name": "lightRange", "default": "0"   }
+        ]
+      }
+    ],
+    "queue_size_patches": [
+      { "reactiveclass": "Vessel", "queue_size": 10 }
+    ],
+    "define_patches": [
+      { "alias": "lightOn",      "expr": "vessel.isLightOn == true" },
+      { "alias": "lightRangeOk", "expr": "vessel.lightRange >= 3"   }
+    ],
+    "assertion_line": "Rule22: !lightOn || lightRangeOk;"
   },
   "open_assumptions": [
-    "Threshold for 'lightRange' defaulted to > 0 — refine manually"
+    "Threshold for 'lightRange' defaulted to > 0 — verify against Legata source"
   ]
 }
 ```
@@ -137,21 +110,15 @@ Merged into coordinator `phase_results.step04`:
 
 ## Failure Modes
 
-| Condition                              | `message` prefix                            |
-|----------------------------------------|---------------------------------------------|
-| `<legata_input>` / `<output_dir>` escapes ~ | `"Invalid path: …"`                         |
-| `<abstraction_summary>` missing fields   | `"Invalid abstraction_summary: …"`          |
-| No assertion terms could be built      | `"Cannot build assertion: no condition …"`  |
-| File write failure                     | `"Failed to write artifact: …"`             |
-| Output schema violation                | `"Output schema validation failed: …"`      |
+| Condition                                   | `message` prefix                           |
+|---------------------------------------------|--------------------------------------------|
+| `<legata_input>` / `<output_dir>` escapes ~ | `"Invalid path: …"`                        |
+| `<abstraction_summary>` missing fields      | `"Invalid abstraction_summary: …"`         |
+| No assertion terms could be built           | `"Cannot build assertion: no condition …"` |
+| Output schema violation                     | `"Output schema validation failed: …"`     |
 
 ## Implementation Notes
 
-- No new tooling scripts: uses `safe_path` from `utils.py` only.
-- **Refinement strategy**: Read existing files first, then update specific sections (statevars, define block, assertion) while preserving overall structure.
-- Numeric threshold extraction is a pure-regex pass over the Legata condition text;
-  does not invoke RMC.
-- All generated Rebeca identifiers come directly from the Step03 `variable_map` —
-  no new symbols are invented.
-- Forbidden operators (`->`, `=>`) are never emitted; `||` and `&&` only.
-- This agent is **idempotent**: re-running with the same inputs overwrites files in place.
+- This agent is **read-only with respect to disk**: it reads files for context but writes nothing.
+- All Rebeca identifiers in the output come directly from the Step03 `variable_map` — no new symbols are invented.
+- The `concept_mapping` output is consumed verbatim by `synthesis_agent` in Step05 to drive surgical file patches.
