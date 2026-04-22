@@ -225,98 +225,18 @@ for child in root.iterdir():
 print(f"Loaded {len(bundles)} rule bundles for consolidation")
 ```
 
-### Setup
-
-Use `setup.py` at the repo root — it handles prerequisites, RMC download, artifact installation, and path patching in one step:
-
-```bash
-# Local install (.agents/ in CWD)
-python3 setup.py
-
-# Global install (~/.agents/)
-python3 setup.py --mode global
-```
-
 ## CLI Usage
 
-All modules have command-line interfaces:
+For coordinator-invoked step CLIs, see **Direct Exec Step CLIs (Coordinator Reference)** in Module Reference below.
 
-### RMC Operations
-
-```bash
-# Run verification
-python3 <scripts>/run_rmc.py \
-  --jar .agents/rmc/rmc.jar \
-  --model model.rebeca \
-  --property property.property \
-  --output-dir output \
-  --timeout-seconds 120 \
-  --jvm-opt "-Xmx2g"
-```
-
-### Rule Triage
+For general script usage, run any script with `--help`:
 
 ```bash
-# Classify rule status
-python3 <scripts>/classify_rule_status.py \
-  --legata-path legata/Rule-22.legata \
-  --output-json
-
-```
-
-### Scoring and Reporting
-
-```bash
-# Score single rule — basic
-python3 <scripts>/score_single_rule.py \
-  --rule-id Rule-22 \
-  --verify-status pass \
-  --output-json
-
-# Score with vacuity result (from verify_gate.py output):
-#   --is-vacuous true|false        feed vacuity_status.is_vacuous from gate result
-#   --assertion-id Rule22          audit trail: which assertion was checked
-# A vacuous pass downgrades status to Conditional (85/100).
-python3 <scripts>/score_single_rule.py \
-  --rule-id Rule-22 \
-  --verify-status pass \
-  --is-vacuous false \
-  --assertion-id Rule22 \
-  --output-json
-
-# Generate report — accepts JSON array, NDJSON, or file path
-# (a) from file
-python3 <scripts>/generate_report.py \
-  --input-scores scorecards.json \
-  --output-dir reports/ \
-  --format both
-
-# (b) from single scorecard on stdin (NDJSON or JSON object)
-python3 score_single_rule.py --rule-id Rule-22 --verify-status pass --output-json \
-  | python3 <scripts>/generate_report.py
-
-# Generate comprehensive per-rule report from a rule output folder
-python3 <scripts>/generate_rule_report.py \
-  --rule-dir output/rules/Rule-22
-# default output: output/rules/reports/Rule-22/comprehensive_report.{json,md}
-
-# Consolidate all rule folders and emit aggregate markdown/json + plots
-python3 <scripts>/consolidate_reports.py \
-  --root-dir output/rules \
-  --output-dir output/reports
-
-# Headless/CI mode if plot rendering is unavailable
-python3 <scripts>/consolidate_reports.py \
-  --root-dir output/rules \
-  --output-dir output/reports \
-  --skip-plots
-```
-
-### Installation
-
-```bash
-# Complete setup (use setup.py — see above)
-python3 setup.py
+python3 <scripts>/run_rmc.py --help
+python3 <scripts>/classify_rule_status.py --help
+python3 <scripts>/verify_gate.py --help
+python3 <scripts>/score_single_rule.py --help
+python3 <scripts>/generate_report.py --help
 ```
 
 ## Platform Support
