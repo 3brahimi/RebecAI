@@ -87,22 +87,32 @@ _Three-part loop: conditional reset → execution loop → terminal handler. Do 
 ### Part 1 — Conditional Reset
 
 Check `<output_dir>/work/<rule_id>/fsm_state.json`:
-- If the file does **not exist**, or `terminal_status` is not `null`:
 
+**Case A — file does NOT exist (truly fresh run):**
 ```bash
-# CRITICAL: Copy reference files as starting points for refinement
+# Copy reference files as starting points — only on a fresh run
 mkdir -p <output_dir>/<rule_id>
-cp <reference_model> <output_dir>/<rule_id>/<rule_id>.rebeca
+cp <reference_model>    <output_dir>/<rule_id>/<rule_id>.rebeca
 cp <reference_property> <output_dir>/<rule_id>/<rule_id>.property
 
-# Then reset FSM
+# Initialize FSM state
 python <scripts>/workflow_fsm.py \
   --rule-id <rule_id> --base-dir <output_dir> --reset
 ```
-
-**Important:** The reference files MUST be copied before the first FSM call. All subsequent steps (abstraction, mapping, synthesis, verification) will refine these files in place.
-
 Parse the JSON action from stdout and proceed to Part 2 with that action (do not call the FSM a second time).
+
+**Case B — file exists and `terminal_status` is `null` (pipeline mid-run):**
+Do nothing in Part 1. Proceed directly to Part 2 (call FSM without `--reset`).
+
+**Case C — file exists and `terminal_status` is `"finished"`:**
+Pipeline already complete. Go directly to Part 3 (`finish`). Do not reset or re-run anything.
+
+**Case D — file exists and `terminal_status` is `"blocked"` (budget exhausted):**
+Do NOT reset and do NOT re-copy reference files — existing artifacts and refined model files must be preserved.
+Go directly to Part 3 (`block`). Surface `reason_code` and `missing_artifacts` to the caller.
+Only reset if the caller explicitly requests a fresh restart (by deleting `fsm_state.json` manually before re-invoking).
+
+**NEVER** re-copy reference files if `<output_dir>/<rule_id>/<rule_id>.rebeca` already exists — it may contain synthesis-agent refinements that took multiple pipeline steps to produce.
 
 ### Part 2 — Execution Loop
 
