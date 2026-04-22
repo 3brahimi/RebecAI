@@ -176,8 +176,10 @@ python <scripts>/artifact_writer.py \
   --base-dir <output_dir>
 ```
 
-On non-zero exit or `passes_gate: false` → stop and return the persisted artifact to the caller.
-On `passes_gate: true` → keep `rmc_exit_code`, `vacuity_status.is_vacuous`, `mutation_score` and proceed to Step 06.
+**FAIL-FAST — CHECK THIS BEFORE DOING ANYTHING ELSE:**
+Parse `passes_gate` from the JSON output above.
+- If `passes_gate` is `false` (or the JSON is missing): **STOP IMMEDIATELY. Do NOT run Step 06 or Step 07.** Return the persisted artifact to the caller as the final result.
+- Only if `passes_gate` is `true`: keep `rmc_exit_code`, `vacuity_status.is_vacuous`, `mutation_score` and proceed to Step 06.
 
 ---
 
@@ -201,12 +203,12 @@ python <scripts>/score_single_rule.py \
   --rmc-exit-code  <step05_verification_gate.rmc_exit_code> \
   --is-vacuous     <step05_verification_gate.vacuity_status.is_vacuous> \
   --mutation-score <step05_verification_gate.mutation_score> \
-  --output-dir     <output_dir> \
+  --output-json \
 | python <scripts>/generate_report.py \
   --output-dir <output_dir>/reports/<rule_id>
 ```
 
-CLI contract: `rebeca_tooling` SKILL.md → **Direct Exec Step CLIs**.
+`score_single_rule.py` does NOT accept `--output-dir`. Use `--output-json` to pipe its scorecard JSON to `generate_report.py`. `generate_report.py` accepts `--output-dir`.
 
 On failure → stop and propagate stderr.
 
