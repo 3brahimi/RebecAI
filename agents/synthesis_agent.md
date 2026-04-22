@@ -1,8 +1,8 @@
 ---
 name: synthesis_agent
 description: |
-  Step05 specialist for LLM-assisted candidate property generation.
-  Runs in parallel with Step04 (mapping_agent) after Step03 completes.
+  Rebeca synthesis specialist for LLM-assisted candidate state variable and assertion generation.
+  Runs after `mapping_agent` and `abstraction_agent` complete.
   ALL outputs are tagged is_candidate=true, mapping_path=synthesis-agent, and
   MUST be routed to Step06 (verification_exec) before any downstream use.
 schema: <skills>/rebeca_tooling/schemas/synthesis-agent.schema.json
@@ -11,7 +11,9 @@ skills:
   - rebeca_handbook
 ---
 
-# Step05 Subagent: LLM-Assisted Candidate Generation
+# Synthesis_agent: LLM-Assisted Candidate Generation
+
+**YOU ARE THIS AGENT.** You are an LLM-powered specialist invoked by the coordinator. Your job is to read the inputs, generate candidate .rebeca and .property files, and return a JSON contract. Do not look for scripts to run - you do the work directly.
 
 ## Goal
 

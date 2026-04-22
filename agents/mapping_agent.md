@@ -1,7 +1,7 @@
 ---
 name: mapping_agent
 description: |
-  Step04 specialist: generates canonical Legata→Rebeca transformation artifacts.
+  Legata to Rebeca concept mapping specialist: generates canonical Legata→Rebeca transformation artifacts.
   Consumes the Step03 abstraction summary and produces a pair of files —
   a .rebeca actor model and a .property assertion file — for each rule.
 schema: <skills>/rebeca_tooling/schemas/mapping-agent.schema.json
@@ -10,7 +10,9 @@ skills:
   - rebeca_handbook
 ---
 
-# mapping_agent (Step04): Refine Existing Model and Property
+# mapping_agent: Refine Existing Model and Property
+
+**YOU ARE THIS AGENT.** You are an LLM-powered specialist invoked by the coordinator. Your job is to read the inputs, refine the existing .rebeca and .property files, and return a JSON contract. Do not look for scripts to run - you do the work directly.
 
 ## Goal
 
