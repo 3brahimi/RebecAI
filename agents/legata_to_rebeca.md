@@ -33,13 +33,15 @@ CLI contracts for all scripts are in `rebeca_tooling` SKILL.md. **Never read `.p
 
 ## Pipeline
 
-Run these steps in order. Stop immediately on any failure and return the error to the caller.
+Run these steps in order. On any failure: persist the error artifact (see each step), then stop and return the error to the caller.
+
+**CRITICAL: Steps 02, 03, and 04 MUST delegate to their named subagent using `@agent_name` syntax. Do NOT perform their work inline, do NOT simulate their output, and do NOT write JSON by hand. If a subagent cannot be invoked, stop the pipeline and report the failure — do not substitute.**
 
 ---
 
 ### Step 01 — Initialise
 
-**No artifact is written for this step.**
+**Do NOT call `artifact_writer.py` for this step. No JSON artifact is written.**
 
 ```bash
 mkdir -p <output_dir>/<rule_id>
@@ -48,6 +50,7 @@ cp <reference_property> <output_dir>/<rule_id>/<rule_id>.property
 ```
 
 If either `cp` fails, stop: `"Init failed: could not copy reference files"`.
+Proceed directly to Step 02.
 
 ---
 
@@ -62,9 +65,7 @@ legata_input:  <legata_input>
 output_dir:    <output_dir>
 ```
 
-On `status: error` → stop and propagate the agent's error envelope.
-
-On `status: ok` → persist the full JSON output:
+Persist the full JSON output regardless of status:
 ```bash
 python <scripts>/artifact_writer.py \
   --rule-id  <rule_id> \
@@ -73,7 +74,8 @@ python <scripts>/artifact_writer.py \
   --base-dir <output_dir>
 ```
 
-Keep `abstraction_summary` in memory for Step 03.
+On `status: error` → stop and return the persisted error to the caller.
+On `status: ok` → keep `abstraction_summary` in memory for Step 03.
 
 ---
 
@@ -89,9 +91,7 @@ output_dir:           <output_dir>
 abstraction_summary:  <step02_abstraction.abstraction_summary>
 ```
 
-On `status: error` → stop and propagate.
-
-On `status: ok` → persist the full JSON output:
+Persist the full JSON output regardless of status:
 ```bash
 python <scripts>/artifact_writer.py \
   --rule-id  <rule_id> \
@@ -100,7 +100,8 @@ python <scripts>/artifact_writer.py \
   --base-dir <output_dir>
 ```
 
-Keep `concept_mapping` in memory for Step 04.
+On `status: error` → stop and return the persisted error to the caller.
+On `status: ok` → keep `concept_mapping` in memory for Step 04.
 
 ---
 
@@ -117,9 +118,7 @@ concept_mapping:      <step03_mapping.concept_mapping>
 legata_text:          <raw content of legata_input file>
 ```
 
-On `status: error` → stop and propagate.
-
-On `status: ok` → persist the full JSON output:
+Persist the full JSON output regardless of status:
 ```bash
 python <scripts>/artifact_writer.py \
   --rule-id  <rule_id> \
@@ -128,7 +127,8 @@ python <scripts>/artifact_writer.py \
   --base-dir <output_dir>
 ```
 
-The synthesis_agent writes the patched `<output_dir>/<rule_id>/<rule_id>.rebeca` and `.property` directly — no additional file copy needed.
+On `status: error` → stop and return the persisted error to the caller.
+On `status: ok` → the synthesis_agent writes the patched `<output_dir>/<rule_id>/<rule_id>.rebeca` and `.property` directly — no additional file copy needed.
 
 ---
 
@@ -143,9 +143,7 @@ python <scripts>/verify_gate.py \
   --output-dir <output_dir>/verification/<rule_id>
 ```
 
-On non-zero exit or `passes_gate: false` → stop immediately and surface the full stdout/stderr to the caller. Do not continue.
-
-On `passes_gate: true` → persist stdout JSON:
+Persist stdout regardless of outcome:
 ```bash
 python <scripts>/artifact_writer.py \
   --rule-id  <rule_id> \
@@ -154,7 +152,8 @@ python <scripts>/artifact_writer.py \
   --base-dir <output_dir>
 ```
 
-Keep `rmc_exit_code`, `vacuity_status.is_vacuous`, and `mutation_score` in memory for Step 07.
+On non-zero exit or `passes_gate: false` → stop and return the persisted artifact to the caller. Do not continue.
+On `passes_gate: true` → keep `rmc_exit_code`, `vacuity_status.is_vacuous`, and `mutation_score` in memory for Step 07.
 
 ---
 

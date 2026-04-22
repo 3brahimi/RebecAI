@@ -37,9 +37,9 @@ Schema: `<skills>/rebeca_tooling/schemas/abstraction-agent.schema.json` → `inp
 ## Tasks (in order)
 
 1. Validate `<legata_input>` and `<output_dir>` (schema + `safe_path`).
-2. **Read existing reference files**: Load `<output_dir>/<rule_id>.rebeca` and `<output_dir>/<rule_id>.property` to extract existing actors, statevars, and property definitions.
-3. Read Legata content; extract actors and section-labelled conditions.
-4. Supplement with existing symbols from reference files (Step 2).
+2. **Read existing reference files** (for structural context only): Load `<output_dir>/<rule_id>.rebeca` and `<output_dir>/<rule_id>.property` to understand what actors and statevars already exist. **Do NOT copy actors from the reference model into `actor_map`** — the reference model may contain simulation infrastructure actors (e.g. `MapServer`, `Environment`) that are unrelated to the rule being abstracted.
+3. Read Legata content; extract actors and section-labelled conditions that are **directly named or implied by this specific rule**.
+4. Use existing symbols from reference files only to avoid naming collisions — do not include them in the output.
 5. Supplement with `<colreg_text>` keyword corpus (when provided).
 6. Apply naming conventions deterministically (see table below).
 7. Map each concept to a Rebeca type and bounds.
