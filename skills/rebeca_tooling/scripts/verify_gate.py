@@ -69,8 +69,8 @@ def run_verification_gate(
         run_model_outcome=True,
     )
 
-    exit_code: int = rmc_result.get("exit_code", -1)
-    verified: bool = exit_code == 0
+    exit_code: int = rmc_result.get("rmc_exit_code", 0)
+    verified: bool = rmc_result.get("rmc_outcome") == "verified"
 
     payload: Dict[str, Any] = {
         "verified": verified,
