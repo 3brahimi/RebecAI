@@ -44,8 +44,8 @@ You are a **thin executor**. You do not decide what step comes next — the FSM 
 
 ## Direct Script Steps
 
-Steps 01, 02, 06, 07, 08 are deterministic — the coordinator runs their scripts directly.
-No LLM agent is invoked.
+Steps 02, 06, 07, 08 are deterministic — the coordinator runs their scripts directly.
+No LLM agent is invoked. Step01 (initialization) is handled by the coordinator in Part 1 of the Executor Protocol (copying reference files).
 
 This coordinator is intentionally a **thin executor**: it documents only dispatch (what to run) and does not embed full CLI flags.
 Authoritative CLI contracts live in `rebeca_tooling` SKILL.md under:
@@ -128,7 +128,7 @@ Repeat until a terminal action is received:
 
   Dispatch on `action.agent`:
 
-  **Branch A — Direct script steps** (`action.agent` ∈ {`init_exec`, `triage_exec`,
+  **Branch A — Direct script steps** (`action.agent` ∈ {`triage_exec`,
   `verification_exec`, `packaging_exec`, `reporting_exec`}):
   a. Run the script identified by the Step Bindings mapping for this `action.step`, mapping
     `action.inputs` fields to CLI arguments (CLI contract: `rebeca_tooling/SKILL.md`).
@@ -175,7 +175,6 @@ steps invoke a subagent specified in `action.agent`. Do not remap.
 
 CLI contracts for direct steps are in `<skills>/rebeca_tooling/SKILL.md` → **Direct Exec Step CLIs** (line 379).
 
-- `step01_init` → `init_exec` (direct: no standalone CLI — handled by coordinator setup)
 - `step02_triage` → `triage_exec` (direct: `classify_rule_status.py`; `<skills>/rebeca_tooling/SKILL.md` line 383)
 - `step03_abstraction` → `abstraction_agent` (LLM subagent)
 - `step04_mapping` → `mapping_agent` (LLM subagent)

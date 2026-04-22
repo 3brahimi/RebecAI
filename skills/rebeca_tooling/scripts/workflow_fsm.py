@@ -51,8 +51,7 @@ class _PipelineStep:
 
 
 _PIPELINE: tuple[_PipelineStep, ...] = (
-    _PipelineStep("start",       "step01_init",               "step01", "step01_init",              "init_exec",          "initialized"),
-    _PipelineStep("initialized", "step02_triage",             "step02", "step02_triage",            "triage_exec",        "triaged"),
+    _PipelineStep("start",       "step02_triage",             "step02", "step02_triage",            "triage_exec",        "triaged"),
     _PipelineStep("triaged",     "step03_abstraction",        "step03", "step03_abstraction",       "abstraction_agent",  "abstracted"),
     _PipelineStep("abstracted",  "step04_mapping",            "step04", "step04_mapping",           "mapping_agent",      "mapped"),
     _PipelineStep("mapped",      "step05_candidates",         "step05", "step05_synthesis",         "synthesis_agent",    "synthesized"),
@@ -274,6 +273,7 @@ def _reset(rule_id: str, base_dir: Path, config: dict[str, Any]) -> dict[str, An
         "history": existing.get("history", []) + [{
             "event": "reset",
             "from_state": existing.get("current_state", "start"),
+            "note": "step01_init removed; coordinator handles reference file copy in Part 1",
             "timestamp": _now_iso(),
         }],
     }
