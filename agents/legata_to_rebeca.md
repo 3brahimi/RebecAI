@@ -44,7 +44,6 @@ For the canonical mapping from `action.step` → `action.agent` (and which scrip
 **Normative interface:** call `workflow_fsm.py` directly (as shown in the Executor Protocol below). This is the only sanctioned coordinator boundary.
 
 - `workflow_fsm.py` is the canonical FSM controller: a pure decision engine that reads artifacts from disk and prints exactly one JSON action to stdout. Coordinators MUST call it directly.
-- `run_pipeline.py` is a rollout/testing harness that wraps `workflow_fsm.py` internally. It is used for integration testing and optional automated runners — NOT by coordinators. Do not invoke `run_pipeline.py` from coordinator logic.
 
 ## Output Contract
 
@@ -152,14 +151,16 @@ Terminal actions end the executor loop and MUST NOT invoke another step agent. E
 The FSM `action.step` field identifies the step enum, and `action.agent` specifies execution mode. Direct steps run a script; LLM
 steps invoke a subagent specified in `action.agent`. Do not remap.
 
-- `step01_init` → `init_exec` (direct: `init_agent.py`; see <skills>/rebeca_tooling/SKILL.md for CLI contract)
-- `step02_triage` → `triage_exec` (direct: `triage_agent.py`; see <skills>/rebeca_tooling/SKILL.md for CLI contract)
+CLI contracts for direct steps are in `<skills>/rebeca_tooling/SKILL.md` → **Direct Exec Step CLIs** (line 379).
+
+- `step01_init` → `init_exec` (direct: no standalone CLI — handled by coordinator setup)
+- `step02_triage` → `triage_exec` (direct: `classify_rule_status.py`; `<skills>/rebeca_tooling/SKILL.md` line 383)
 - `step03_abstraction` → `abstraction_agent` (LLM subagent)
 - `step04_mapping` → `mapping_agent` (LLM subagent)
 - `step05_synthesis` → `synthesis_agent` (LLM subagent; artifact name: `step05_candidates` ≠ enum)
-- `step06_verification_gate` → `verification_exec` (direct: 4-phase script pipeline; see <skills>/rebeca_tooling/SKILL.md for CLI contract)
-- `step07_packaging` → `packaging_exec` (direct: `packaging_agent.py`; see <skills>/rebeca_tooling/SKILL.md for CLI contract)
-- `step08_reporting` → `reporting_exec` (direct: `generate_report.py` + `generate_rule_report.py`; see <skills>/rebeca_tooling/SKILL.md for CLI contract)
+- `step06_verification_gate` → `verification_exec` (direct: `verify_gate.py`; `<skills>/rebeca_tooling/SKILL.md` line 393)
+- `step07_packaging` → `packaging_exec` (direct: no standalone CLI — coordinator copies finals to output dir)
+- `step08_reporting` → `reporting_exec` (direct: `score_single_rule.py | generate_report.py`; `<skills>/rebeca_tooling/SKILL.md` line 415)
 
 ## Canonical Artifact Persistence
 
@@ -167,7 +168,6 @@ The executor persists step artifacts via `artifact_writer.py`. The FSM's `action
 
 Anti-drift rule (canonical runtime sources that MUST agree):
 - `workflow_fsm` (`workflow_fsm._PIPELINE` step enums + artifact names)
-- `run_pipeline` (`run_pipeline._STEP_ENUM_TO_ARTIFACT` mapping)
 - `output_policy` (the allowed artifact name set enforced by `output_policy.step_artifact_path`)
 
 In the executor loop, use an explicit mapping placeholder rather than passing `action.step` raw:
@@ -180,14 +180,6 @@ python <scripts>/artifact_writer.py \
 ```
 
 Write is atomic (tmp→rename).
-
-Gate 0 machine-check (run before first FSM call if resuming an interrupted run):
-Installed checker path (repo): `<scripts>/check_artifact_gaps.py`
-```bash
-python3 <scripts>/check_artifact_gaps.py --rule-id <RULE_ID> --base-dir output
-# (equivalently, from repo root)
-python3 <scripts>/check_artifact_gaps.py --rule-id <RULE_ID> --base-dir output
-```
 
 ## issue_class Reference
 

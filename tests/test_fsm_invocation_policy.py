@@ -1,10 +1,6 @@
-"""Invocation-policy tests: workflow_fsm.py is the canonical coordinator interface;
-run_pipeline.py is a rollout/testing harness that wraps it.
+"""Invocation-policy tests: workflow_fsm.py is the canonical coordinator interface.
 
-Guards against:
-- Coordinator accidentally delegating to run_pipeline instead of workflow_fsm.
-- run_pipeline being misidentified as the canonical FSM boundary.
-- workflow_fsm gaining a dependency on run_pipeline (direction reversal).
+Guards against workflow_fsm losing its identity as a pure decision engine.
 """
 
 from __future__ import annotations
@@ -21,65 +17,7 @@ SCRIPTS = Path(__file__).resolve().parents[1] / "skills" / "rebeca_tooling" / "s
 AGENTS_DIR = Path(__file__).resolve().parents[1] / "agents"
 
 WORKFLOW_FSM = SCRIPTS / "workflow_fsm.py"
-RUN_PIPELINE = SCRIPTS / "run_pipeline.py"
 COORDINATOR_MD = AGENTS_DIR / "legata_to_rebeca.md"
-
-
-# ---------------------------------------------------------------------------
-# Source-level dependency direction
-# ---------------------------------------------------------------------------
-
-class TestDependencyDirection:
-    """run_pipeline imports/calls workflow_fsm; workflow_fsm must NOT import run_pipeline."""
-
-    def _get_imports(self, path: Path) -> set[str]:
-        tree = ast.parse(path.read_text(encoding="utf-8"))
-        names: set[str] = set()
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
-                for alias in node.names:
-                    names.add(alias.name)
-            elif isinstance(node, ast.ImportFrom):
-                if node.module:
-                    names.add(node.module)
-        return names
-
-    def _get_string_literals(self, path: Path) -> list[str]:
-        tree = ast.parse(path.read_text(encoding="utf-8"))
-        return [
-            node.s
-            for node in ast.walk(tree)
-            if isinstance(node, ast.Constant) and isinstance(node.s, str)
-        ]
-
-    def test_workflow_fsm_does_not_import_run_pipeline(self):
-        imports = self._get_imports(WORKFLOW_FSM)
-        assert "run_pipeline" not in imports, (
-            "workflow_fsm.py must not import run_pipeline — dependency direction would be reversed"
-        )
-
-    def test_workflow_fsm_does_not_reference_run_pipeline_as_string(self):
-        literals = self._get_string_literals(WORKFLOW_FSM)
-        assert not any("run_pipeline" in s for s in literals), (
-            "workflow_fsm.py must not reference run_pipeline.py in string literals"
-        )
-
-    def test_run_pipeline_references_workflow_fsm(self):
-        text = RUN_PIPELINE.read_text(encoding="utf-8")
-        assert "workflow_fsm.py" in text, (
-            "run_pipeline.py must reference workflow_fsm.py (it wraps it)"
-        )
-
-    def test_run_pipeline_calls_workflow_fsm_via_subprocess(self):
-        tree = ast.parse(RUN_PIPELINE.read_text(encoding="utf-8"))
-        string_literals = [
-            node.s
-            for node in ast.walk(tree)
-            if isinstance(node, ast.Constant) and isinstance(node.s, str)
-        ]
-        assert any("workflow_fsm" in s for s in string_literals), (
-            "run_pipeline.py must invoke workflow_fsm.py by name"
-        )
 
 
 # ---------------------------------------------------------------------------
@@ -93,12 +31,6 @@ class TestModuleDocstrings:
             "workflow_fsm.py docstring must identify it as a pure decision engine"
         )
 
-    def test_run_pipeline_docstring_identifies_executor_loop(self):
-        text = RUN_PIPELINE.read_text(encoding="utf-8")
-        assert "executor" in text.lower() or "wrapper" in text.lower() or "harness" in text.lower(), (
-            "run_pipeline.py docstring must identify it as an executor loop or harness"
-        )
-
     def test_workflow_fsm_docstring_says_no_side_effects_beyond_fsm_state(self):
         text = WORKFLOW_FSM.read_text(encoding="utf-8")
         assert "fsm_state.json" in text, (
@@ -107,49 +39,7 @@ class TestModuleDocstrings:
 
 
 # ---------------------------------------------------------------------------
-# run_pipeline.py requires FSM_CONTROLLER_ENABLED=1 (policy enforcement gate)
-# ---------------------------------------------------------------------------
-
-class TestRunPipelineFeatureFlag:
-    def test_exits_2_when_flag_unset(self, tmp_path):
-        env = os.environ.copy()
-        env.pop("FSM_CONTROLLER_ENABLED", None)
-        result = subprocess.run(
-            [sys.executable, str(RUN_PIPELINE), "--rule-id", "Rule-22",
-             "--base-dir", str(tmp_path)],
-            capture_output=True, text=True, env=env,
-        )
-        assert result.returncode == 2, (
-            f"run_pipeline.py must exit 2 when FSM_CONTROLLER_ENABLED is unset, got {result.returncode}"
-        )
-
-    def test_exits_2_when_flag_is_zero(self, tmp_path):
-        env = os.environ.copy()
-        env["FSM_CONTROLLER_ENABLED"] = "0"
-        result = subprocess.run(
-            [sys.executable, str(RUN_PIPELINE), "--rule-id", "Rule-22",
-             "--base-dir", str(tmp_path)],
-            capture_output=True, text=True, env=env,
-        )
-        assert result.returncode == 2, (
-            "run_pipeline.py must exit 2 when FSM_CONTROLLER_ENABLED=0"
-        )
-
-    def test_deprecation_stderr_mentions_workflow_fsm_alternative(self, tmp_path):
-        env = os.environ.copy()
-        env.pop("FSM_CONTROLLER_ENABLED", None)
-        result = subprocess.run(
-            [sys.executable, str(RUN_PIPELINE), "--rule-id", "Rule-22",
-             "--base-dir", str(tmp_path)],
-            capture_output=True, text=True, env=env,
-        )
-        assert "workflow_fsm.py" in result.stderr or "FSM_CONTROLLER_ENABLED" in result.stderr, (
-            "Deprecation message must reference workflow_fsm.py or FSM_CONTROLLER_ENABLED"
-        )
-
-
-# ---------------------------------------------------------------------------
-# Coordinator doc uses workflow_fsm.py, not run_pipeline.py
+# Coordinator doc uses workflow_fsm.py
 # ---------------------------------------------------------------------------
 
 class TestCoordinatorDocInvocationPolicy:
@@ -170,32 +60,6 @@ class TestCoordinatorDocInvocationPolicy:
         assert "canonical" in text and "workflow_fsm.py" in text, (
             "legata_to_rebeca.md must describe workflow_fsm.py as the canonical interface"
         )
-
-    def test_coordinator_policy_identifies_run_pipeline_as_harness(self):
-        text = COORDINATOR_MD.read_text(encoding="utf-8")
-        assert "run_pipeline.py" in text, (
-            "legata_to_rebeca.md must mention run_pipeline.py and its role"
-        )
-        # The mention must include a non-coordinator role label
-        lines = text.splitlines()
-        pipeline_lines = [l for l in lines if "run_pipeline.py" in l]
-        role_keywords = {"harness", "testing", "rollout", "wrapper", "NOT"}
-        assert any(
-            any(kw in line for kw in role_keywords) for line in pipeline_lines
-        ), (
-            "run_pipeline.py must be labelled as harness/testing/rollout/wrapper "
-            "or explicitly excluded from coordinator use"
-        )
-
-    def test_coordinator_uses_installed_gate0_checker_path(self):
-        text = COORDINATOR_MD.read_text(encoding="utf-8")
-        assert "skills/rebeca_tooling/scripts/check_artifact_gaps.py" in text, (
-            "Coordinator doc must reference installed Gate 0 checker path under skills/rebeca_tooling/scripts"
-        )
-        assert "tests/check_artifact_gaps.py" not in text, (
-            "Coordinator doc must not reference tests/check_artifact_gaps.py (tests are not installed)"
-        )
-
 
 # ---------------------------------------------------------------------------
 # Terminal handling — completeness and determinism (Issue 5)
@@ -363,32 +227,12 @@ def _import_from_scripts(name: str):
     import importlib
     if str(SCRIPTS) not in sys.path:
         sys.path.insert(0, str(SCRIPTS))
-    # Remove stale cached version if present to allow re-import
     sys.modules.pop(name, None)
     return importlib.import_module(name)
 
 
 class TestEnumToArtifactMapping:
-    """workflow_fsm, run_pipeline, and output_policy must agree on enum→artifact mapping."""
-
-    def test_run_pipeline_artifact_values_in_output_policy_allowed_set(self):
-        rp = _import_from_scripts("run_pipeline")
-        op = _import_from_scripts("output_policy")
-        # Extract allowed set from output_policy.step_artifact_path source
-        import inspect, ast as _ast
-        src = inspect.getsource(op.step_artifact_path)
-        tree = _ast.parse(src)
-        allowed: set[str] = set()
-        for node in _ast.walk(tree):
-            if isinstance(node, _ast.Set):
-                for elt in node.elts:
-                    if isinstance(elt, _ast.Constant) and isinstance(elt.s, str):
-                        allowed.add(elt.s)
-        artifact_values = set(rp._STEP_ENUM_TO_ARTIFACT.values())
-        unknown = artifact_values - allowed
-        assert not unknown, (
-            f"run_pipeline._STEP_ENUM_TO_ARTIFACT values not in output_policy allowed set: {unknown}"
-        )
+    """workflow_fsm and output_policy must agree on enum→artifact mapping."""
 
     def test_workflow_fsm_pipeline_artifacts_in_output_policy_allowed_set(self):
         fsm = _import_from_scripts("workflow_fsm")
@@ -406,31 +250,6 @@ class TestEnumToArtifactMapping:
         unknown = fsm_artifacts - allowed
         assert not unknown, (
             f"workflow_fsm._PIPELINE artifacts not in output_policy allowed set: {unknown}"
-        )
-
-    def test_workflow_fsm_and_run_pipeline_step_enums_agree(self):
-        fsm = _import_from_scripts("workflow_fsm")
-        rp = _import_from_scripts("run_pipeline")
-        fsm_enums = {step.step_enum for step in fsm._PIPELINE}
-        rp_enums = set(rp._STEP_ENUM_TO_ARTIFACT.keys())
-        assert fsm_enums == rp_enums, (
-            f"Step enum mismatch between workflow_fsm._PIPELINE and run_pipeline._STEP_ENUM_TO_ARTIFACT.\n"
-            f"  FSM only: {fsm_enums - rp_enums}\n"
-            f"  pipeline only: {rp_enums - fsm_enums}"
-        )
-
-    def test_workflow_fsm_and_run_pipeline_artifact_names_agree(self):
-        fsm = _import_from_scripts("workflow_fsm")
-        rp = _import_from_scripts("run_pipeline")
-        fsm_map = {step.step_enum: step.artifact for step in fsm._PIPELINE}
-        rp_map = rp._STEP_ENUM_TO_ARTIFACT
-        mismatches = {
-            enum: (fsm_map[enum], rp_map[enum])
-            for enum in fsm_map
-            if enum in rp_map and fsm_map[enum] != rp_map[enum]
-        }
-        assert not mismatches, (
-            f"Artifact name mismatches between workflow_fsm and run_pipeline: {mismatches}"
         )
 
     def test_known_enum_artifact_divergences_are_intentional(self):
@@ -482,9 +301,8 @@ class TestEnumToArtifactMapping:
 
     def test_coordinator_doc_has_anti_drift_note(self):
         text = COORDINATOR_MD.read_text(encoding="utf-8")
-        # Check the canonical artifact section specifically
         start = text.find("## Canonical Artifact Persistence")
         section = text[start:text.find("\n## ", start + 1)]
-        assert "workflow_fsm" in section and "run_pipeline" in section and "output_policy" in section, (
-            "Canonical Artifact Persistence must name all three runtime sources in the anti-drift note"
+        assert "workflow_fsm" in section and "output_policy" in section, (
+            "Canonical Artifact Persistence must name workflow_fsm and output_policy in the anti-drift note"
         )

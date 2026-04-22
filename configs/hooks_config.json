@@ -1,7 +1,4 @@
 {
   "enabled": true,
-  "pre_run_rmc_check": true,
-  "rmc_jar_path": ".agents/rmc/rmc.jar",
-  "rmc_url": "https://github.com/rebeca-lang/org.rebecalang.rmc/releases/latest",
-  "download_on_missing": true
+  "rmc_jar_path": ".agents/rmc/rmc.jar"
 }

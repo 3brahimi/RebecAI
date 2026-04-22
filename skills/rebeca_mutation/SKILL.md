@@ -11,11 +11,19 @@ description: |
 
 ## When to invoke
 
+Use `verify_gate.py` — it runs RMC, vacuity, and mutation in one call and returns `passes_gate`.
+Do **not** invoke `vacuity_checker.py` or `mutation_engine.py` directly.
+
+```bash
+python3 <scripts>/verify_gate.py \
+  --jar <jar> --model model.rebeca --property property.property \
+  --rule-id Rule22 --output-dir output/Rule22 --output-json
+```
+
 | Trigger | Action |
 |---------|--------|
-| After `run_rmc` returns exit code 0 (property verified) | Run vacuity check first; then run mutation suite |
-| During Step06 (Verification) quality gate | Compute mutation score; fail if score < threshold |
-| On-demand quality audit of an existing `.property` file | Run targeted mutation strategies |
+| After Step05 synthesis | Run `verify_gate.py`; check `passes_gate` |
+| During Step06 quality gate | Read `mutation_score` and `vacuity_status.is_vacuous` from gate result |
 
 ---
 
@@ -95,166 +103,16 @@ The skill emits a JSON report compatible with the agent's scoring pipeline:
 
 ---
 
-## Python Workflow
-
-```python
-from scripts import MutationEngine, Mutation, check_vacuity, run_rmc
-from pathlib import Path
-import json, os, tempfile
-
-JAR    = "<jar>"
-MODEL  = "models/rule22.rebeca"
-PROP   = "models/rule22.property"
-OUTDIR = "output/rule22"
-
-# Step 1 — Vacuity check (only run if RMC already passed)
-vacuity = check_vacuity(jar=JAR, model=MODEL, property_file=PROP, output_dir=OUTDIR)
-if vacuity["is_vacuous"]:
-    print("VACUOUS — fix the property before running mutation suite")
-    raise SystemExit(2)
-
-# Step 2 — Generate all mutants
-engine = MutationEngine(rule_id="Rule22", model_content=Path(MODEL).read_text(),
-                        property_content=Path(PROP).read_text())
-mutants: list[Mutation] = engine.generate_all()
-
-# Step 3 — Run RMC on each mutant, collect results
-killed = 0
-survived_list = []
-per_strategy: dict[str, dict] = {}
-
-for mut in mutants:
-    strat = mut.strategy
-    per_strategy.setdefault(strat, {"total": 0, "killed": 0, "survived": 0})
-    per_strategy[strat]["total"] += 1
-
-    suffix = ".rebeca" if mut.artifact == "model" else ".property"
-    with tempfile.NamedTemporaryFile(mode="w", suffix=suffix,
-                                    delete=False, encoding="utf-8") as tmp:
-        tmp.write(mut.mutated_content)
-        tmp_path = tmp.name
-
-    try:
-        mut_model = tmp_path if mut.artifact == "model" else MODEL
-        mut_prop  = tmp_path if mut.artifact == "property" else PROP
-        exit_code = run_rmc(jar=JAR, model=mut_model, property_file=mut_prop,
-                            output_dir=f"{OUTDIR}_mut_{mut.mutation_id}",
-                            timeout_seconds=60)
-    finally:
-        os.unlink(tmp_path)
-
-    if exit_code != 0:
-        killed += 1
-        per_strategy[strat]["killed"] += 1
-    else:
-        per_strategy[strat]["survived"] += 1
-        survived_list.append({"mutation_id": mut.mutation_id,
-                               "strategy": strat,
-                               "description": mut.description,
-                               "artifact": mut.artifact})
-
-total = len(mutants)
-score = (killed / total * 100) if total else 0.0
-
-report = {
-    "rule_id": "Rule22",
-    "mutation_score": round(score, 1),
-    "total_mutants": total,
-    "killed": killed,
-    "survived": total - killed,
-    "errors": 0,
-    "vacuity": vacuity,
-    "per_strategy": [{"strategy": s, **v} for s, v in per_strategy.items()],
-    "survived_mutations": survived_list,
-}
-print(json.dumps(report, indent=2))
-```
-
----
-
-## CLI Usage
-
-Run the vacuity checker standalone:
-
-```bash
-python3 <scripts>/vacuity_checker.py \
-  --jar      <jar> \
-  --model    models/rule22.rebeca \
-  --property models/rule22.property \
-  --output-dir output/rule22 \
-  --output-json
-```
-
-Generate mutations and print JSON (no RMC run — catalog mode):
-
-```bash
-python3 <scripts>/mutation_engine.py \
-  --rule-id   Rule22 \
-  --model     models/rule22.rebeca \
-  --property  models/rule22.property \
-  --strategy  all \
-  --output-json
-```
-
-Run single strategy only:
-
-```bash
-python3 <scripts>/mutation_engine.py \
-  --rule-id   Rule22 \
-  --model     models/rule22.rebeca \
-  --property  models/rule22.property \
-  --strategy  transition_bypass \
-  --output-json
-
-Run kill-run mode (executes sampled mutants with baseline semantic comparison):
-
-```bash
-python3 <scripts>/mutation_engine.py \
-  --rule-id Rule22 \
-  --model models/rule22.rebeca \
-  --property models/rule22.property \
-  --run-with-jar <jar> \
-  --run-with-model models/rule22.rebeca \
-  --run-with-property models/rule22.property \
-  --run-timeout 60 \
-  --max-mutants 50 \
-  --total-timeout 600 \
-  --seed 42 \
-  --output-json
-```
-```
-
-### Exit codes
-
-| Code | Meaning |
-|------|---------|
-| 0 | Mutation engine ran; JSON report on stdout |
-| 1 | Invalid inputs (missing files, bad arguments) |
-| 2 | Vacuity check aborted the run (property is vacuous) |
-
----
-
 ## Step06 Integration
 
-During **Step06 (Verification)**, after `run_rmc` exits 0, invoke this skill as a
-quality gate:
+During **Step06 (Verification)**, call `verify_gate.py` once. Read `passes_gate` from the result:
 
-```python
-# Inside Step06 handler
-if rmc_exit_code == 0:
-    report = run_mutation_suite(jar, model, property_file, output_dir)
-    if report["vacuity"]["is_vacuous"]:
-        wf_status = "VACUOUS"     # property needs rework
-    elif report["mutation_score"] < 80:
-        wf_status = "WEAK"        # property passes but misses mutations
-    else:
-        wf_status = "VERIFIED"    # strong verification
-```
-
-The `wf_status` feeds into the 100-point rubric score:
-- `VACUOUS`  → `verification_outcome` = 0 pts
-- `WEAK`     → `verification_outcome` = partial (proportional to mutation score)
-- `VERIFIED` → `verification_outcome` = full 25 pts
+| `passes_gate` field | Meaning | Action |
+|---------------------|---------|--------|
+| `verified=false` | RMC parse/compile failed | Fix model or property |
+| `vacuity_status.is_vacuous=true` | Property trivially satisfied | Strengthen assertion |
+| `mutation_score < 80` | Weak property; mutants survived | Add missing cases |
+| `passes_gate=true` | All criteria met | Proceed to packaging |
 
 ---
 

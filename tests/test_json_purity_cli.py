@@ -88,52 +88,6 @@ def test_snapshotter_output_json_stdout_is_pure_json() -> None:
     assert payload["rule_id"] == "Rule-22"
 
 
-def test_symbol_differ_output_json_stdout_is_pure_json() -> None:
-    model_text = "reactiveclass A(1) { statevars { int x; } A() { x = 0; } } main { A a():(); }"
-    prop_text = "property { Assertion { Rule22: x >= 0; } }"
-
-    with tempfile.TemporaryDirectory(dir=Path.home()) as td:
-        base = Path(td)
-        model = base / "model.rebeca"
-        prop = base / "model.property"
-        snapshot = base / "snapshot.json"
-        model.write_text(model_text, encoding="utf-8")
-        prop.write_text(prop_text, encoding="utf-8")
-
-        # build snapshot first
-        snap_result = _run_script(
-            [
-                "snapshotter.py",
-                "--rule-id",
-                "Rule-22",
-                "--model",
-                str(model),
-                "--property",
-                str(prop),
-                "--output",
-                str(snapshot),
-            ]
-        )
-        assert snap_result.returncode == 0, snap_result.stderr
-
-        result = _run_script(
-            [
-                "symbol_differ.py",
-                "--snapshot",
-                str(snapshot),
-                "--model",
-                str(model),
-                "--property",
-                str(prop),
-                "--output-json",
-            ]
-        )
-
-    # symbol_differ exits 0 or 1 based on hallucination classification; both are valid here.
-    assert result.returncode in (0, 1), result.stderr
-    payload = json.loads(result.stdout)
-    assert "is_hallucination" in payload
-
 
 def test_vacuity_checker_output_json_stdout_is_pure_json_on_error() -> None:
     with tempfile.TemporaryDirectory(dir=Path.home()) as td:

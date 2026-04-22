@@ -27,8 +27,7 @@
     "mode": "all"
   },
   "hooks": {
-    "enabled": true,
-    "pre_run_rmc_check": true
+    "enabled": true
   },
   "scoring": {
     "enabled": true,

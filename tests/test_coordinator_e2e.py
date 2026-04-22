@@ -115,15 +115,6 @@ def pipeline(work_dir: Path) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 class TestStep01Init:
-    def test_pre_run_rmc_check(self, pipeline: Dict[str, Any]) -> None:
-        """IT-E2E-01a: pre_run_rmc_check.py runs without crashing."""
-        result = _run([sys.executable, str(_SCRIPTS / "pre_run_rmc_check.py")])
-        # Tool exits 0 (jar found) or non-zero (jar absent) but must not crash
-        assert result.returncode in (0, 1, 2), (
-            f"pre_run_rmc_check.py exited {result.returncode}: {result.stderr}"
-        )
-        pipeline["execution_path"].append("step01:pre_run_rmc_check")
-
     def test_classify_rule_status_formalized(self, pipeline: Dict[str, Any]) -> None:
         """IT-E2E-01b: Rule22 classifies as 'formalized' (has clause/condition/assure)."""
         result = _run([
@@ -162,18 +153,7 @@ class TestStep02Triage:
         }
         pipeline["execution_path"].append("step02")
 
-    def test_colreg_fallback_mapper_contract(self, pipeline: Dict[str, Any]) -> None:
-        """IT-E2E-02b: colreg_fallback_mapper returns the required JSON fields."""
-        result = _run([
-            sys.executable, str(_SCRIPTS / "colreg_fallback_mapper.py"),
-            "--rule-id", pipeline["rule_id"],
-            "--colreg-text", "Lookout",
-        ])
-        assert result.returncode == 0, f"colreg_fallback_mapper.py failed: {result.stderr}"
-        data = _json(result, context="Step02/colreg_fallback_mapper")
-        for field in ("rule_id", "provisional_property", "confidence", "mapping_path"):
-            assert field in data, f"Missing field {field!r} in colreg_fallback_mapper output"
-        assert data["mapping_path"] == "colreg-fallback"
+
 
 
 # ---------------------------------------------------------------------------

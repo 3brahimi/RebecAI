@@ -16,26 +16,7 @@ check_json_field() {
 
 echo "Running functional tests..."
 
-# 1. Test Fallback Mapper
-result=$(PYTHONPATH="$TOOLING_SCRIPTS" python3 "$TOOLING_SCRIPTS/colreg_fallback_mapper.py" --rule-id "Test-99" --colreg-text "Lookout" 2>/dev/null)
-# Expecting: {"rule_id": "Test-99", "provisional_property": "true", "confidence": "high", "assumptions": [], "requires_manual_review": true, "mapping_path": "colreg-fallback"}
-
-for field in rule_id provisional_property confidence assumptions requires_manual_review mapping_path; do
-  val=$(check_json_field "$result" "$field")
-  if [[ "$val" == "MISSING" ]]; then
-    echo "FAIL: FALLBACK-001-$field — Missing field"
-    exit 1
-  fi
-done
-# Check specific enum
-conf=$(check_json_field "$result" "confidence")
-if [[ "$conf" != "high" && "$conf" != "medium" && "$conf" != "low" ]]; then
-  echo "FAIL: FALLBACK-003 — invalid confidence"
-  exit 1
-fi
-echo "PASS: All fallback tests passed."
-
-# 2. Test Scoring (SCORING-002)
+# Test Scoring (SCORING-002)
 report=$(PYTHONPATH="$TOOLING_SCRIPTS" python3 - << 'PYEOF'
 import sys
 from skills.rebeca_tooling.scripts.generate_report import ReportGenerator

@@ -66,18 +66,6 @@ Schema: `<skills>/rebeca_tooling/schemas/abstraction-agent.schema.json` → `inp
 | binary on/off, exhibit/hide             | `boolean`   | —                  |
 | Ambiguous (fallback)                    | `boolean`   | —                  |
 
-## CLI
-
-```bash
-python <scripts>/abstraction_agent.py \
-  --rule-id       Rule-22 \
-  --legata-path   input/Rule-22.legata \
-  [--snapshot-path output/snapshots/Rule-22.snapshot.json] \
-  [--colreg-text  "Every vessel shall exhibit lights..."]
-```
-
-Exit code `0` = success, `1` = failure.
-
 ## Output Contract (success)
 
 Merged into coordinator `phase_results.step03`:
@@ -145,8 +133,7 @@ Merged into coordinator `phase_results.step03`:
 ## Implementation Notes
 
 - No new tooling scripts introduced: uses `extract_state_variables` and
-  `extract_property_identifiers` from `snapshotter.py` (via `__init__.py`),
-  and the COLREG keyword corpus from `COLREGFallbackMapper`.
+  `extract_property_identifiers` from `snapshotter.py` (via `__init__.py`).
 - Naming conversion is pure string transformation — fully deterministic.
 - `snapshot_path` seeds additional state variables discovered by Step01
   (prevents the abstraction from diverging from the already-snapshotted baseline).

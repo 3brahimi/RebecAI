@@ -53,7 +53,7 @@ GEMINI_ROOT_LOCAL = REPO_ROOT / ".gemini"
 GEMINI_ROOT_GLOBAL = HOME / ".gemini"
 GITHUB_ROOT = REPO_ROOT / ".github"
 
-# --- STANDALONE UTILITIES (Formerly in utils.py/download_rmc.py) ---
+# --- STANDALONE UTILITIES ---
 
 def resolve_executable(name: str) -> str:
     return shutil.which(name)

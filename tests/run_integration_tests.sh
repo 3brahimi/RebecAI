@@ -7,8 +7,6 @@
 #   IT-004  Skills installed to target dir
 #   IT-005  rmc.jar downloaded and is a valid JAR (ZIP magic)
 #   IT-006  rmc.jar executes (java -jar rmc.jar -h)
-#   IT-007  download_rmc.py in isolation: re-download to fresh dir
-#   IT-008  pre_run_rmc_check.py: detects existing jar, skips download
 #   IT-009  run_rmc.py: RMC parses known-good model → generates .cpp files
 #   IT-010  run_rmc.py: g++ compiles generated .cpp → produces executable
 #   IT-011  run_rmc.py: RMC rejects known-bad model → exit code 5
@@ -210,51 +208,6 @@ else
     else
       fail "IT-006" "rmc.jar produced no recognisable output — may be corrupt"
     fi
-  fi
-fi
-
-echo ""
-
-# ──────────────────────────────────────────────────────────
-# IT-007: download_rmc.py in isolation (fresh directory)
-# ──────────────────────────────────────────────────────────
-echo "── IT-007: download_rmc.py isolation ──"
-
-FRESH_RMC_DIR="$SECONDARY_DIR/rmc_fresh"
-mkdir -p "$FRESH_RMC_DIR"
-
-DL_ARGS=(--url "https://github.com/rebeca-lang/org.rebecalang.rmc/releases/latest"
-         --dest-dir "$FRESH_RMC_DIR")
-[[ -n "$RMC_TAG" ]] && DL_ARGS+=(--tag "$RMC_TAG")
-
-if PYTHONPATH="$LIB_DIR" "$PYTHON_BIN" "$LIB_DIR/download_rmc.py" \
-    "${DL_ARGS[@]}" > "$SECONDARY_DIR/download.log" 2>&1; then
-  if [[ -f "$FRESH_RMC_DIR/rmc.jar" ]]; then
-    pass "IT-007: download_rmc.py downloaded rmc.jar to fresh directory"
-  else
-    fail "IT-007" "download_rmc.py exited 0 but rmc.jar not found"
-  fi
-else
-  exit_code=$?
-  fail "IT-007" "download_rmc.py exited $exit_code — see $SECONDARY_DIR/download.log"
-fi
-
-echo ""
-
-# ──────────────────────────────────────────────────────────
-# IT-008: pre_run_rmc_check.py detects existing jar
-# ──────────────────────────────────────────────────────────
-echo "── IT-008: pre_run_rmc_check.py ──"
-
-if [[ ! -f "$RMC_JAR" ]]; then
-  skip "IT-008" "rmc.jar missing — skipping pre-run check test"
-else
-  output=$(PYTHONPATH="$LIB_DIR" RMC_DESTINATION="$INSTALL_DIR/rmc" \
-    "$PYTHON_BIN" "$LIB_DIR/pre_run_rmc_check.py" 2>&1 || true)
-  if echo "$output" | grep -q "valid\|already exists\|provisioned"; then
-    pass "IT-008: pre_run_rmc_check.py detected existing rmc.jar"
-  else
-    fail "IT-008" "Unexpected output from pre_run_rmc_check.py: $output"
   fi
 fi
 

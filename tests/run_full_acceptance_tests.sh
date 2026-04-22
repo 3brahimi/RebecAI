@@ -143,29 +143,6 @@ else
   FAILED_TESTS+=("AT-005")
 fi
 
-# AT-006: download_rmc script exists and handles URL/destination/checksum parameters
-echo -n "AT-006 (RMC Download Script): "
-if check_file "$ARTIFACT_ROOT/skills/rebeca_tooling/scripts/download_rmc.py" && \
-   check_grep "url\|dest_dir" "$ARTIFACT_ROOT/skills/rebeca_tooling/scripts/download_rmc.py"; then
-  echo "PASS"
-  ((PASSED++))
-else
-  echo "FAIL"
-  ((FAILED++))
-  FAILED_TESTS+=("AT-006")
-fi
-
-# AT-007: download_rmc script handles error cases
-echo -n "AT-007 (RMC Download Error Handling): "
-if check_grep "exit\|error\|Error" "$ARTIFACT_ROOT/skills/rebeca_tooling/scripts/download_rmc.py"; then
-  echo "PASS"
-  ((PASSED++))
-else
-  echo "FAIL"
-  ((FAILED++))
-  FAILED_TESTS+=("AT-007")
-fi
-
 # AT-008: run_rmc script exists and validates model/property paths
 echo -n "AT-008 (RMC Run Script): "
 if check_file "$ARTIFACT_ROOT/skills/rebeca_tooling/scripts/run_rmc.py" && \
@@ -236,17 +213,6 @@ else
   FAILED_TESTS+=("AT-013")
 fi
 
-# AT-014: Hooks automation exists
-echo -n "AT-014 (Hooks Automation): "
-if check_file "$ARTIFACT_ROOT/skills/rebeca_tooling/scripts/pre_run_rmc_check.py"; then
-  echo "PASS"
-  ((PASSED++))
-else
-  echo "FAIL"
-  ((FAILED++))
-  FAILED_TESTS+=("AT-014")
-fi
-
 # AT-015: Single-rule scoring exists
 echo -n "AT-015 (Single-Rule Scoring): "
 if check_file "$ARTIFACT_ROOT/skills/rebeca_tooling/scripts/score_single_rule.py"; then
@@ -278,17 +244,6 @@ else
   echo "FAIL"
   ((FAILED++))
   FAILED_TESTS+=("AT-017")
-fi
-
-# AT-018: COLREG fallback mapping exists
-echo -n "AT-018 (COLREG Fallback): "
-if check_file "$ARTIFACT_ROOT/skills/rebeca_tooling/scripts/colreg_fallback_mapper.py"; then
-  echo "PASS"
-  ((PASSED++))
-else
-  echo "FAIL"
-  ((FAILED++))
-  FAILED_TESTS+=("AT-018")
 fi
 
 # AT-019: Incorrect/incomplete handling documented

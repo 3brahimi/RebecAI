@@ -133,73 +133,15 @@ property {
 
 ## RMC Toolchain Usage
 
-### Python Library (Cross-Platform)
-
-The **rebeca_tooling** skill provides all RMC operations:
-
-```python
-import sys
-from pathlib import Path
-
-# Reference rebeca_tooling skill
-tooling_skill = Path("<skills>/rebeca_tooling").expanduser()
-sys.path.insert(0, str(tooling_skill))
-
-from scripts import download_rmc, run_rmc
-
-# Download RMC latest release
-download_rmc(
-    url="https://github.com/rebeca-lang/org.rebecalang.rmc/releases/latest",
-    dest_dir=".agents/rmc"
-)
-
-# Download specific version
-download_rmc(
-    url="https://github.com/rebeca-lang/org.rebecalang.rmc/releases",
-    dest_dir=".agents/rmc",
-    tag="2.14"
-)
-
-# Run verification
-result = run_rmc(
-    jar=".agents/rmc/rmc.jar",
-    model="./models/SimulationModelCode.rebeca",
-    property_file="./properties/rule_22.property",
-    output_dir="./verification_output",
-    timeout_seconds=120,
-    jvm_opts=["-Xms256m", "-Xmx2g"]
-)
-
-# Check result
-if result == 0:
-    print("Verification complete")
-elif result == 5:
-    print("Parse error - check Rebeca syntax")
-elif result == 4:
-    print("C++ compilation failed")
-elif result == 3:
-    print("Timeout")
-```
-
-### Command-Line Interface
-
-For manual usage, CLI wrappers are available:
+RMC is provisioned by `setup.py` at install time. To run verification:
 
 ```bash
-# Download RMC
-python3 <scripts>/download_rmc.py \
-  --url https://github.com/rebeca-lang/org.rebecalang.rmc/releases/latest \
-  --dest-dir .agents/rmc
-
-# Run verification
 python3 <scripts>/run_rmc.py \
-  --jar .agents/rmc/rmc.jar \
+  --jar <jar> \
   --model ./models/SimulationModelCode.rebeca \
   --property ./properties/rule_22.property \
   --output-dir ./verification_output \
-  --timeout-seconds 120 \
-  --jvm-opt "-Xms256m" \
-  --jvm-opt "-Xmx2g"
+  --timeout-seconds 120
 ```
 
 For the full tooling API and additional CLI commands, consult the `rebeca_tooling` skill at `<skills>/rebeca_tooling/SKILL.md`.

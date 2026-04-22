@@ -15,7 +15,6 @@ import json
 import os
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -147,16 +146,6 @@ def _run_artifact_writer(rule_id: str, step: str, data: dict, base_dir: Path) ->
     )
 
 
-def _run_gate0(rule_id: str, base_dir: Path) -> dict:
-    result = subprocess.run(
-        [sys.executable, str(TESTS / "check_artifact_gaps.py"),
-         "--rule-id", rule_id, "--base-dir", str(base_dir)],
-        capture_output=True,
-        text=True,
-    )
-    return json.loads(result.stdout)
-
-
 # ---------------------------------------------------------------------------
 # Tests: artifact_writer.py correctness
 # ---------------------------------------------------------------------------
@@ -225,90 +214,6 @@ def test_artifact_written_and_read_back_passes_schema(
     on_disk = json.loads(path.read_text())
     errors = validate_step_output(schema_key, on_disk)
     assert errors == [], f"{step_artifact}: on-disk schema violations: {errors}"
-
-
-# ---------------------------------------------------------------------------
-# Tests: Gate 0 end-to-end (simulated complete pipeline run)
-# ---------------------------------------------------------------------------
-
-def _write_all_artifacts(base_dir: Path) -> None:
-    """Simulate a complete pipeline run: write all 8 step artifacts."""
-    for step_artifact, data in STEP_PAYLOADS.items():
-        r = _run_artifact_writer(RULE_ID, step_artifact, data, base_dir)
-        assert r.returncode == 0, f"artifact_writer failed for {step_artifact}: {r.stderr}"
-
-
-def _create_report_files(base_dir: Path) -> None:
-    """Create the four required report files under output/reports/<rule_id>/."""
-    rp = report_paths(RULE_ID, base_dir)
-    rp.report_dir.mkdir(parents=True, exist_ok=True)
-    rp.summary_json.write_text(json.dumps({"status": "ok"}))
-    rp.summary_md.write_text("# Summary\n")
-    rp.verification_json.write_text(json.dumps({"status": "ok"}))
-    rp.quality_gates_json.write_text(json.dumps({"status": "ok"}))
-
-
-class TestGate0EndToEnd:
-    def test_complete_run_passes_gate0(self, tmp_path: Path) -> None:
-        _write_all_artifacts(tmp_path)
-        _create_report_files(tmp_path)
-        report = _run_gate0(RULE_ID, tmp_path)
-        assert report["gate_passed"], f"Gate 0 failed: {report['missing']}"
-        assert report["gaps"] == 0
-        assert report["present_count"] == 8
-
-    def test_missing_any_one_artifact_fails_gate0(self, tmp_path: Path) -> None:
-        """Removing any single step artifact must cause Gate 0 to fail."""
-        for step_artifact in STEP_PAYLOADS:
-            with tempfile.TemporaryDirectory() as td:
-                base = Path(td)
-                _write_all_artifacts(base)
-                _create_report_files(base)
-                # Remove one artifact
-                path = step_artifact_path(RULE_ID, step_artifact, base)
-                path.unlink()
-                report = _run_gate0(RULE_ID, base)
-                assert not report["gate_passed"], (
-                    f"Gate 0 should fail when {step_artifact} is missing"
-                )
-
-    def test_skeleton_artifacts_fail_gate0(self, tmp_path: Path) -> None:
-        """Artifacts that only contain {'status':'ok'} must not pass Gate 0."""
-        work_dir = tmp_path / "work" / RULE_ID
-        work_dir.mkdir(parents=True)
-        for step_artifact in STEP_PAYLOADS:
-            p = work_dir / f"{step_artifact}.json"
-            p.write_text(json.dumps({"status": "ok"}))
-        report = _run_gate0(RULE_ID, tmp_path)
-        assert not report["gate_passed"]
-        assert report["gaps"] == 8
-
-    def test_missing_report_files_fails_gate0(self, tmp_path: Path) -> None:
-        """step08_reporting.json present but report files absent → Gate 0 fails."""
-        _write_all_artifacts(tmp_path)
-        # Deliberately do NOT call _create_report_files
-        report = _run_gate0(RULE_ID, tmp_path)
-        assert not report["gate_passed"]
-        missing_files = {m["file"] for m in report["missing"]}
-        assert "summary.json" in missing_files
-        assert "quality_gates.json" in missing_files
-
-    def test_rerun_produces_same_artifacts(self, tmp_path: Path) -> None:
-        """Writing all artifacts twice produces identical on-disk content (idempotent)."""
-        _write_all_artifacts(tmp_path)
-        _create_report_files(tmp_path)
-        snapshots_first = {}
-        for step_artifact in STEP_PAYLOADS:
-            path = step_artifact_path(RULE_ID, step_artifact, tmp_path)
-            snapshots_first[step_artifact] = json.loads(path.read_text())
-
-        # Second run
-        _write_all_artifacts(tmp_path)
-        for step_artifact in STEP_PAYLOADS:
-            path = step_artifact_path(RULE_ID, step_artifact, tmp_path)
-            assert json.loads(path.read_text()) == snapshots_first[step_artifact], (
-                f"{step_artifact}: artifact changed on rerun"
-            )
 
 
 # ---------------------------------------------------------------------------

@@ -11,12 +11,12 @@ description: |
 
 ## Purpose
 
-This skill orchestrates a two-tier hallucination detection pipeline for Rebeca artifacts:
+This skill orchestrates hallucination detection for Rebeca artifacts:
 
 1. **Capture Golden State** (`snapshotter.py`)
-2. **Audit Hallucinations** (`symbol_differ.py` + `run_rmc` stderr/exit-code signals)
+2. **Audit Hallucinations** — performed internally by `verify_gate.py` during Step06
 
-It integrates with Step06 Phase3 and Step08 scoring to distinguish:
+It integrates with Step06 and Step08 scoring to distinguish:
 - real hallucinations (`dead_code`, `reference`)
 - non-hallucination parse issues (`syntax`)
 
@@ -70,7 +70,7 @@ Additional diagnostic fields:
 
 ## CLI Usage
 
-### 1) Capture Golden Snapshot
+### Capture Golden Snapshot
 
 ```bash
 python3 <scripts>/snapshotter.py \
@@ -80,17 +80,8 @@ python3 <scripts>/snapshotter.py \
   --output output/rule22_golden_snapshot.json
 ```
 
-### 2) Audit Hallucinations
-
-```bash
-python3 <scripts>/symbol_differ.py \
-  --snapshot output/rule22_golden_snapshot.json \
-  --model output/rule22_current.rebeca \
-  --property output/rule22_current.property \
-  --rmc-exit-code 5 \
-  --rmc-stderr-log output/verification/rmc_stderr.log \
-  --output-json
-```
+Hallucination detection is performed internally by `verify_gate.py` during Step06.
+Hallucination detection logic is embedded in `verify_gate.py` — do not invoke it separately.
 
 ---
 

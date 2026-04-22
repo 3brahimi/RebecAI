@@ -104,18 +104,6 @@ Threshold detection: numeric literals (`meters(N)`, `miles(N)`, plain `N`) are
 extracted from the Legata section text. Operator is inferred from `>=`, `>`, `<=`,
 `<`, or `==`; defaults to `> 0`.
 
-## CLI
-
-```bash
-python <scripts>/mapping_agent.py \
-  --rule-id            Rule-22 \
-  --legata-path        input/Rule-22.legata \
-  --abstraction-json   '{"naming_contract":{...},"actor_map":[...],"variable_map":[...]}' \
-  --output-dir         output/Rule-22/
-```
-
-Exit code `0` = success, `1` = failure.
-
 ## Output Contract (success)
 
 Merged into coordinator `phase_results.step04`:
