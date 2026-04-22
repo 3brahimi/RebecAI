@@ -300,16 +300,6 @@ def verify_rule(rule_id: str, model_path: str, property_path: str) -> dict:
 
 These CLIs are used by the coordinator for the deterministic pipeline steps.
 
-#### `step02_triage` (`triage_exec`) — Rule classification
-
-```bash
-python3 <scripts>/classify_rule_status.py \
-  --legata-path <legata_input> \
-  --output-json
-```
-
-If `status` is `not-formalized` or `todo-placeholder` treat as terminal `skip`; surface `next_action`.
-
 #### `step06_verification_gate` (`verification_exec`) — RMC + vacuity + mutation
 
 ```bash

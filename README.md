@@ -6,8 +6,7 @@ A multi-agent orchestration (MAO) system for transforming maritime safety rules 
 
 RebecAI provides a unified framework to:
 - **Transform** formal specifications (Legata/COLREG) into verifiable Rebeca actor models
-- **Automate** model checking workflows using RMC across Step01–Step08
-- **Triage** rules for formalization quality
+- **Automate** model checking workflows using RMC
 - **Verify** properties using mutation scoring and vacuity checks
 - **Report** verification outcomes through automated tooling
 
@@ -15,7 +14,7 @@ RebecAI provides a unified framework to:
 
 | Category | Path | Purpose |
 | :--- | :--- | :--- |
-| **Agents** | `agents/` | Coordinator + 8 specialist subagents |
+| **Agents** | `agents/` | Coordinator + 4 specialist subagents |
 | **Skills** | `skills/` | Reusable knowledge injected at subagent startup |
 
 ## Quick Start
@@ -62,7 +61,7 @@ rule_id:            <rule_id>
 legata_input:       <legata_file>
 reference_model:    <reference_model>
 reference_property: <reference_property>
-output_dir:         output/<rule_id>
+output_dir:         output
 ```
 
 Run inside the project directory where RebecAI is installed (`~/.claude/agents/legata_to_rebeca.md` must exist). The agent has Bash access and will call the tooling scripts directly.
@@ -80,7 +79,7 @@ rule_id:            <rule_id>
 legata_input:       <legata_file>
 reference_model:    <reference_model>
 reference_property: <reference_property>
-output_dir:         output/<rule_id>
+output_dir:         output
 ```
 
 Run from the project root. Gemini CLI loads agents from `~/.gemini/agents/`. The agent file is a physical copy with Gemini-incompatible frontmatter keys stripped by the installer.
@@ -98,7 +97,7 @@ rule_id:            <rule_id>
 legata_input:       <legata_file>
 reference_model:    <reference_model>
 reference_property: <reference_property>
-output_dir:         output/<rule_id>
+output_dir:         output
 ```
 
 The agent file lives at `.github/agents/legata_to_rebeca.agent.md`. Copilot Chat runs a single agent context — there are no spawned subagents. The coordinator executes all eight steps itself in sequence.
@@ -114,7 +113,7 @@ rule_id:            Rule-22
 legata_input:       legata/colreg/Rule22.txt
 reference_model:    legata/rebeca/SimulationModelCode.rebeca
 reference_property: legata/rebeca/SimulationModelCode.property
-output_dir:         output/Rule-22
+output_dir:         output
 ```
 
 ## Architecture: Multi-Agent Orchestration
@@ -123,8 +122,6 @@ output_dir:         output/Rule-22
 
 ```
 legata_to_rebeca (coordinator)
-├── Step01 → init_exec            validate inputs, provision RMC, snapshot
-├── Step02 → triage_exec          classify rule formalization status
 ├── Step03 → abstraction_agent    extract actors, discretize variables
 ├── Step04 → mapping_agent        generate .rebeca model + .property file
 ├── Step05 → synthesis_agent      LLM-assisted candidate generation (parallel)
@@ -139,9 +136,7 @@ legata_to_rebeca (coordinator)
 
 | Agent | Step | Description |
 | :--- | :--- | :--- |
-| `legata_to_rebeca` | Coordinator | Orchestrates Step01–Step08, manages shared_state |
-| `init_exec` | Step01 | Validates inputs, provisions RMC, captures golden snapshot |
-| `triage_exec` | Step02 | Classifies rule status: formalized / incomplete / incorrect / not-formalized |
+| `legata_to_rebeca` | Coordinator | Orchestrates Step03–Step08, manages shared_state |
 | `abstraction_agent` | Step03 | Extracts actors, applies naming conventions, discretizes variables |
 | `mapping_agent` | Step04 | Generates `.rebeca` model and `.property` file |
 | `synthesis_agent` | Step05 | LLM-assisted candidate property generation (requires Step06 validation) |

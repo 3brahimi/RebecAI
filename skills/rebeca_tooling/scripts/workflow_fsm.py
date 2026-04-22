@@ -51,8 +51,7 @@ class _PipelineStep:
 
 
 _PIPELINE: tuple[_PipelineStep, ...] = (
-    _PipelineStep("start",       "step02_triage",             "step02", "step02_triage",            "triage_exec",        "triaged"),
-    _PipelineStep("triaged",     "step03_abstraction",        "step03", "step03_abstraction",       "abstraction_agent",  "abstracted"),
+    _PipelineStep("start",       "step03_abstraction",        "step03", "step03_abstraction",       "abstraction_agent",  "abstracted"),
     _PipelineStep("abstracted",  "step04_mapping",            "step04", "step04_mapping",           "mapping_agent",      "mapped"),
     _PipelineStep("mapped",      "step05_candidates",         "step05", "step05_synthesis",         "synthesis_agent",    "synthesized"),
     _PipelineStep("synthesized", "step06_verification_gate",  "step06", "step06_verification_gate", "verification_exec",  "verified"),

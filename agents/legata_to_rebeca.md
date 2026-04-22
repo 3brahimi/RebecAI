@@ -21,10 +21,10 @@ rule_id:            <rule identifier, e.g. Rule-22>
 legata_input:       <path to .legata source file>
 reference_model:    <path to existing .rebeca file to start from>
 reference_property: <path to existing .property file to start from>
-output_dir:         <output directory, e.g. output/Rule-22>
+output_dir:         <base output directory, e.g. output>
 ```
 
-**Critical workflow invariant:** The `<reference_model>` and `<reference_property>` are the **starting points** for refinement. Step01 copies them to `<output_dir>/<rule_id>.rebeca` and `<output_dir>/<rule_id>.property`, and all subsequent steps refine these files **in place** until they pass verification.
+**Critical workflow invariant:** The `<reference_model>` and `<reference_property>` are the **starting points** for refinement. Part 1 copies them to `<output_dir>/<rule_id>/<rule_id>.rebeca` and `<output_dir>/<rule_id>/<rule_id>.property`, and all subsequent steps refine these files **in place** until they pass verification.
 
 Subagents (LLM agents; invoked only for Steps 03, 04, 05):
 1. @abstraction_agent
@@ -44,8 +44,8 @@ You are a **thin executor**. You do not decide what step comes next — the FSM 
 
 ## Direct Script Steps
 
-Steps 02, 06, 07, 08 are deterministic — the coordinator runs their scripts directly.
-No LLM agent is invoked. Step01 (initialization) is handled by the coordinator in Part 1 of the Executor Protocol (copying reference files).
+Steps 06, 07, 08 are deterministic — the coordinator runs their scripts directly.
+No LLM agent is invoked. Initialization (copying reference files) is handled by the coordinator in Part 1 of the Executor Protocol.
 
 This coordinator is intentionally a **thin executor**: it documents only dispatch (what to run) and does not embed full CLI flags.
 Authoritative CLI contracts live in `rebeca_tooling` SKILL.md under:
@@ -84,18 +84,18 @@ _Three-part loop: conditional reset → execution loop → terminal handler. Do 
 
 ### Part 1 — Conditional Reset
 
-Check `output/work/<RULE_ID>/fsm_state.json`:
+Check `<output_dir>/work/<rule_id>/fsm_state.json`:
 - If the file does **not exist**, or `terminal_status` is not `null`:
 
 ```bash
-# CRITICAL: Copy reference files to output_dir as starting points for refinement
-mkdir -p <output_dir>
-cp <reference_model> <output_dir>/<rule_id>.rebeca
-cp <reference_property> <output_dir>/<rule_id>.property
+# CRITICAL: Copy reference files as starting points for refinement
+mkdir -p <output_dir>/<rule_id>
+cp <reference_model> <output_dir>/<rule_id>/<rule_id>.rebeca
+cp <reference_property> <output_dir>/<rule_id>/<rule_id>.property
 
 # Then reset FSM
 python <scripts>/workflow_fsm.py \
-  --rule-id <RULE_ID> --base-dir output --reset
+  --rule-id <rule_id> --base-dir <output_dir> --reset
 ```
 
 **Important:** The reference files MUST be copied before the first FSM call. All subsequent steps (abstraction, mapping, synthesis, verification) will refine these files in place.
@@ -109,7 +109,7 @@ Repeat until a terminal action is received:
 1. **Call FSM** (skip on first iteration if reset already returned an action):
    ```bash
    python <scripts>/workflow_fsm.py \
-     --rule-id <RULE_ID> --base-dir output
+     --rule-id <rule_id> --base-dir <output_dir>
    ```
 
 2. **Parse** the JSON action from stdout:
@@ -128,8 +128,7 @@ Repeat until a terminal action is received:
 
   Dispatch on `action.agent`:
 
-  **Branch A — Direct script steps** (`action.agent` ∈ {`triage_exec`,
-  `verification_exec`, `packaging_exec`, `reporting_exec`}):
+  **Branch A — Direct script steps** (`action.agent` ∈ {`verification_exec`, `packaging_exec`, `reporting_exec`}):
   a. Run the script identified by the Step Bindings mapping for this `action.step`, mapping
     `action.inputs` fields to CLI arguments (CLI contract: `rebeca_tooling/SKILL.md`).
   b. Capture stdout as the step artifact JSON.
@@ -144,10 +143,10 @@ Repeat until a terminal action is received:
   d. Persist the artifact:
     ```bash
     python <scripts>/artifact_writer.py \
-      --rule-id <RULE_ID> \
+      --rule-id <rule_id> \
       --step <artifact_step_name_for_action_step> \
       --data '<step_artifact_json>' \
-      --base-dir output
+      --base-dir <output_dir>
     ```
     Note: `action.step` enum and artifact filename can differ — see Canonical Artifact Persistence.
   e. Verify every path in `required_artifacts[]` now exists on disk before looping.
@@ -163,8 +162,8 @@ Terminal actions end the executor loop and MUST NOT invoke another step agent. E
   → Return success; surface `output/reports/<rule_id>/summary.json`.
 - **`block`** — Refinement budget exhausted.
   → Emit partial report if `step08_reporting.json` exists; surface `reason_code` and `missing_artifacts[]`.
-- **`skip`** — Rule not eligible for mapping (from Step02 triage).
-  → Surface `step02.classification.next_action` as the skip reason.
+- **`skip`** — Unused (triage step removed).
+  → Should not occur; treat as error if encountered.
 - **`error`** — Unrecoverable failure from a step agent.
   → Propagate the agent's error envelope; do not retry.
 
@@ -175,7 +174,6 @@ steps invoke a subagent specified in `action.agent`. Do not remap.
 
 CLI contracts for direct steps are in `<skills>/rebeca_tooling/SKILL.md` → **Direct Exec Step CLIs** (line 379).
 
-- `step02_triage` → `triage_exec` (direct: `classify_rule_status.py`; `<skills>/rebeca_tooling/SKILL.md` line 383)
 - `step03_abstraction` → `abstraction_agent` (LLM subagent)
 - `step04_mapping` → `mapping_agent` (LLM subagent)
 - `step05_synthesis` → `synthesis_agent` (LLM subagent; artifact name: `step05_candidates` ≠ enum)
