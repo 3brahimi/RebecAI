@@ -231,3 +231,4 @@ graphify-out/
 CLAUDE.md
 GEMINI.md
 *.pyc
+docs/

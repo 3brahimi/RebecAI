@@ -229,3 +229,4 @@ CLAUDE.md
 GEMINI.md
 *.pyc
 !legata/
+!docs/
