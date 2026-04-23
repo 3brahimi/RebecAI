@@ -24,6 +24,7 @@ from skills.rebeca_tooling.scripts.mutation_engine import (
     write_mutation_artifact,
 )
 from skills.rebeca_tooling.scripts.utils import safe_path
+from skills.rebeca_tooling.scripts.output_policy import step_artifact_path
 
 _MUTATION_SCORE_THRESHOLD = 80.0
 
@@ -167,15 +168,16 @@ def main() -> None:
     parser.add_argument("--property",   required=True, help="Path to .property file")
     parser.add_argument("--rule-id",    required=True, help="Rule identifier (e.g. Rule-22)")
     parser.add_argument("--output-dir", required=True, help="Directory for verification artefacts")
-    parser.add_argument("--output-file", metavar="PATH", help="Write JSON result atomically to PATH")
+    parser.add_argument("--base-dir",   default="output", help="Pipeline base dir for artifact_writer (default: output)")
+    parser.add_argument("--output-file", metavar="PATH", help="Also write JSON result atomically to PATH")
     parser.add_argument("--output-json", action="store_true", help="Print JSON result to stdout")
-    parser.add_argument("--rmc-timeout",      type=int, default=120, help="RMC timeout in seconds (default: 120)")
-    parser.add_argument("--vacuity-timeout",  type=int, default=60,  help="Vacuity RMC timeout in seconds (default: 60)")
-    parser.add_argument("--max-mutants",      type=int, default=50,  help="Max mutants to run (default: 50)")
-    parser.add_argument("--mutation-timeout", type=int, default=600, help="Total mutation wall-clock budget in seconds (default: 600)")
-    parser.add_argument("--seed",             type=int, default=42,  help="Random seed for mutant sampling (default: 42)")
-    parser.add_argument("--skip-vacuity",  action="store_true", help="Skip vacuity check")
-    parser.add_argument("--skip-mutation", action="store_true", help="Skip mutation scoring")
+    parser.add_argument("--rmc-timeout",      type=int, default=120)
+    parser.add_argument("--vacuity-timeout",  type=int, default=60)
+    parser.add_argument("--max-mutants",      type=int, default=50)
+    parser.add_argument("--mutation-timeout", type=int, default=600)
+    parser.add_argument("--seed",             type=int, default=42)
+    parser.add_argument("--skip-vacuity",  action="store_true")
+    parser.add_argument("--skip-mutation", action="store_true")
 
     args = parser.parse_args()
 
@@ -198,11 +200,17 @@ def main() -> None:
         skip_mutation=args.skip_mutation,
     )
 
+    # Always write the canonical pipeline artifact — no LLM handover needed.
+    artifact_path = step_artifact_path(args.rule_id, "step05_verification_gate", Path(args.base_dir))
+    _write_atomic(artifact_path, result)
+
     if args.output_file:
         _write_atomic(Path(args.output_file), result)
 
-    if args.output_json or not args.output_file:
+    if args.output_json:
         print(json.dumps(result, indent=2))
+    else:
+        print(json.dumps({"status": "ok", "passes_gate": result["passes_gate"], "artifact": str(artifact_path)}))
 
 
 if __name__ == "__main__":
