@@ -155,27 +155,30 @@ On `status: ok` → the synthesis_agent writes the patched `<output_dir>/<rule_i
 
 ### Step 05 — Verification (`verify_gate.py`)
 
+Run verify_gate and write its result directly to a file — do NOT capture or pipe stdout:
+
 ```bash
 python <scripts>/verify_gate.py \
   --rule-id    <rule_id> \
   --model      <output_dir>/<rule_id>/<rule_id>.rebeca \
   --property   <output_dir>/<rule_id>/<rule_id>.property \
-  --jar    <jar> \
-  --output-dir <output_dir>/verification/<rule_id>
+  --jar        <jar> \
+  --output-dir <output_dir>/verification/<rule_id> \
+  --output-file <output_dir>/work/<rule_id>/step05_verification_gate_raw.json
 ```
 
-Persist stdout regardless of outcome:
+Persist from that file (no shell escaping of JSON):
 ```bash
 python <scripts>/artifact_writer.py \
-  --rule-id  <rule_id> \
-  --step     step05_verification_gate \
-  --data     '<verify_gate.py stdout>' \
-  --base-dir <output_dir>
+  --rule-id   <rule_id> \
+  --step      step05_verification_gate \
+  --from-file <output_dir>/work/<rule_id>/step05_verification_gate_raw.json \
+  --base-dir  <output_dir>
 ```
 
 **FAIL-FAST — CHECK THIS BEFORE DOING ANYTHING ELSE:**
-Parse `passes_gate` from the JSON output above.
-- If `passes_gate` is `false` (or the JSON is missing): **STOP IMMEDIATELY. Do NOT run Step 06 or Step 07.** Return the persisted artifact to the caller as the final result.
+Read `passes_gate` from `<output_dir>/work/<rule_id>/step05_verification_gate_raw.json`.
+- If the file is missing or `passes_gate` is `false`: **STOP. Do NOT run Step 06 or Step 07.** Return `{"status":"error","step":"step05_verification_gate","passes_gate":false}` to the caller.
 - Only if `passes_gate` is `true`: keep `rmc_exit_code`, `vacuity_status.is_vacuous`, `mutation_score` and proceed to Step 06.
 
 ---

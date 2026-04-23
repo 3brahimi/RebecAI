@@ -179,13 +179,9 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    try:
-        jar   = str(safe_path(args.jar))
-        model = str(safe_path(args.model))
-        prop  = str(safe_path(args.property))
-    except ValueError as exc:
-        print(json.dumps({"status": "error", "message": str(exc)}))
-        sys.exit(1)
+    jar   = str(safe_path(args.jar))
+    model = str(safe_path(args.model))
+    prop  = str(safe_path(args.property))
 
     result = run_verification_gate(
         jar=jar,

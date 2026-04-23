@@ -27,7 +27,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Atomically write a step artifact JSON")
     parser.add_argument("--rule-id", required=True)
     parser.add_argument("--step", required=True, help="e.g. step02_abstraction")
-    parser.add_argument("--data", required=True, help="JSON string of artifact payload")
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--data", help="JSON string of artifact payload")
+    group.add_argument("--from-file", metavar="PATH", help="Path to JSON file to read payload from")
     parser.add_argument("--base-dir", default="output")
     args = parser.parse_args()
 
@@ -36,9 +38,13 @@ def main() -> None:
     from output_policy import step_artifact_path
 
     try:
-        payload = json.loads(args.data)
-    except json.JSONDecodeError as exc:
-        print(json.dumps({"status": "error", "message": f"Invalid JSON in --data: {exc}"}))
+        if args.from_file:
+            raw = Path(args.from_file).read_text(encoding="utf-8")
+        else:
+            raw = args.data
+        payload = json.loads(raw)
+    except (json.JSONDecodeError, OSError) as exc:
+        print(json.dumps({"status": "error", "message": f"Could not load artifact payload: {exc}"}))
         sys.exit(1)
 
     try:
