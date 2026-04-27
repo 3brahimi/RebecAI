@@ -9,10 +9,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-try:
-    from .snapshotter import extract_state_variables  # type: ignore
-except ImportError:
-    from snapshotter import extract_state_variables
 
 
 @dataclass(frozen=True)
@@ -31,6 +27,7 @@ class RuleReportBundle:
     model_property_stats: Dict[str, Any]
     mapping_delta: Dict[str, Optional[int]]
     artifacts: Dict[str, str]
+    rubric_9pt: Dict[str, Any]
 
 
 def _load_json(path: Path) -> Optional[Dict[str, Any]]:
@@ -234,6 +231,13 @@ def _count_assertions(property_content: str) -> int:
     return len(re.findall(r"\b\w+\s*:\s*.+?;", block, re.DOTALL))
 
 
+def _count_statevars(model_content: str) -> int:
+    count = 0
+    for block in re.findall(r'\bstatevars\s*\{([^}]*)\}', model_content, re.DOTALL):
+        count += len(re.findall(r'\b\w+\s+\w+\s*(?:=\s*[^;]+)?\s*;', block))
+    return count
+
+
 def _extract_model_property_stats(model_file: Optional[Path], property_file: Optional[Path]) -> Dict[str, Any]:
     statevars_count = 0
     predicates_count = 0
@@ -242,7 +246,7 @@ def _extract_model_property_stats(model_file: Optional[Path], property_file: Opt
     if model_file and model_file.exists():
         try:
             model_content = model_file.read_text(encoding="utf-8")
-            statevars_count = len(extract_state_variables(model_content))
+            statevars_count = _count_statevars(model_content)
         except Exception:
             statevars_count = 0
 
@@ -339,6 +343,9 @@ def build_rule_report_bundle(rule_dir: Path) -> Optional[RuleReportBundle]:
     if vacuity_metrics.get("checks_total", 0) == 0:
         vacuity_metrics = _extract_vacuity_from_scorecard(scorecard)
 
+    rubric_9pt_raw = scorecard.get("rubric_9pt", {})
+    rubric_9pt: Dict[str, Any] = rubric_9pt_raw if isinstance(rubric_9pt_raw, dict) else {}
+
     return RuleReportBundle(
         rule_id=_extract_rule_id(scorecard, rule_dir.name),
         folder=str(rule_dir),
@@ -358,6 +365,7 @@ def build_rule_report_bundle(rule_dir: Path) -> Optional[RuleReportBundle]:
             "model": str(model_file) if model_file else "",
             "property": str(property_file) if property_file else "",
         },
+        rubric_9pt=rubric_9pt,
     )
 
 
