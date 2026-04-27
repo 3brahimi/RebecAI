@@ -1,63 +1,331 @@
 #!/usr/bin/env python3
+"""Score a single Legata→Rebeca translation against the 9-point TQC rubric.
+
+Translation Quality Criteria (TQC) from docs/manuscript.tex §TQC:
+  1. Syntax correctness   (0–1)  — automated via RMC two-stage exit code
+  2. Attribute coverage   (0–3)  — automated via variable_map vs concept_mapping
+  3. Actor coverage       (0–2)  — automated via actor_map vs concept_mapping
+  4. No hallucinations    (0–1)  — auto-partial via stderr error patterns
+  5. Logic correctness    (0–2)  — heuristic: assertion structure + verification outcome
+  Total max: 9 pts
+
+The 9-pt total is always normalized to 0–100. When vacuity and/or mutation analyses
+are enabled their results fill the remaining weight:
+
+  Mode              | Base | Vacuity | Mutation
+  Neither           | 100% |    —    |    —
+  Vacuity only      |  85% |   15%   |    —
+  Mutation only     |  75% |    —    |   25%
+  Both              |  60% |   15%   |   25%
 """
-Score a single Legata→Rebeca transformation against the scoring contract.
-Implements: syntax(10) + semantic_alignment(55) + verification_outcome(25) + hallucination_penalty(10) = 100
-Field names match scoring_reporting_contract.md exactly.
-"""
+
+from __future__ import annotations
 
 import json
-import os
+import re
 import sys
-import tempfile
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any, Dict, List, Optional
+
+# ---------------------------------------------------------------------------
+# Normalization weight constants (must sum to 100 for the "both enabled" mode)
+# ---------------------------------------------------------------------------
+_W_VACUITY: float = 15.0
+_W_MUTATION: float = 25.0
+_W_BASE_BOTH: float = 60.0
+_W_BASE_VAC_ONLY: float = 85.0
+_W_BASE_MUT_ONLY: float = 75.0
+_W_BASE_NONE: float = 100.0
+
+# ---------------------------------------------------------------------------
+# Shared result type
+# ---------------------------------------------------------------------------
+
+@dataclass
+class CriterionResult:
+    score: int
+    max_score: int
+    method: str          # "automated" | "auto_partial" | "heuristic"
+    detail: Dict[str, Any]
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+
+# ---------------------------------------------------------------------------
+# Helper 1 — Syntax correctness (0–1)
+# ---------------------------------------------------------------------------
+
+_RMC_ERROR_LINE = re.compile(r"line:\d+,\s*column:\d+,\s*.+")
+
+
+def score_syntax_correctness(
+    rmc_exit_code: int,
+    rmc_stderr_content: str = "",
+    compile_stderr_content: str = "",
+) -> CriterionResult:
+    """Criterion 1: 1 if both compile stages passed, 0 otherwise."""
+    if rmc_exit_code == 0:
+        return CriterionResult(
+            score=1, max_score=1, method="automated",
+            detail={"stage_failed": None, "error_lines": []},
+        )
+
+    if rmc_exit_code == 5:
+        error_lines = _RMC_ERROR_LINE.findall(rmc_stderr_content)
+        return CriterionResult(
+            score=0, max_score=1, method="automated",
+            detail={"stage_failed": "rmc_parse", "error_lines": error_lines[:10]},
+        )
+
+    if rmc_exit_code == 4:
+        cpp_errors = [
+            ln.strip() for ln in compile_stderr_content.splitlines()
+            if ": error:" in ln
+        ][:10]
+        return CriterionResult(
+            score=0, max_score=1, method="automated",
+            detail={"stage_failed": "cpp_compile", "error_lines": cpp_errors},
+        )
+
+    if rmc_exit_code == 3:
+        return CriterionResult(
+            score=0, max_score=1, method="automated",
+            detail={"stage_failed": "rmc_timeout", "error_lines": []},
+        )
+
+    return CriterionResult(
+        score=0, max_score=1, method="automated",
+        detail={"stage_failed": "rmc_other", "error_lines": [], "exit_code": rmc_exit_code},
+    )
+
+
+# ---------------------------------------------------------------------------
+# Helper 2 — Attribute coverage (0–3)
+# ---------------------------------------------------------------------------
+
+def score_attribute_coverage(
+    variable_map: Dict[str, Any],
+    concept_mapping: Dict[str, Any],
+) -> CriterionResult:
+    """Criterion 2: coverage of required attributes in mapping output (0–3)."""
+    required: set = set(variable_map.keys())
+    if not required:
+        return CriterionResult(
+            score=3, max_score=3, method="automated",
+            detail={"required": [], "found": [], "missing": [], "coverage_pct": 100.0},
+        )
+
+    found: set = set()
+
+    for patch in concept_mapping.get("statevar_patches", []):
+        for sv in patch.get("add_statevars", []):
+            found.add(sv.get("name", ""))
+
+    for dp in concept_mapping.get("define_patches", []):
+        expr = dp.get("expr", "")
+        for var in required:
+            if re.search(r"\b" + re.escape(var) + r"\b", expr):
+                found.add(var)
+
+    found = found & required
+    missing = required - found
+    coverage_pct = len(found) / len(required) * 100.0
+
+    if coverage_pct < 33.0:
+        score = 0
+    elif coverage_pct < 67.0:
+        score = 1
+    elif coverage_pct < 100.0:
+        score = 2
+    else:
+        score = 3
+
+    return CriterionResult(
+        score=score, max_score=3, method="automated",
+        detail={
+            "required": sorted(required),
+            "found": sorted(found),
+            "missing": sorted(missing),
+            "coverage_pct": round(coverage_pct, 1),
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
+# Helper 3 — Actor coverage (0–2)
+# ---------------------------------------------------------------------------
+
+def score_actor_coverage(
+    actor_map: Dict[str, Any],
+    concept_mapping: Dict[str, Any],
+) -> CriterionResult:
+    """Criterion 3: none/some/all relevant actors present in mapping (0–2)."""
+    required: set = set(actor_map.keys())
+    if not required:
+        return CriterionResult(
+            score=2, max_score=2, method="automated",
+            detail={"required": [], "found": [], "missing": []},
+        )
+
+    found: set = set()
+    for patch in (
+        concept_mapping.get("statevar_patches", [])
+        + concept_mapping.get("queue_size_patches", [])
+    ):
+        rc = patch.get("reactiveclass", "")
+        if rc:
+            found.add(rc)
+
+    found = found & required
+    missing = required - found
+
+    if not found:
+        score = 0
+    elif found < required:
+        score = 1
+    else:
+        score = 2
+
+    return CriterionResult(
+        score=score, max_score=2, method="automated",
+        detail={
+            "required": sorted(required),
+            "found": sorted(found),
+            "missing": sorted(missing),
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
+# Helper 4 — No hallucinations (0–1)
+# ---------------------------------------------------------------------------
+
+_HALLUCINATION_RMC = re.compile(
+    r"undefined|not declared|unknown symbol|cannot resolve|unresolved",
+    re.IGNORECASE,
+)
+
+_HALLUCINATION_CPP = re.compile(
+    r"has no member named|was not declared in this scope|is not a member of|no such identifier",
+    re.IGNORECASE,
+)
+
+
+def score_hallucination_free(
+    rmc_exit_code: int,
+    rmc_stderr_content: str = "",
+    compile_stderr_content: str = "",
+) -> CriterionResult:
+    """Criterion 4: 1 if no fictitious references detected, 0 otherwise."""
+    if rmc_exit_code == 0:
+        return CriterionResult(
+            score=1, max_score=1, method="auto_partial",
+            detail={"matched_patterns": [], "stage": "clean"},
+        )
+
+    rmc_matches = _HALLUCINATION_RMC.findall(rmc_stderr_content)
+    cpp_matches = _HALLUCINATION_CPP.findall(compile_stderr_content)
+
+    if rmc_matches:
+        return CriterionResult(
+            score=0, max_score=1, method="auto_partial",
+            detail={"matched_patterns": list(set(rmc_matches)), "stage": "rmc_parse"},
+        )
+    if cpp_matches:
+        return CriterionResult(
+            score=0, max_score=1, method="auto_partial",
+            detail={"matched_patterns": list(set(cpp_matches)), "stage": "cpp_compile"},
+        )
+
+    return CriterionResult(
+        score=0, max_score=1, method="auto_partial",
+        detail={"matched_patterns": [], "stage": "syntax_or_other_error"},
+    )
+
+
+# ---------------------------------------------------------------------------
+# Helper 5 — Logic correctness (0–2)
+# ---------------------------------------------------------------------------
+
+_ASSERTION_FORM = re.compile(r"assertion\s+\w+\s*:\s*!\w+\s*\|\|\s*\w+\s*;")
+
+
+def score_logic_correctness(
+    property_text: str,
+    concept_mapping: Dict[str, Any],
+    verify_status: str,
+    is_vacuous: Optional[bool],
+) -> CriterionResult:
+    """Criterion 5: expression completeness + semantic correctness (0–2)."""
+    expected_assertions: List[str] = concept_mapping.get("assertion_lines", [])
+
+    if not expected_assertions or not property_text:
+        expression_complete = 0
+    else:
+        form_ok = _ASSERTION_FORM.search(property_text) is not None
+        labels_ok = all(
+            re.search(
+                r"assertion\s+" + re.escape(ln.split(":")[0].strip()) + r"\s*:",
+                property_text,
+            )
+            for ln in expected_assertions
+            if ":" in ln
+        )
+        expression_complete = 1 if (form_ok and labels_ok) else 0
+
+    semantic_correct = 1 if (verify_status == "pass" and is_vacuous is not True) else 0
+
+    return CriterionResult(
+        score=expression_complete + semantic_correct,
+        max_score=2,
+        method="heuristic",
+        detail={
+            "expression_complete": expression_complete,
+            "semantic_correct": semantic_correct,
+            "verify_status": verify_status,
+            "is_vacuous": is_vacuous,
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
+# Main scorer
+# ---------------------------------------------------------------------------
 
 class RubricScorer:
-    """Implements 100-point scoring rubric matching scoring_reporting_contract.md."""
-
-    def __init__(self):
-        # Weights sum to 100; field names match the contract exactly
-        self.weights = {
-            "syntax": 10,
-            "semantic_alignment": 55,   # covers completeness + actor coverage
-            "verification_outcome": 25,
-            "hallucination_penalty": 10,
-        }
-        self.total_points = sum(self.weights.values())  # 100
+    """TQC 9-point rubric scorer, normalized to 0–100."""
 
     def score_rule(
         self,
         rule_id: str,
-        model_artifact: Optional[str] = None,
-        property_artifact: Optional[str] = None,
         verify_status: str = "unknown",
-        is_vacuous: Optional[bool] = None,
-        assertion_id: Optional[str] = None,
         rmc_exit_code: Optional[int] = None,
         model_outcome: Optional[str] = None,
+        is_vacuous: Optional[bool] = None,
+        assertion_id: Optional[str] = None,
         mutation_score: Optional[float] = None,
         vacuity_comparison: Optional[str] = None,
+        property_text: str = "",
+        variable_map: Optional[Dict[str, Any]] = None,
+        actor_map: Optional[Dict[str, Any]] = None,
+        concept_mapping: Optional[Dict[str, Any]] = None,
+        rmc_stderr_content: str = "",
+        compile_stderr_content: str = "",
+        # Legacy positional compat
+        model_artifact: Optional[str] = None,
+        property_artifact: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """
-        Score a single rule transformation.
+        """Score a single rule translation. Returns scorecard dict."""
+        effective_status = verify_status
+        if rmc_exit_code is not None and rmc_exit_code != 0:
+            effective_status = "fail"
+        elif (model_outcome or "").strip().lower() == "cex":
+            effective_status = "fail"
 
-        Args:
-            rule_id: Rule identifier (e.g., "Rule-22")
-            model_artifact: Path to .rebeca file or None/"no_model_change"
-            property_artifact: Path to .property file or None
-            verify_status: Verification status (pass|fail|timeout|blocked|unknown)
-            is_vacuous: Vacuity result from vacuity_checker (True/False/None).
-                        When None the vacuity field is left as "unchecked".
-            assertion_id: Label of the assertion that was checked, for auditability.
-            rmc_exit_code: Raw run_rmc exit code for the baseline run.
-            model_outcome: Semantic outcome from model.out (satisfied|cex|unknown).
-            mutation_score: Mutation kill rate in [0, 100].
-            vacuity_comparison: Baseline-vs-vacuity outcome relation (same|changed|unknown).
+        exit_code = rmc_exit_code if rmc_exit_code is not None else (0 if effective_status == "pass" else 1)
 
-        Returns:
-            Scorecard dict with breakdown, status, and remediation hints
-        """
-        # Resolve vacuity — do NOT hardcode False when the caller didn't provide it
         vacuity_entry: Dict[str, Any] = {
             "is_vacuous": is_vacuous,
             "assertion_id": assertion_id,
@@ -68,262 +336,243 @@ class RubricScorer:
             ),
         }
 
-        # Normalize optional semantic inputs.
-        normalized_model_outcome = (model_outcome or "unknown").strip().lower()
-        normalized_vacuity_cmp = (vacuity_comparison or "unknown").strip().lower()
-        bounded_mutation_score = max(0.0, min(100.0, float(mutation_score))) if mutation_score is not None else None
+        bounded_mutation: Optional[float] = (
+            max(0.0, min(100.0, float(mutation_score)))
+            if mutation_score is not None else None
+        )
 
-        semantic_alignment_score: Optional[int] = None
-        if bounded_mutation_score is not None or normalized_vacuity_cmp in ("same", "changed"):
-            mutation_component = (bounded_mutation_score or 0.0) * 0.50  # max 50
-            vacuity_component = 5.0 if normalized_vacuity_cmp == "same" else 0.0
-            semantic_alignment_score = int(round(min(55.0, mutation_component + vacuity_component)))
+        # Run all 5 TQC helpers
+        c1 = score_syntax_correctness(exit_code, rmc_stderr_content, compile_stderr_content)
+        c2 = score_attribute_coverage(variable_map or {}, concept_mapping or {})
+        c3 = score_actor_coverage(actor_map or {}, concept_mapping or {})
+        c4 = score_hallucination_free(exit_code, rmc_stderr_content, compile_stderr_content)
+        c5 = score_logic_correctness(property_text, concept_mapping or {}, effective_status, is_vacuous)
 
-        scorecard = {
-            "integrity": "passed",
-            "mutation_score": bounded_mutation_score if bounded_mutation_score is not None else 0.0,
-            "vacuity": vacuity_entry,
-            "rmc_exit_code": rmc_exit_code,
-            "model_outcome": normalized_model_outcome,
-            "vacuity_comparison": normalized_vacuity_cmp,
-            "is_hallucination": False,
-            "rule_id": rule_id,
-            "input_status": self._infer_input_status(model_artifact, property_artifact),
-            "score_breakdown": {},
-            "score_total": 0,
-            "status": "Unknown",
-            "confidence": 0.0,
-            "mapping_path": "legata",
-            "failure_reasons": [],
-            "remediation_hints": []
+        rubric_total = c1.score + c2.score + c3.score + c4.score + c5.score
+
+        rubric_9pt = {
+            "syntax_correctness": c1.to_dict(),
+            "attribute_coverage": c2.to_dict(),
+            "actor_coverage":     c3.to_dict(),
+            "hallucination_free": c4.to_dict(),
+            "logic_correctness":  c5.to_dict(),
+            "total": rubric_total,
+            "max":   9,
         }
 
-        # Scoring logic based on verification status
-        # All breakdown field names match scoring_reporting_contract.md
-        effective_verify_status = verify_status
-        if rmc_exit_code is not None and rmc_exit_code != 0:
-            effective_verify_status = "fail"
-        elif normalized_model_outcome == "cex":
-            effective_verify_status = "fail"
+        has_vacuity  = is_vacuous is not None
+        has_mutation = bounded_mutation is not None
 
-        if effective_verify_status == "pass":
-            scorecard["score_breakdown"]["syntax"] = 10
-            scorecard["score_breakdown"]["semantic_alignment"] = (
-                semantic_alignment_score if semantic_alignment_score is not None else 55
-            )
-            scorecard["score_breakdown"]["verification_outcome"] = 25
-            scorecard["score_breakdown"]["hallucination_penalty"] = 10
-            scorecard["score_total"] = sum(scorecard["score_breakdown"].values())
-            scorecard["status"] = "Pass"
-            scorecard["confidence"] = 1.0
-            # A vacuous pass is technically a verification pass but semantically
-            # meaningless — penalise the verification_outcome sub-score.
-            if is_vacuous is True:
-                scorecard["score_breakdown"]["verification_outcome"] = 10
-                scorecard["score_total"] = sum(scorecard["score_breakdown"].values())
-                scorecard["status"] = "Conditional"
-                scorecard["confidence"] = 0.6
-                scorecard["failure_reasons"].append(
-                    "Property verified but vacuously — precondition is never reachable"
-                )
-                scorecard["remediation_hints"].append(
-                    "Review precondition reachability; strengthen model state space"
-                )
-
-        elif effective_verify_status == "fail":
-            scorecard["score_breakdown"]["syntax"] = 10   # Syntax likely still valid
-            scorecard["score_breakdown"]["semantic_alignment"] = (
-                semantic_alignment_score if semantic_alignment_score is not None else 30
-            )
-            scorecard["score_breakdown"]["verification_outcome"] = 0   # Verification failed
-            scorecard["score_breakdown"]["hallucination_penalty"] = 0  # Likely hallucination
-            scorecard["score_total"] = sum(scorecard["score_breakdown"].values())
-            scorecard["status"] = "Fail"
-            scorecard["confidence"] = 0.5
-            if rmc_exit_code is not None and rmc_exit_code != 0:
-                scorecard["failure_reasons"].append(
-                    f"Verification failed in RMC model checker (exit={rmc_exit_code})"
-                )
-            elif normalized_model_outcome == "cex":
-                scorecard["failure_reasons"].append(
-                    "model.out reported counterexample outcome (cex)"
-                )
-            else:
-                scorecard["failure_reasons"].append("Verification failed in RMC model checker")
-            scorecard["remediation_hints"].append("Review counterexample from RMC output")
-            scorecard["remediation_hints"].append("Check state variable alignment")
-            scorecard["remediation_hints"].append("Verify assertion logic matches Legata condition")
-
-        elif effective_verify_status == "timeout":
-            scorecard["score_breakdown"]["syntax"] = 10
-            scorecard["score_breakdown"]["semantic_alignment"] = (
-                semantic_alignment_score if semantic_alignment_score is not None else 30
-            )
-            scorecard["score_breakdown"]["verification_outcome"] = 0
-            scorecard["score_breakdown"]["hallucination_penalty"] = 0
-            scorecard["score_total"] = sum(scorecard["score_breakdown"].values())
-            scorecard["status"] = "Conditional"
-            scorecard["confidence"] = 0.3
-            scorecard["failure_reasons"].append("Verification timed out (>120s)")
-            scorecard["remediation_hints"].append("Increase timeout in rmc_config")
-            scorecard["remediation_hints"].append("Simplify actor state space")
-            scorecard["remediation_hints"].append("Review property complexity")
-
-        elif verify_status == "blocked":
-            scorecard["score_breakdown"]["syntax"] = 0
-            scorecard["score_breakdown"]["semantic_alignment"] = 0
-            scorecard["score_breakdown"]["verification_outcome"] = 0
-            scorecard["score_breakdown"]["hallucination_penalty"] = 0
-            scorecard["score_total"] = 0
-            scorecard["status"] = "Blocked"
-            scorecard["confidence"] = 0.0
-            scorecard["mapping_path"] = "colreg-fallback"
-            scorecard["failure_reasons"].append("Legata formalization insufficient")
-            scorecard["remediation_hints"].append("Use COLREG fallback mapping")
-            scorecard["remediation_hints"].append("Manual review required")
-
-        else:  # unknown
-            scorecard["score_breakdown"]["syntax"] = 0
-            scorecard["score_breakdown"]["semantic_alignment"] = 0
-            scorecard["score_breakdown"]["verification_outcome"] = 0
-            scorecard["score_breakdown"]["hallucination_penalty"] = 0
-            scorecard["score_total"] = 0
-            scorecard["status"] = "Unknown"
-            scorecard["confidence"] = 0.0
-            scorecard["failure_reasons"].append("Verification status unknown")
-
-        return scorecard
-
-    def _infer_input_status(self, model: Optional[str], prop: Optional[str]) -> str:
-        """Infer input Legata status from artifacts."""
-        if model is None and prop is None:
-            return "not-formalized"
-        elif model == "no_model_change" and prop:
-            return "formalized"
-        elif model and prop:
-            return "formalized"
-        elif model and prop is None:
-            return "incomplete"
+        if has_vacuity and has_mutation:
+            base_weight = _W_BASE_BOTH
+        elif has_vacuity:
+            base_weight = _W_BASE_VAC_ONLY
+        elif has_mutation:
+            base_weight = _W_BASE_MUT_ONLY
         else:
-            return "unknown"
+            base_weight = _W_BASE_NONE
+
+        base_pct     = (rubric_total / 9.0) * base_weight
+        vacuity_pct  = (_W_VACUITY if is_vacuous is not True else 0.0) if has_vacuity else 0.0
+        mutation_pct = ((bounded_mutation / 100.0) * _W_MUTATION) if has_mutation else 0.0
+        score_total  = round(base_pct + vacuity_pct + mutation_pct)
+
+        failure_reasons: List[str] = []
+        remediation_hints: List[str] = []
+
+        if effective_status == "pass":
+            status = "Pass"
+            confidence = round(0.8 + 0.1 * (rubric_total / 9.0), 2)
+            if is_vacuous is True:
+                status = "Conditional"
+                confidence = 0.6
+                failure_reasons.append("Property verified but vacuously — precondition never reachable")
+                remediation_hints.append("Review precondition reachability; strengthen model state space")
+        elif effective_status == "fail":
+            status = "Fail"
+            confidence = 0.5
+            if rmc_exit_code and rmc_exit_code != 0:
+                failure_reasons.append(f"Verification failed in RMC model checker (exit={rmc_exit_code})")
+            elif (model_outcome or "").strip().lower() == "cex":
+                failure_reasons.append("model.out reported counterexample outcome (cex)")
+            else:
+                failure_reasons.append("Verification failed in RMC model checker")
+            remediation_hints += [
+                "Review counterexample from RMC output",
+                "Check state variable alignment",
+                "Verify assertion logic matches Legata condition",
+            ]
+        elif effective_status == "timeout":
+            status = "Conditional"
+            confidence = 0.3
+            failure_reasons.append("Verification timed out (>120s)")
+            remediation_hints += [
+                "Increase timeout in rmc_config",
+                "Simplify actor state space",
+                "Review property complexity",
+            ]
+        elif verify_status == "blocked":
+            status = "Blocked"
+            confidence = 0.0
+            failure_reasons.append("Legata formalization insufficient")
+            remediation_hints += ["Use COLREG fallback mapping", "Manual review required"]
+        else:
+            status = "Unknown"
+            confidence = 0.0
+            failure_reasons.append("Verification status unknown")
+
+        if c1.score == 0:
+            failure_reasons.append(f"Syntax error in stage: {c1.detail.get('stage_failed')}")
+        if c2.score < 2:
+            missing = c2.detail.get("missing", [])
+            if missing:
+                failure_reasons.append(f"Missing attributes in mapping: {missing}")
+        if c3.score < 2:
+            missing = c3.detail.get("missing", [])
+            if missing:
+                failure_reasons.append(f"Missing actors in mapping: {missing}")
+        if c4.score == 0 and c4.detail.get("matched_patterns"):
+            failure_reasons.append(f"Hallucination detected: {c4.detail['matched_patterns']}")
+        if c5.detail.get("expression_complete") == 0:
+            failure_reasons.append("Assertion form missing or malformed in property file")
+
+        return {
+            "rule_id": rule_id,
+            "rubric_9pt": rubric_9pt,
+            "score_breakdown": {
+                "base_9pt":      rubric_total,
+                "base_9pt_pct":  round(base_pct, 2),
+                "vacuity_pct":   round(vacuity_pct, 2) if has_vacuity else None,
+                "mutation_pct":  round(mutation_pct, 2) if has_mutation else None,
+            },
+            "score_total": score_total,
+            "status": status,
+            "confidence": confidence,
+            "vacuity": vacuity_entry,
+            "mutation_score": bounded_mutation if bounded_mutation is not None else 0.0,
+            "rmc_exit_code": rmc_exit_code,
+            "model_outcome": (model_outcome or "unknown").strip().lower(),
+            "mapping_path": "legata",
+            "failure_reasons": failure_reasons,
+            "remediation_hints": remediation_hints,
+        }
 
 
-def main():
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+
+def main() -> None:
     import argparse
 
-    parser = argparse.ArgumentParser(description="Score a single rule transformation")
-    parser.add_argument("--rule-id", required=True, help="Rule identifier (e.g., Rule-22)")
-    parser.add_argument("--model", default=None, help="Path to .rebeca model artifact")
-    parser.add_argument("--property", default=None, help="Path to .property artifact")
+    parser = argparse.ArgumentParser(
+        description="Score a single Legata→Rebeca translation (TQC 9-pt rubric)"
+    )
+    parser.add_argument("--rule-id", required=True)
     parser.add_argument("--verify-status", default="unknown",
-                        choices=["pass", "fail", "timeout", "blocked", "unknown"],
-                        help="Verification status from RMC")
-    parser.add_argument(
-        "--rmc-exit-code",
-        type=int,
-        default=None,
-        help="Raw RMC exit code from run_rmc.py",
-    )
-    parser.add_argument(
-        "--model-outcome",
-        default="unknown",
-        choices=["satisfied", "cex", "unknown"],
-        help="Semantic outcome from model.out execution",
-    )
-    parser.add_argument(
-        "--mutation-score",
-        type=float,
-        default=None,
-        help="Mutation kill rate in [0,100] used for semantic alignment scoring",
-    )
-    parser.add_argument(
-        "--vacuity-comparison",
-        default="unknown",
-        choices=["same", "changed", "unknown"],
-        help="Baseline-vs-vacuity semantic outcome relation",
-    )
-    parser.add_argument(
-        "--is-vacuous",
-        default=None,
-        choices=["true", "false"],
-        help="Vacuity result from vacuity_checker (true/false). "
-             "Omit if vacuity check was not performed.",
-    )
-    parser.add_argument(
-        "--assertion-id",
-        default=None,
-        help="Label of the assertion that was checked (for audit trail)",
-    )
-    parser.add_argument("--output-json", action="store_true", help="Output as JSON to stdout")
-    parser.add_argument(
-        "--output-file",
-        default=None,
-        metavar="PATH",
-        help=(
-            "Write scorecard JSON atomically to PATH (temp + rename). "
-            "Preferred over shell redirection of --output-json."
-        ),
-    )
+                        choices=["pass", "fail", "timeout", "blocked", "unknown"])
+    parser.add_argument("--rmc-exit-code", type=int, default=None)
+    parser.add_argument("--model-outcome", default="unknown",
+                        choices=["satisfied", "cex", "unknown"])
+    parser.add_argument("--is-vacuous", default=None, choices=["true", "false"],
+                        help="Vacuity result (omit if vacuity was not run)")
+    parser.add_argument("--assertion-id", default=None)
+    parser.add_argument("--mutation-score", type=float, default=None,
+                        help="Mutation kill rate [0,100] (omit if mutation was not run)")
+    parser.add_argument("--vacuity-comparison", default="unknown",
+                        choices=["same", "changed", "unknown"])
+    parser.add_argument("--output-dir", default="output",
+                        help="Pipeline base output directory (default: output). "
+                             "All input artifact paths are resolved from here via output_policy. "
+                             "Output artifact written to <output-dir>/work/<rule-id>/step07_reporting.json.")
+    parser.add_argument("--output-json", action="store_true")
+    parser.add_argument("--output-file", metavar="PATH", default=None)
 
     args = parser.parse_args()
 
-    # Parse --is-vacuous string → Optional[bool]
     is_vacuous: Optional[bool] = None
     if args.is_vacuous == "true":
         is_vacuous = True
     elif args.is_vacuous == "false":
         is_vacuous = False
 
+    # Bootstrap package root so sibling imports work when run directly
+    _HERE = Path(__file__).resolve().parent
+    _PKG_ROOT = _HERE.parent.parent.parent
+    if str(_PKG_ROOT) not in sys.path:
+        sys.path.insert(0, str(_PKG_ROOT))
+    from skills.rebeca_tooling.scripts.output_policy import (
+        step_artifact_path, final_paths, verification_paths,
+    )
+    from skills.rebeca_tooling.scripts.artifact_writer import _atomic_write
+
+    base = Path(args.output_dir)
+    rule_id = args.rule_id
+
+    def _read(p: Path) -> str:
+        return p.read_text(encoding="utf-8") if p.exists() else ""
+
+    def _read_json(p: Path) -> Dict[str, Any]:
+        return json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
+
+    property_file  = final_paths(rule_id, base).property
+    abs_path       = step_artifact_path(rule_id, "step02_abstraction", base)
+    cm_path        = step_artifact_path(rule_id, "step03_mapping", base)
+    rmc_dir        = verification_paths(rule_id, base_dir=base).rule_verification_dir / "rmc"
+
+    abs_raw  = _read_json(abs_path)
+    abs_data = abs_raw.get("abstraction_summary", abs_raw)
+
+    cm_raw  = _read_json(cm_path)
+    cm_data = cm_raw.get("concept_mapping", cm_raw)
+
     scorer = RubricScorer()
     scorecard = scorer.score_rule(
-        rule_id=args.rule_id,
-        model_artifact=args.model,
-        property_artifact=args.property,
+        rule_id=rule_id,
         verify_status=args.verify_status,
-        is_vacuous=is_vacuous,
-        assertion_id=args.assertion_id,
         rmc_exit_code=args.rmc_exit_code,
         model_outcome=args.model_outcome,
+        is_vacuous=is_vacuous,
+        assertion_id=args.assertion_id,
         mutation_score=args.mutation_score,
         vacuity_comparison=args.vacuity_comparison,
+        property_text=_read(property_file),
+        variable_map=abs_data.get("variable_map", {}),
+        actor_map=abs_data.get("actor_map", {}),
+        concept_mapping=cm_data,
+        rmc_stderr_content=_read(rmc_dir / "rmc_stderr.log"),
+        compile_stderr_content=_read(rmc_dir / "compile_stderr.log"),
     )
 
+    # Always write the canonical pipeline artifact
+    artifact_path = step_artifact_path(rule_id, "step07_reporting", base)
+    _atomic_write(artifact_path, scorecard)
+
     if args.output_file:
-        out = Path(args.output_file)
-        out.parent.mkdir(parents=True, exist_ok=True)
-        serialised = json.dumps(scorecard, indent=2, ensure_ascii=False)
-        fd, tmp = tempfile.mkstemp(dir=out.parent, prefix=f".{out.name}.tmp", suffix=".json")
-        try:
-            with os.fdopen(fd, "w", encoding="utf-8") as fh:
-                fh.write(serialised)
-            os.replace(tmp, out)
-        except Exception:
-            try:
-                os.unlink(tmp)
-            except OSError:
-                pass
-            raise
+        _atomic_write(Path(args.output_file), scorecard)
 
     if args.output_json:
         print(json.dumps(scorecard, indent=2))
     elif not args.output_file:
-        print(f"Rule: {scorecard['rule_id']}")
-        print(f"Status: {scorecard['status']}")
-        print(f"Score: {scorecard['score_total']}/{scorer.total_points}")
-        print(f"Confidence: {scorecard['confidence']:.1%}")
-        print(f"Mapping: {scorecard['mapping_path']}")
-        print("\nBreakdown (out of 100):")
-        for component, points in scorecard['score_breakdown'].items():
-            max_pts = scorer.weights[component]
-            print(f"  {component}: {points}/{max_pts}")
-        if scorecard['failure_reasons']:
-            print("\nReasons:")
-            for reason in scorecard['failure_reasons']:
+        r = scorecard["rubric_9pt"]
+        print(f"Rule:        {scorecard['rule_id']}")
+        print(f"Status:      {scorecard['status']}")
+        print(f"Score:       {scorecard['score_total']}/100")
+        print(f"Rubric:      {r['total']}/{r['max']} pts")
+        print(f"Confidence:  {scorecard['confidence']:.1%}")
+        print("\nTQC Breakdown:")
+        for name, c in [
+            ("1. Syntax",     r["syntax_correctness"]),
+            ("2. Attributes", r["attribute_coverage"]),
+            ("3. Actors",     r["actor_coverage"]),
+            ("4. No halluc.", r["hallucination_free"]),
+            ("5. Logic",      r["logic_correctness"]),
+        ]:
+            print(f"  {name}: {c['score']}/{c['max']}  [{c['method']}]")
+        if scorecard["failure_reasons"]:
+            print("\nIssues:")
+            for reason in scorecard["failure_reasons"]:
                 print(f"  - {reason}")
-        if scorecard['remediation_hints']:
-            print("\nRemediation:")
-            for hint in scorecard['remediation_hints']:
-                print(f"  - {hint}")
 
 
 if __name__ == "__main__":
