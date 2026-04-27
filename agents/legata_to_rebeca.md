@@ -193,42 +193,48 @@ python <scripts>/artifact_writer.py \
 
 Mutation and vacuity are either both disabled (no args in Step 05, since `--no-vacuity` and `--no-mutation` are default) or both enabled (both passed `--vacuity` and `--mutation` in Step 05).
 
-**If Step 05 ran with default (both disabled)** — most common path:
+Run these three commands in sequence. On any failure: stop and return the error to the caller.
 
+**Step 07a — Score** (`score_rule.py`)
+
+Default (both disabled):
 ```bash
 python <scripts>/score_rule.py \
   --rule-id       <rule_id> \
   --rmc-exit-code <step05_verification_gate.rmc_exit_code> \
-  --output-json \
-| python <scripts>/generate_report.py \
-  --output-dir <output_dir>/reports/<rule_id>
+  --output-dir    <output_dir>
 ```
 
-**If Step 05 ran with both vacuity and mutation enabled** (passed `--vacuity --mutation`):
-
+With vacuity and mutation enabled:
 ```bash
 python <scripts>/score_rule.py \
   --rule-id        <rule_id> \
   --rmc-exit-code  <step05_verification_gate.rmc_exit_code> \
   --is-vacuous     <step05_verification_gate.vacuity_status.is_vacuous> \
   --mutation-score <step05_verification_gate.mutation_score> \
-  --output-json \
-| python <scripts>/generate_report.py \
+  --output-dir     <output_dir>
+```
+
+`score_rule.py` writes the scorecard to `<output_dir>/work/<rule_id>/step07_reporting.json` automatically.
+
+**Step 07b — Aggregate Report** (`generate_report.py`)
+
+```bash
+python <scripts>/generate_report.py \
+  --input-scores <output_dir>/work/<rule_id>/step07_reporting.json \
+  --output-dir   <output_dir>/reports/<rule_id> \
+  --format both
+```
+
+**Step 07c — Per-Rule Comprehensive Report** (`generate_rule_report.py`)
+
+```bash
+python <scripts>/generate_rule_report.py \
+  --rule-dir   <output_dir>/<rule_id> \
   --output-dir <output_dir>/reports/<rule_id>
 ```
 
-`score_rule.py` does NOT accept `--output-dir`. Use `--output-json` to pipe its scorecard JSON to `generate_report.py`. `generate_report.py` accepts `--output-dir`.
-
-On failure → stop and propagate stderr.
-
-On success → persist stdout:
-```bash
-python <scripts>/artifact_writer.py \
-  --rule-id  <rule_id> \
-  --step     step07_reporting \
-  --data     '<generate_report.py stdout>' \
-  --base-dir <output_dir>
-```
+On any failure → stop and propagate stderr.
 
 Return `<output_dir>/reports/<rule_id>/summary.json` to the caller.
 

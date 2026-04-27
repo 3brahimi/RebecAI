@@ -93,7 +93,7 @@ result = run_rmc(
 
 ### Scoring and Reporting
 
-#### Score Single Rule
+#### Score Single Rule (TQC 9-Point Rubric)
 
 ```python
 from scripts.score_rule import RubricScorer
@@ -101,23 +101,42 @@ from scripts.score_rule import RubricScorer
 scorer = RubricScorer()
 scorecard = scorer.score_rule(
     rule_id="Rule-22",
-    verify_status="pass",       # pass|fail|timeout|blocked|unknown
-    model_artifact="model.rebeca",
-    property_artifact="property.property",
-    is_vacuous=False,           # from vacuity_checker result; None = unchecked
-    assertion_id="Rule22",      # assertion label used in vacuity check
+    verify_status="pass",          # pass|fail|timeout|blocked|unknown
+    rmc_exit_code=0,               # raw exit code from run_rmc_detailed()
+    is_vacuous=False,              # from vacuity_checker; None = not run
+    mutation_score=85.0,           # kill rate [0,100]; None = not run
+    # TQC artifact inputs — pass directly when calling from Python.
+    # The CLI derives these automatically from --output-dir + --rule-id.
+    property_text="...",           # content of .property file
+    variable_map={"speed": ...},   # from abstraction_summary.variable_map
+    actor_map={"GiveWayVessel": ...},  # from abstraction_summary.actor_map
+    concept_mapping={...},         # from step03_mapping.json concept_mapping
+    rmc_stderr_content="...",      # from verify_gate rmc/rmc_stderr.log
+    compile_stderr_content="...",  # from verify_gate rmc/compile_stderr.log
 )
 
 # Returns dict with:
-# - score_total: 0-100
-# - score_breakdown: {syntax:10, semantic_alignment:55, verification_outcome:25, integrity:10}
+# - rubric_9pt: {
+#     syntax_correctness:  {score:0-1, max:1, method:"automated", detail:{...}},
+#     attribute_coverage:  {score:0-3, max:3, method:"automated", detail:{...}},
+#     actor_coverage:      {score:0-2, max:2, method:"automated", detail:{...}},
+#     hallucination_free:  {score:0-1, max:1, method:"auto_partial", detail:{...}},
+#     logic_correctness:   {score:0-2, max:2, method:"heuristic", detail:{...}},
+#     total: 0-9, max: 9
+#   }
+# - score_breakdown: {base_9pt_pct, vacuity_pct, mutation_pct}
+# - score_total: 0-100  (normalized; weights depend on which analyses ran)
 # - status: Pass|Fail|Conditional|Blocked|Unknown
-#   NOTE: a vacuous pass (is_vacuous=True) yields status=Conditional and score=85
 # - confidence: 0.0-1.0
-# - vacuity: {is_vacuous: bool|None, assertion_id: str|None, status: "non_vacuous"|"vacuous"|"unchecked"}
-# - mapping_path: legata|colreg-fallback|synthesis-agent
+# - vacuity: {is_vacuous, assertion_id, status}
 # - failure_reasons: list
 # - remediation_hints: list
+#
+# Normalization weights:
+#   Neither vacuity nor mutation: base=100%
+#   Vacuity only:  base=85%  + vacuity=15%
+#   Mutation only: base=75%  + mutation=25%
+#   Both:          base=60%  + vacuity=15% + mutation=25%
 ```
 
 ## API/CLI Contract Sync (auto-generated source of truth)
@@ -303,19 +322,27 @@ Key output fields in `gate_result.json`:
 
 #### `step07_reporting` (`reporting_exec`) — Score and report
 
+Three sequential commands. `score_rule.py` writes `step07_reporting.json`; `generate_report.py` reads it; `generate_rule_report.py` generates per-rule comprehensive report.
+
 ```bash
-# Conditionally add --is-vacuous and --mutation-score (omit if null from Step 05)
+# Step 07a — Score (conditionally add --is-vacuous and --mutation-score)
 python3 <scripts>/score_rule.py \
-  --rule-id        <rule_id> \
-  --verify-status  <pass|fail|timeout|blocked> \
-  --rmc-exit-code  <rmc_exit_code> \
+  --rule-id       <rule_id> \
+  --rmc-exit-code <rmc_exit_code> \
+  --output-dir    <output_dir> \
   $([ "<vacuity_status.is_vacuous>" != "null" ] && echo "--is-vacuous <true|false>" || true) \
-  $([ "<mutation_score>" != "null" ] && echo "--mutation-score <mutation_score>" || true) \
-  --assertion-id   <rule_id> \
-  --output-json \
-| python3 <scripts>/generate_report.py \
-  --output-dir <output_dir>/reports \
+  $([ "<mutation_score>" != "null" ] && echo "--mutation-score <mutation_score>" || true)
+
+# Step 07b — Aggregate Report
+python3 <scripts>/generate_report.py \
+  --input-scores <output_dir>/work/<rule_id>/step07_reporting.json \
+  --output-dir   <output_dir>/reports/<rule_id> \
   --format both
+
+# Step 07c — Per-Rule Comprehensive Report
+python3 <scripts>/generate_rule_report.py \
+  --rule-dir   <output_dir>/<rule_id> \
+  --output-dir <output_dir>/reports/<rule_id>
 ```
 
 ## JSON Output Purity Contract
