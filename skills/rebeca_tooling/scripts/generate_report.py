@@ -418,7 +418,7 @@ Examples:
   generate_report.py --input-scores scorecards.json --output-dir reports/ --format both
 
   # single rule piped as compact JSON
-  score_single_rule.py --rule-id Rule-22 --verify-status pass --output-json | generate_report.py
+  score_rule.py --rule-id Rule-22 --verify-status pass --output-json | generate_report.py
 
   # multiple rules via NDJSON file
   generate_report.py --input-scores results.ndjson --format json

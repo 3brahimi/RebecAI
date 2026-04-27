@@ -1,8 +1,8 @@
-"""Unit tests for score_single_rule semantic signal integration."""
+"""Unit tests for score_rule semantic signal integration."""
 
 from __future__ import annotations
 
-from skills.rebeca_tooling.scripts.score_single_rule import RubricScorer
+from skills.rebeca_tooling.scripts.score_rule import RubricScorer
 
 
 def test_score_uses_rmc_modelout_mutation_and_vacuity_signals() -> None:

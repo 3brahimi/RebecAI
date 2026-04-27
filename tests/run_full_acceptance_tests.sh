@@ -213,7 +213,7 @@ fi
 
 # AT-015: Single-rule scoring exists
 echo -n "AT-015 (Single-Rule Scoring): "
-if check_file "$ARTIFACT_ROOT/skills/rebeca_tooling/scripts/score_single_rule.py"; then
+if check_file "$ARTIFACT_ROOT/skills/rebeca_tooling/scripts/score_rule.py"; then
   echo "PASS"
   ((PASSED++))
 else

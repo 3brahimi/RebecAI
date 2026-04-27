@@ -182,7 +182,7 @@ def check_vacuity(
 
     # Warn when multiple assertions exist and no assertion_id was specified —
     # silently defaulting to the first assertion is a common source of vacuity
-    # result mismatches between this tool and score_single_rule.py.
+    # result mismatches between this tool and score_rule.py.
     if assertion_id is None:
         # Extract the full Assertion block, then collect all label: entries inside it.
         _block = re.search(r'\bAssertion\s*\{([^}]*)\}', property_content, re.DOTALL)

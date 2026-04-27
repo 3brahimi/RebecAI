@@ -196,7 +196,7 @@ Mutation and vacuity are either both disabled (no args in Step 05, since `--no-v
 **If Step 05 ran with default (both disabled)** — most common path:
 
 ```bash
-python <scripts>/score_single_rule.py \
+python <scripts>/score_rule.py \
   --rule-id       <rule_id> \
   --rmc-exit-code <step05_verification_gate.rmc_exit_code> \
   --output-json \
@@ -207,7 +207,7 @@ python <scripts>/score_single_rule.py \
 **If Step 05 ran with both vacuity and mutation enabled** (passed `--vacuity --mutation`):
 
 ```bash
-python <scripts>/score_single_rule.py \
+python <scripts>/score_rule.py \
   --rule-id        <rule_id> \
   --rmc-exit-code  <step05_verification_gate.rmc_exit_code> \
   --is-vacuous     <step05_verification_gate.vacuity_status.is_vacuous> \
@@ -217,7 +217,7 @@ python <scripts>/score_single_rule.py \
   --output-dir <output_dir>/reports/<rule_id>
 ```
 
-`score_single_rule.py` does NOT accept `--output-dir`. Use `--output-json` to pipe its scorecard JSON to `generate_report.py`. `generate_report.py` accepts `--output-dir`.
+`score_rule.py` does NOT accept `--output-dir`. Use `--output-json` to pipe its scorecard JSON to `generate_report.py`. `generate_report.py` accepts `--output-dir`.
 
 On failure → stop and propagate stderr.
 

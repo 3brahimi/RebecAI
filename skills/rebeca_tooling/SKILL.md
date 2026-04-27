@@ -96,7 +96,7 @@ result = run_rmc(
 #### Score Single Rule
 
 ```python
-from scripts.score_single_rule import RubricScorer
+from scripts.score_rule import RubricScorer
 
 scorer = RubricScorer()
 scorecard = scorer.score_rule(
@@ -216,7 +216,7 @@ For general script usage, run any script with `--help`:
 python3 <scripts>/run_rmc.py --help
 python3 <scripts>/classify_rule_status.py --help
 python3 <scripts>/verify_gate.py --help
-python3 <scripts>/score_single_rule.py --help
+python3 <scripts>/score_rule.py --help
 python3 <scripts>/generate_report.py --help
 ```
 
@@ -268,8 +268,8 @@ def verify_rule(rule_id: str, model_path: str, property_path: str) -> dict:
 |--------|---------|-----|
 | `run_rmc.py` | Execute RMC model checker | ✓ |
 | `verify_gate.py` | Single-call gate: RMC → vacuity → mutation; outputs `passes_gate` | ✓ |
-| `score_single_rule.py` | 100-point scoring rubric; `--rmc-exit-code`, `--is-vacuous`, `--mutation-score` | ✓ |
-| `generate_report.py` | Aggregate report from scorecards; pipe from `score_single_rule.py` | ✓ |
+| `score_rule.py` | 100-point scoring rubric; `--rmc-exit-code`, `--is-vacuous`, `--mutation-score` | ✓ |
+| `generate_report.py` | Aggregate report from scorecards; pipe from `score_rule.py` | ✓ |
 | `output_policy.py` | Canonical path policy — the only permitted source of artifact paths | ✗ |
 | `artifact_writer.py` | Atomically persist a step artifact (tmp→rename) | ✓ |
 
@@ -305,7 +305,7 @@ Key output fields in `gate_result.json`:
 
 ```bash
 # Conditionally add --is-vacuous and --mutation-score (omit if null from Step 05)
-python3 <scripts>/score_single_rule.py \
+python3 <scripts>/score_rule.py \
   --rule-id        <rule_id> \
   --verify-status  <pass|fail|timeout|blocked> \
   --rmc-exit-code  <rmc_exit_code> \
@@ -351,7 +351,7 @@ CI also runs this automatically via `.github/workflows/cli-help-doc-sync.yml`.
 5. **Handle C++ compilation failures** - Exit code 4 means g++ failed, not RMC
 6. **Distinguish parse vs compile errors** - Exit code 5 (parse) vs 4 (compile)
 7. **Review fallback mappings** - COLREG fallback always requires manual review
-8. **Feed vacuity result into score_single_rule** using `--is-vacuous` — read `vacuity_status.is_vacuous` from `verify_gate.py` output; a vacuous pass silently scores 100 otherwise
+8. **Feed vacuity result into score_rule** using `--is-vacuous` — read `vacuity_status.is_vacuous` from `verify_gate.py` output; a vacuous pass silently scores 100 otherwise
 9. **Pipe scorecards as JSON array or NDJSON** to generate_report.py; do not rely on stdin line-by-line when cards span multiple lines
 10. **Use generate_rule_report.py for artifact-rich per-rule outputs** instead of scorecard-only summaries when mutation/vacuity/model stats are required
 11. **Use consolidate_reports.py for portfolio-level review** and include SVG plots for papers/decks, PNG for slides/CI artifacts

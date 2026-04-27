@@ -21,10 +21,10 @@ def _run_script(args: list[str]) -> subprocess.CompletedProcess[str]:
     )
 
 
-def test_score_single_rule_output_json_stdout_is_pure_json() -> None:
+def test_score_rule_output_json_stdout_is_pure_json() -> None:
     result = _run_script(
         [
-            "score_single_rule.py",
+            "score_rule.py",
             "--rule-id",
             "Rule-22",
             "--verify-status",

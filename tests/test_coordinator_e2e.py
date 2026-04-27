@@ -439,8 +439,8 @@ class TestStep07Packaging:
 # ---------------------------------------------------------------------------
 
 class TestStep08Reporting:
-    def test_score_single_rule(self, pipeline: Dict[str, Any]) -> None:
-        """IT-E2E-08a: score_single_rule.py produces a valid scorecard."""
+    def test_score_rule(self, pipeline: Dict[str, Any]) -> None:
+        """IT-E2E-08a: score_rule.py produces a valid scorecard."""
         step04 = pipeline["phase_results"].get("step04")
         assert step04 is not None, "Step04 must complete before Step08"
 
@@ -448,15 +448,15 @@ class TestStep08Reporting:
         verify_status = "pass" if step06.get("verified") else "unknown"
 
         result = _run([
-            sys.executable, str(_SCRIPTS / "score_single_rule.py"),
+            sys.executable, str(_SCRIPTS / "score_rule.py"),
             "--rule-id", pipeline["rule_id"],
             "--model", step04["model_artifact"]["path"],
             "--property", step04["property_artifact"]["path"],
             "--verify-status", verify_status,
             "--output-json",
         ])
-        assert result.returncode == 0, f"score_single_rule.py failed: {result.stderr}"
-        scorecard = _json(result, context="Step08/score_single_rule")
+        assert result.returncode == 0, f"score_rule.py failed: {result.stderr}"
+        scorecard = _json(result, context="Step08/score_rule")
 
         for field in ("rule_id", "status", "score_total", "score_breakdown"):
             assert field in scorecard, f"scorecard missing required field: {field!r}"
