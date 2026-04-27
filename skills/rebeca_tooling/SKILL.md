@@ -288,6 +288,8 @@ python3 <scripts>/verify_gate.py \
   --output-dir <verification_run_dir> \
   --output-file <verification_run_dir>/gate_result.json \
   --output-json
+  # Optional: append --vacuity to enable vacuity checking (default: off)
+  # Optional: append --mutation to enable mutation-based testing (default: off)
 ```
 
 Key output fields in `gate_result.json`:
@@ -296,18 +298,19 @@ Key output fields in `gate_result.json`:
 |-----------------------------|--------------------------------------------|
 | `passes_gate`               | `true` only when all three criteria met    |
 | `rmc_exit_code`             | 0 = parse + compile OK                     |
-| `vacuity_status.is_vacuous` | `true` = assertion trivially satisfied     |
-| `mutation_score`            | kill rate 0–100; threshold is 80           |
+| `vacuity_status.is_vacuous` | `true` = assertion trivially satisfied; `null` if vacuity was not enabled |
+| `mutation_score`            | kill rate 0–100; threshold is 80; `null` if mutation was not enabled |
 
 #### `step07_reporting` (`reporting_exec`) — Score and report
 
 ```bash
+# Conditionally add --is-vacuous and --mutation-score (omit if null from Step 05)
 python3 <scripts>/score_single_rule.py \
   --rule-id        <rule_id> \
   --verify-status  <pass|fail|timeout|blocked> \
   --rmc-exit-code  <rmc_exit_code> \
-  --is-vacuous     <true|false> \
-  --mutation-score <mutation_score> \
+  $([ "<vacuity_status.is_vacuous>" != "null" ] && echo "--is-vacuous <true|false>" || true) \
+  $([ "<mutation_score>" != "null" ] && echo "--mutation-score <mutation_score>" || true) \
   --assertion-id   <rule_id> \
   --output-json \
 | python3 <scripts>/generate_report.py \

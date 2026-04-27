@@ -30,9 +30,9 @@ def _zip_url(commit: str | None) -> str:
 RMC_LATEST_URL = "https://github.com/rebeca-lang/org.rebecalang.rmc/releases/latest"
 
 # Coordinator/sub-agent design contract
-REQUIRED_SKILLS: Set[str] = {
+REQUIRED_SKILLS: Set[str] = {"rebeca_tooling"}  # minimal hard requirement
+OPTIONAL_SKILLS: Set[str] = {
     "legata_to_rebeca",
-    "rebeca_tooling",
     "rebeca_handbook",
     "rebeca_mutation",
 }
@@ -202,6 +202,9 @@ def validate_design_coverage(root: Path, strict: bool = True) -> Tuple[bool, Lis
         if not (skills_dir / skill_name).is_dir():
             missing.append(f"skills/{skill_name}/")
 
+    # Optional skills are not required to be present (checked only for --check, not for --no-skills installs).
+    # For validation during --check, optional skills are expected unless explicitly excluded.
+
     if missing:
         messages.extend(["Missing design artifacts:"] + [f"- {m}" for m in missing])
         return (False, messages) if strict else (True, [f"warning: {m}" for m in messages])
@@ -262,6 +265,34 @@ def _write_gemini_agent(src: Path, dest: Path) -> None:
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(f"---\n{''.join(filtered_lines)}---\n{rest}")
     print(f"  ✓ Copied (gemini-clean): {dest}")
+
+
+def _strip_optional_skills_from_agents(agents_dir: Path, optional_skills: Set[str]) -> None:
+    """Remove skill entries from agent YAML frontmatter when skills are not installed.
+
+    Removes lines matching `  - <skill_name>` where skill_name is in optional_skills.
+    Works directly on the `skills:` block assuming consistent formatting.
+    """
+    import re as _re
+    for agent_file in agents_dir.glob("*.md"):
+        try:
+            text = agent_file.read_text(encoding="utf-8")
+            original = text
+
+            # Remove skill list items: lines like "  - skill_name"
+            for skill_name in optional_skills:
+                pattern = rf"^  - {_re.escape(skill_name)}\s*$"
+                text = _re.sub(pattern, "", text, flags=_re.MULTILINE)
+
+            # Clean up any blank lines left in the skills: block (optional)
+            # Replace multiple consecutive blank lines with a single blank line
+            text = _re.sub(r"\n\n\n+", "\n\n", text)
+
+            if text != original:
+                agent_file.write_text(text, encoding="utf-8")
+                print(f"  ✓ Stripped optional skills from: {agent_file.name}")
+        except Exception as e:
+            print(f"  ⚠ Failed to strip skills from {agent_file.name}: {e}")
 
 
 def link_to_target(target_root: Path, primary_truth: Path, owned_skills: set[str], is_github: bool = False):
@@ -374,6 +405,8 @@ def main():
     parser.add_argument("--commit", help="Git commit hash or branch to install (default: main)")
     parser.add_argument("--rmc-tag", help="Optional RMC release tag (e.g., v2.13)")
     parser.add_argument("--no-rmc", action="store_true")
+    parser.add_argument("--no-skills", action="store_true",
+                        help="Skip installing optional skills (legata_to_rebeca, rebeca_handbook, rebeca_mutation). Default: false.")
     parser.add_argument(
         "--check",
         action="store_true",
@@ -531,6 +564,9 @@ def main():
         for entry in skills_src.iterdir():
             if entry.name == "__pycache__":
                 continue
+            # Skip optional skills if --no-skills is set
+            if entry.name in OPTIONAL_SKILLS and args.no_skills:
+                continue
             dest_entry = skills_dest / entry.name
             if entry.is_dir():
                 if dest_entry.exists() or dest_entry.is_symlink():
@@ -598,6 +634,11 @@ def main():
             (primary_target / "skills" / "rmc_path.txt").write_text(str(rmc_jar_path), encoding="utf-8")
         else:
             print("    ⚠ RMC auto-download failed. Please install manually.")
+
+    # Strip optional skills from agent YAML if --no-skills was set
+    if args.no_skills:
+        print("  Stripping optional skills from agent YAML...")
+        _strip_optional_skills_from_agents(primary_target / "agents", OPTIONAL_SKILLS)
 
     # Stamp resolved <scripts> and <jar> into agent markdown files so the agent
     # receives concrete paths at runtime — no filesystem probing required.

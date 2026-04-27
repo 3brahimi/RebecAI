@@ -17,7 +17,8 @@ Do **not** invoke `vacuity_checker.py` or `mutation_engine.py` directly.
 ```bash
 python3 <scripts>/verify_gate.py \
   --jar <jar> --model model.rebeca --property property.property \
-  --rule-id Rule22 --output-dir output/Rule22 --output-json
+  --rule-id Rule22 --output-dir output/Rule22 --output-json \
+  --mutation  # Required to enable mutation-based testing (default: off)
 ```
 
 | Trigger | Action |
