@@ -46,6 +46,7 @@ def _bundle_to_json_payload(bundle: RuleReportBundle) -> Dict[str, Any]:
         "status": bundle.status,
         "score_total": bundle.score_total,
         "score_breakdown": bundle.score_breakdown,
+        "rubric_9pt": bundle.rubric_9pt,
         "failure_reasons": bundle.failure_reasons,
         "remediation_hints": bundle.remediation_hints,
         "metrics": {
@@ -82,6 +83,33 @@ def _bundle_to_markdown(payload: Dict[str, Any]) -> str:
 
     for key, value in payload["score_breakdown"].items():
         lines.append(f"| {key} | {value:.2f} |")
+
+    if payload.get("rubric_9pt"):
+        lines += [
+            "",
+            "## TQC 9-Point Rubric",
+            "| Criterion | Score | Max | Method |",
+            "|-----------|-------|-----|--------|",
+        ]
+        rubric = payload["rubric_9pt"]
+        criterion_keys = [
+            "syntax_correctness",
+            "attribute_coverage",
+            "actor_coverage",
+            "hallucination_free",
+            "logic_correctness",
+        ]
+        for key in criterion_keys:
+            if key in rubric:
+                c = rubric[key]
+                score = c.get("score", 0)
+                max_score = c.get("max", 1)
+                method = c.get("method", "")
+                lines.append(f"| {key} | {score} | {max_score} | {method} |")
+        if "total" in rubric:
+            total = rubric["total"]
+            max_total = rubric.get("max", 9)
+            lines.append(f"| **Total** | **{total}** | **{max_total}** | |")
 
     lines += [
         "",
