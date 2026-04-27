@@ -176,14 +176,24 @@ def main() -> None:
     parser.add_argument("--max-mutants",      type=int, default=50)
     parser.add_argument("--mutation-timeout", type=int, default=600)
     parser.add_argument("--seed",             type=int, default=42)
-    parser.add_argument("--skip-vacuity",  action="store_true")
-    parser.add_argument("--skip-mutation", action="store_true")
+
+    parser.add_argument("--vacuity",    dest="vacuity", action="store_true",  default=False,
+        help="Enable vacuity checking (default: off)")
+    parser.add_argument("--no-vacuity", dest="vacuity", action="store_false",
+        help="Skip vacuity checking")
+    parser.add_argument("--mutation",    dest="mutation", action="store_true",  default=False,
+        help="Enable mutation-based testing (default: off)")
+    parser.add_argument("--no-mutation", dest="mutation", action="store_false",
+        help="Skip mutation-based testing")
 
     args = parser.parse_args()
 
     jar   = str(safe_path(args.jar))
     model = str(safe_path(args.model))
     prop  = str(safe_path(args.property))
+
+    skip_vacuity  = not args.vacuity
+    skip_mutation = not args.mutation
 
     result = run_verification_gate(
         jar=jar,
@@ -196,8 +206,8 @@ def main() -> None:
         max_mutants=args.max_mutants,
         mutation_timeout=args.mutation_timeout,
         seed=args.seed,
-        skip_vacuity=args.skip_vacuity,
-        skip_mutation=args.skip_mutation,
+        skip_vacuity=skip_vacuity,
+        skip_mutation=skip_mutation,
     )
 
     # Always write the canonical pipeline artifact — no LLM handover needed.
