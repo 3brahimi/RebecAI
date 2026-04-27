@@ -167,6 +167,8 @@ python <scripts>/verify_gate.py \
   --base-dir   <output_dir>
 ```
 
+> **Optional:** Append `--vacuity` to enable vacuity checking; append `--mutation` to enable mutation-based testing. Both are off by default.
+
 Stdout is a compact status line: `{"status":"ok","passes_gate":<bool>,"artifact":"<path>"}`.
 
 **FAIL-FAST:**
@@ -188,6 +190,21 @@ python <scripts>/artifact_writer.py \
 ---
 
 ### Step 07 — Reporting
+
+Mutation and vacuity are either both disabled (no args in Step 05, since `--no-vacuity` and `--no-mutation` are default) or both enabled (both passed `--vacuity` and `--mutation` in Step 05).
+
+**If Step 05 ran with default (both disabled)** — most common path:
+
+```bash
+python <scripts>/score_single_rule.py \
+  --rule-id       <rule_id> \
+  --rmc-exit-code <step05_verification_gate.rmc_exit_code> \
+  --output-json \
+| python <scripts>/generate_report.py \
+  --output-dir <output_dir>/reports/<rule_id>
+```
+
+**If Step 05 ran with both vacuity and mutation enabled** (passed `--vacuity --mutation`):
 
 ```bash
 python <scripts>/score_single_rule.py \
