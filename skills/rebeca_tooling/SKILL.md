@@ -116,7 +116,7 @@ scorecard = scorer.score_rule(
 )
 
 # Returns dict with:
-# - rubric_9pt: {
+# - rubric_10pt: {
 #     syntax_correctness:  {score:0-1, max:1, method:"automated", detail:{...}},
 #     attribute_coverage:  {score:0-3, max:3, method:"automated", detail:{...}},
 #     actor_coverage:      {score:0-2, max:2, method:"automated", detail:{...}},

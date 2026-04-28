@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Score a single Legata→Rebeca translation against the 9-point TQC rubric.
+"""Score a single Legata→Rebeca translation against the 10-point TQC rubric.
 
 Translation Quality Criteria (TQC) from docs/manuscript.tex §TQC:
   1. Syntax correctness   (0–1)  — automated via RMC two-stage exit code
   2. Attribute coverage   (0–3)  — automated via variable_map vs concept_mapping
   3. Actor coverage       (0–2)  — automated via actor_map vs concept_mapping
   4. No hallucinations    (0–1)  — auto-partial via stderr error patterns
-  5. Logic correctness    (0–2)  — heuristic: define coverage + atomic proposition check
-  Total max: 9 pts
+  5. Logic granularity    (0–3)  — heuristic: define coverage + atomic proposition check
+  Total max: 10 pts
 
-The 9-pt total is always normalized to 0–100. When vacuity and/or mutation analyses
+The 10-pt total is always normalized to 0–100. When vacuity and/or mutation analyses
 are enabled their results fill the remaining weight:
 
   Mode              | Base | Vacuity | Mutation
@@ -296,20 +296,17 @@ def _check_semantic_correct(props: Dict[str, str]) -> Tuple[int, Dict[str, Any]]
     if not props:
         return 0, {"compound_props": [], "note": "no define block"}
     compound = [name for name, rhs in props.items() if _COMPOUND_OP.search(rhs)]
-    score = 1 if not compound else 0
+    score = 2 if not compound else 0
     return score, {"compound_props": sorted(compound)}
 
 
-def score_logic_correctness(
+def score_logic_granularity_correctness(
     property_text: str,
-    concept_mapping: Dict[str, Any],  # kept for signature compat; unused
-    verify_status: str = "unknown",   # kept for compat; unused
-    is_vacuous: Optional[bool] = None,  # kept for compat; unused
 ) -> CriterionResult:
     """Criterion 5: expression completeness + semantic correctness (0–2).
 
     Expression completeness (1 pt): every prop in define{} appears in Assertion{}.
-    Semantic correctness (1 pt): no prop in define{} is compound (no && or || in
+    Semantic correctness (2 pt): no prop in define{} is compound (no && or || in
     RHS), ensuring each atomic proposition maps to a single state comparison so
     counterexample traces identify exactly which proposition failed.
     Both are static analyses of property_text only.
@@ -322,7 +319,7 @@ def score_logic_correctness(
 
     return CriterionResult(
         score=expr_score + sem_score,
-        max_score=2,
+        max_score=3,
         method="heuristic",
         detail={
             "expression_complete": expr_score,
@@ -338,7 +335,7 @@ def score_logic_correctness(
 # ---------------------------------------------------------------------------
 
 class RubricScorer:
-    """TQC 9-point rubric scorer, normalized to 0–100."""
+    """TQC 10-point rubric scorer, normalized to 0–100."""
 
     def score_rule(
         self,
@@ -349,16 +346,12 @@ class RubricScorer:
         is_vacuous: Optional[bool] = None,
         assertion_id: Optional[str] = None,
         mutation_score: Optional[float] = None,
-        vacuity_comparison: Optional[str] = None,
         property_text: str = "",
         variable_map: Optional[Dict[str, Any]] = None,
         actor_map: Optional[Dict[str, Any]] = None,
         concept_mapping: Optional[Dict[str, Any]] = None,
         rmc_stderr_content: str = "",
         compile_stderr_content: str = "",
-        # Legacy positional compat
-        model_artifact: Optional[str] = None,
-        property_artifact: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Score a single rule translation. Returns scorecard dict."""
         effective_status = verify_status
@@ -389,18 +382,18 @@ class RubricScorer:
         c2 = score_attribute_coverage(variable_map or {}, concept_mapping or {})
         c3 = score_actor_coverage(actor_map or {}, concept_mapping or {})
         c4 = score_hallucination_free(exit_code, rmc_stderr_content, compile_stderr_content)
-        c5 = score_logic_correctness(property_text, concept_mapping or {}, effective_status, is_vacuous)
+        c5 = score_logic_granularity_correctness(property_text)
 
         rubric_total = c1.score + c2.score + c3.score + c4.score + c5.score
 
-        rubric_9pt = {
+        rubric_10pt = {
             "syntax_correctness": c1.to_dict(),
             "attribute_coverage": c2.to_dict(),
             "actor_coverage":     c3.to_dict(),
             "hallucination_free": c4.to_dict(),
             "logic_correctness":  c5.to_dict(),
             "total": rubric_total,
-            "max":   9,
+            "max":   10,
         }
 
         has_vacuity  = is_vacuous is not None
@@ -415,7 +408,7 @@ class RubricScorer:
         else:
             base_weight = _W_BASE_NONE
 
-        base_pct     = (rubric_total / 9.0) * base_weight
+        base_pct     = (rubric_total / 10.0) * base_weight
         vacuity_pct  = (_W_VACUITY if is_vacuous is not True else 0.0) if has_vacuity else 0.0
         mutation_pct = ((bounded_mutation / 100.0) * _W_MUTATION) if has_mutation else 0.0
         score_total  = round(base_pct + vacuity_pct + mutation_pct)
@@ -425,7 +418,7 @@ class RubricScorer:
 
         if effective_status == "pass":
             status = "Pass"
-            confidence = round(0.8 + 0.1 * (rubric_total / 9.0), 2)
+            confidence = round(0.8 + 0.1 * (rubric_total / 10.0), 2)
             if is_vacuous is True:
                 status = "Conditional"
                 confidence = 0.6
@@ -481,10 +474,10 @@ class RubricScorer:
 
         return {
             "rule_id": rule_id,
-            "rubric_9pt": rubric_9pt,
+            "rubric_10pt": rubric_10pt,
             "score_breakdown": {
-                "base_9pt":      rubric_total,
-                "base_9pt_pct":  round(base_pct, 2),
+                "base_10pt":      rubric_total,
+                "base_10pt_pct":  round(base_pct, 2),
                 "vacuity_pct":   round(vacuity_pct, 2) if has_vacuity else None,
                 "mutation_pct":  round(mutation_pct, 2) if has_mutation else None,
             },
@@ -509,7 +502,7 @@ def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Score a single Legata→Rebeca translation (TQC 9-pt rubric)"
+        description="Score a single Legata→Rebeca translation (TQC 10-pt rubric)"
     )
     parser.add_argument("--rule-id", required=True)
     parser.add_argument("--verify-status", default="unknown",
@@ -578,7 +571,6 @@ def main() -> None:
         is_vacuous=is_vacuous,
         assertion_id=args.assertion_id,
         mutation_score=args.mutation_score,
-        vacuity_comparison=args.vacuity_comparison,
         property_text=_read(property_file),
         variable_map=abs_data.get("variable_map", {}),
         actor_map=abs_data.get("actor_map", {}),
@@ -597,7 +589,7 @@ def main() -> None:
     if args.output_json:
         print(json.dumps(scorecard, indent=2))
     elif not args.output_file:
-        r = scorecard["rubric_9pt"]
+        r = scorecard["rubric_10pt"]
         print(f"Rule:        {scorecard['rule_id']}")
         print(f"Status:      {scorecard['status']}")
         print(f"Score:       {scorecard['score_total']}/100")

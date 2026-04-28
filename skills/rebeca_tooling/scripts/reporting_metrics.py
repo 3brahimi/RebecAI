@@ -27,7 +27,7 @@ class RuleReportBundle:
     model_property_stats: Dict[str, Any]
     mapping_delta: Dict[str, Optional[int]]
     artifacts: Dict[str, str]
-    rubric_9pt: Dict[str, Any]
+    rubric_10pt: Dict[str, Any]
 
 
 def _load_json(path: Path) -> Optional[Dict[str, Any]]:
@@ -343,8 +343,8 @@ def build_rule_report_bundle(rule_dir: Path) -> Optional[RuleReportBundle]:
     if vacuity_metrics.get("checks_total", 0) == 0:
         vacuity_metrics = _extract_vacuity_from_scorecard(scorecard)
 
-    rubric_9pt_raw = scorecard.get("rubric_9pt", {})
-    rubric_9pt: Dict[str, Any] = rubric_9pt_raw if isinstance(rubric_9pt_raw, dict) else {}
+    rubric_10pt_raw = scorecard.get("rubric_10pt", {})
+    rubric_10pt: Dict[str, Any] = rubric_10pt_raw if isinstance(rubric_10pt_raw, dict) else {}
 
     return RuleReportBundle(
         rule_id=_extract_rule_id(scorecard, rule_dir.name),
@@ -365,7 +365,7 @@ def build_rule_report_bundle(rule_dir: Path) -> Optional[RuleReportBundle]:
             "model": str(model_file) if model_file else "",
             "property": str(property_file) if property_file else "",
         },
-        rubric_9pt=rubric_9pt,
+        rubric_10pt=rubric_10pt,
     )
 
 
