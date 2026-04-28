@@ -47,9 +47,26 @@ Run these steps in order. On any failure: persist the error artifact, then stop 
 **Do NOT call `artifact_writer.py` for this step. No JSON artifact is written.**
 
 ```bash
-mkdir -p <output_dir>/<rule_id>
-cp <reference_model>    <output_dir>/<rule_id>/<rule_id>.rebeca
-cp <reference_property> <output_dir>/<rule_id>/<rule_id>.property
+mkdir -p "<output_dir>/<rule_id>"
+cp "<reference_model>" "<output_dir>/<rule_id>/<rule_id>.rebeca"
+
+# If a reference property path was provided and exists, copy it.
+# Otherwise create a minimal placeholder property so Init doesn't fail.
+if [ -n "<reference_property>" ] && [ -f "<reference_property>" ]; then
+  cp "<reference_property>" "<output_dir>/<rule_id>/<rule_id>.property"
+else
+  cat > "<output_dir>/<rule_id>/<rule_id>.property" <<'PROPERTY'
+property{
+    define{
+        // Here goes the definition of Boolean Atomic Propositions
+    }
+
+    Assertion{
+        // Here goes the assertion of Boolean Invariants
+    }
+}
+PROPERTY
+fi
 ```
 
 If either `cp` fails, stop: `"Init failed: could not copy reference files"`.
