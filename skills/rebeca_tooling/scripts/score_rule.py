@@ -6,7 +6,7 @@ Translation Quality Criteria (TQC) from docs/manuscript.tex §TQC:
   2. Attribute coverage   (0–3)  — automated via variable_map vs concept_mapping
   3. Actor coverage       (0–2)  — automated via actor_map vs concept_mapping
   4. No hallucinations    (0–1)  — auto-partial via stderr error patterns
-  5. Logic correctness    (0–2)  — heuristic: assertion structure + verification outcome
+  5. Logic correctness    (0–2)  — heuristic: define coverage + atomic proposition check
   Total max: 9 pts
 
 The 9-pt total is always normalized to 0–100. When vacuity and/or mutation analyses
@@ -26,7 +26,7 @@ import re
 import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 # ---------------------------------------------------------------------------
 # Normalization weight constants (must sum to 100 for the "both enabled" mode)
@@ -249,43 +249,86 @@ def score_hallucination_free(
 # Helper 5 — Logic correctness (0–2)
 # ---------------------------------------------------------------------------
 
-_ASSERTION_FORM = re.compile(r"assertion\s+\w+\s*:\s*!\w+\s*\|\|\s*\w+\s*;")
+def _parse_define_props(property_text: str) -> Dict[str, str]:
+    """Return {prop_name: rhs_expr} for every entry in the define block."""
+    m = re.search(r'\bdefine\s*\{([^}]*)\}', property_text, re.DOTALL)
+    if not m:
+        return {}
+    props: Dict[str, str] = {}
+    for entry in m.group(1).split(';'):
+        entry = entry.strip()
+        if '=' not in entry:
+            continue
+        name, _, rhs = entry.partition('=')
+        name = name.strip()
+        if name:
+            props[name] = rhs.strip()
+    return props
+
+
+def _parse_assertion_block(property_text: str) -> str:
+    """Return the raw text inside Assertion { ... }."""
+    m = re.search(r'\bAssertion\s*\{([^}]*)\}', property_text, re.DOTALL)
+    return m.group(1) if m else ""
+
+
+def _check_expression_complete(
+    props: Dict[str, str], assertion_block: str
+) -> Tuple[int, Dict[str, Any]]:
+    if not props:
+        return 0, {"defined": [], "used": [], "unused": [], "note": "no define block"}
+    unused = [
+        name for name in props
+        if not re.search(r'\b' + re.escape(name) + r'\b', assertion_block)
+    ]
+    score = 1 if not unused else 0
+    return score, {
+        "defined": sorted(props.keys()),
+        "used": sorted(set(props.keys()) - set(unused)),
+        "unused": sorted(unused),
+    }
+
+
+_COMPOUND_OP = re.compile(r'\&\&|\|\|')
+
+
+def _check_semantic_correct(props: Dict[str, str]) -> Tuple[int, Dict[str, Any]]:
+    if not props:
+        return 0, {"compound_props": [], "note": "no define block"}
+    compound = [name for name, rhs in props.items() if _COMPOUND_OP.search(rhs)]
+    score = 1 if not compound else 0
+    return score, {"compound_props": sorted(compound)}
 
 
 def score_logic_correctness(
     property_text: str,
-    concept_mapping: Dict[str, Any],
-    verify_status: str,
-    is_vacuous: Optional[bool],
+    concept_mapping: Dict[str, Any],  # kept for signature compat; unused
+    verify_status: str = "unknown",   # kept for compat; unused
+    is_vacuous: Optional[bool] = None,  # kept for compat; unused
 ) -> CriterionResult:
-    """Criterion 5: expression completeness + semantic correctness (0–2)."""
-    expected_assertions: List[str] = concept_mapping.get("assertion_lines", [])
+    """Criterion 5: expression completeness + semantic correctness (0–2).
 
-    if not expected_assertions or not property_text:
-        expression_complete = 0
-    else:
-        form_ok = _ASSERTION_FORM.search(property_text) is not None
-        labels_ok = all(
-            re.search(
-                r"assertion\s+" + re.escape(ln.split(":")[0].strip()) + r"\s*:",
-                property_text,
-            )
-            for ln in expected_assertions
-            if ":" in ln
-        )
-        expression_complete = 1 if (form_ok and labels_ok) else 0
+    Expression completeness (1 pt): every prop in define{} appears in Assertion{}.
+    Semantic correctness (1 pt): no prop in define{} is compound (no && or || in
+    RHS), ensuring each atomic proposition maps to a single state comparison so
+    counterexample traces identify exactly which proposition failed.
+    Both are static analyses of property_text only.
+    """
+    props = _parse_define_props(property_text)
+    assertion_block = _parse_assertion_block(property_text)
 
-    semantic_correct = 1 if (verify_status == "pass" and is_vacuous is not True) else 0
+    expr_score, expr_detail = _check_expression_complete(props, assertion_block)
+    sem_score, sem_detail = _check_semantic_correct(props)
 
     return CriterionResult(
-        score=expression_complete + semantic_correct,
+        score=expr_score + sem_score,
         max_score=2,
         method="heuristic",
         detail={
-            "expression_complete": expression_complete,
-            "semantic_correct": semantic_correct,
-            "verify_status": verify_status,
-            "is_vacuous": is_vacuous,
+            "expression_complete": expr_score,
+            "semantic_correct": sem_score,
+            "expression_detail": expr_detail,
+            "semantic_detail": sem_detail,
         },
     )
 

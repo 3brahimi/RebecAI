@@ -158,37 +158,89 @@ def test_hallucination_syntax_only_not_flagged_as_hallucination() -> None:
 # Helper 5 — Logic correctness
 # ---------------------------------------------------------------------------
 
-_PROP = """
-define Rule22_cond := giveWayVessel.speed > 0;
-define Rule22_assure := giveWayVessel.actionTaken;
-assertion Rule22: !Rule22_cond || Rule22_assure;
+# Property with well-formed define{} block: atomic props, all used in Assertion{}
+_PROP_GOOD = """
+property {
+  define {
+    cond = giveWayVessel.speed > 0;
+    assure = giveWayVessel.actionTaken == 1;
+  }
+  Assertion {
+    Rule22: !cond || assure;
+  }
+}
 """
 
-_CM = {"assertion_lines": ["Rule22: !Rule22_cond || Rule22_assure;"]}
+# Property with a compound prop (cond && assure in RHS)
+_PROP_COMPOUND = """
+property {
+  define {
+    cond = giveWayVessel.speed > 0;
+    assure = giveWayVessel.actionTaken == 1;
+    combined = cond && assure;
+  }
+  Assertion {
+    Rule22: !cond || assure || combined;
+  }
+}
+"""
+
+# Property where one defined prop is unused in Assertion{}
+_PROP_UNUSED = """
+property {
+  define {
+    cond = giveWayVessel.speed > 0;
+    unused_prop = giveWayVessel.length > 50;
+  }
+  Assertion {
+    Rule22: !cond;
+  }
+}
+"""
+
+_CM = {"assertion_lines": ["Rule22: !cond || assure;"]}
 
 
 def test_logic_correctness_full() -> None:
-    r = score_logic_correctness(_PROP, _CM, "pass", False)
+    r = score_logic_correctness(_PROP_GOOD, _CM)
     assert r.score == 2
     assert r.detail["expression_complete"] == 1
     assert r.detail["semantic_correct"] == 1
+    assert r.detail["expression_detail"]["unused"] == []
+    assert r.detail["semantic_detail"]["compound_props"] == []
 
 
-def test_logic_correctness_fail_verification() -> None:
-    r = score_logic_correctness(_PROP, _CM, "fail", None)
+def test_logic_correctness_compound_prop() -> None:
+    r = score_logic_correctness(_PROP_COMPOUND, _CM)
     assert r.detail["semantic_correct"] == 0
+    assert "combined" in r.detail["semantic_detail"]["compound_props"]
     assert r.score == 1  # expression_complete=1, semantic=0
 
 
-def test_logic_correctness_vacuous_pass() -> None:
-    r = score_logic_correctness(_PROP, _CM, "pass", True)
-    assert r.detail["semantic_correct"] == 0  # vacuous → 0
-    assert r.score == 1
-
-
-def test_logic_correctness_missing_assertion() -> None:
-    r = score_logic_correctness("", {}, "pass", False)
+def test_logic_correctness_unused_prop() -> None:
+    r = score_logic_correctness(_PROP_UNUSED, _CM)
     assert r.detail["expression_complete"] == 0
+    assert "unused_prop" in r.detail["expression_detail"]["unused"]
+    assert r.score <= 1
+
+
+def test_logic_correctness_empty_property() -> None:
+    r = score_logic_correctness("", {})
+    assert r.detail["expression_complete"] == 0
+    assert r.score == 0
+
+
+def test_logic_correctness_no_assertion_block() -> None:
+    prop = "property { define { cond = x.speed > 0; } }"
+    r = score_logic_correctness(prop, {})
+    assert r.detail["expression_complete"] == 0
+
+
+def test_logic_correctness_verify_status_ignored() -> None:
+    # verify_status and is_vacuous must not affect the score
+    r_pass = score_logic_correctness(_PROP_GOOD, _CM, verify_status="pass", is_vacuous=False)
+    r_fail = score_logic_correctness(_PROP_GOOD, _CM, verify_status="fail", is_vacuous=True)
+    assert r_pass.score == r_fail.score == 2
 
 
 # ---------------------------------------------------------------------------
@@ -219,8 +271,8 @@ def test_scorer_normalization_both_enabled() -> None:
     )
     assert card["score_breakdown"]["vacuity_pct"] == 15.0
     assert card["score_breakdown"]["mutation_pct"] == 25.0
-    # rubric_total=8 (expression_complete=0, no property_text); base=(8/9)*60=53.33+15+25=93
-    assert card["score_total"] == 93
+    # rubric_total=7 (logic=0, no property_text); base=(7/9)*60=46.67+15+25=86.67 → 87
+    assert card["score_total"] == 87
 
 
 def test_scorer_normalization_vacuity_only() -> None:
@@ -229,8 +281,8 @@ def test_scorer_normalization_vacuity_only() -> None:
         rule_id="Rule-22", verify_status="pass", rmc_exit_code=0, is_vacuous=False,
     )
     assert card["score_breakdown"]["mutation_pct"] is None
-    # rubric_total=8; base=(8/9)*85=75.56+15=90.56 → 91
-    assert card["score_total"] == 91
+    # rubric_total=7 (logic=0, no property_text); base=(7/9)*85=66.11+15=81.11 → 81
+    assert card["score_total"] == 81
 
 
 def test_scorer_normalization_mutation_only() -> None:
@@ -239,8 +291,8 @@ def test_scorer_normalization_mutation_only() -> None:
         rule_id="Rule-22", verify_status="pass", rmc_exit_code=0, mutation_score=80.0,
     )
     assert card["score_breakdown"]["vacuity_pct"] is None
-    # rubric_total=8; base=(8/9)*75=66.67; mutation=0.8*25=20 → 86.67 → 87
-    assert card["score_total"] == 87
+    # rubric_total=7 (logic=0, no property_text); base=(7/9)*75=58.33; mutation=0.8*25=20 → 78.33 → 78
+    assert card["score_total"] == 78
 
 
 def test_scorer_cex_forces_fail() -> None:
