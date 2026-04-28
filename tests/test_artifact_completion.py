@@ -36,11 +36,39 @@ RULE_ID = "PhaseB-TestRule"
 STEP_PAYLOADS: dict[str, dict] = {
     "step02_abstraction": {
         "status": "ok",
-        "source_file_path": RULE_ID,
+        "rule_id": RULE_ID,
         "abstraction_summary": {
-            "actor_map": ["Ship"],
-            "variable_map": ["speed", "hasLight"],
-            "naming_contract": {"reactiveclass": "PascalCase"},
+            "naming_contract": {
+                "reactive_class_style": "PascalCase",
+                "state_var_style": "camelCase",
+                "instance_style": "lowerCamelCase",
+                "define_alias_style": "camelCase",
+                "assertion_name_style": "PascalCase",
+            },
+            "actor_map": [
+                {"legata_actor": "OwnShip", "rebeca_class": "Ship", "rebeca_instance": "s1"},
+            ],
+            "variable_map": [
+                {
+                    "legata_concept": "ship speed is within safe range",
+                    "legata_var": "Vessel.Speed",
+                    "legata_value": "10",
+                    "rebeca_class": "Ship",
+                    "rebeca_statevar": "ship_velocity",
+                    "rebeca_type": "int",
+                    "bounds": {"min": 0, "max": 30},
+                    "rebeca_init_value": ["10"],
+                    "is_new": False,
+                },
+                {
+                    "legata_concept": "masthead light is on",
+                    "rebeca_class": "Ship",
+                    "rebeca_statevar": "masthead_light_on",
+                    "rebeca_type": "boolean",
+                    "rebeca_init_value": ["false", "true"],
+                    "is_new": False,
+                },
+            ],
         },
         "open_assumptions": [],
     },

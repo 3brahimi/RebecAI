@@ -1,43 +1,85 @@
 {
   "status": "ok",
+  "rule_id": "Rule-22",
   "abstraction_summary": {
-    "actor_map": {
-      "OwnShip": {
-        "queue_size": 5,
-        "source": "Rule22"
-      }
+    "naming_contract": {
+      "reactive_class_style": "PascalCase",
+      "state_var_style": "camelCase",
+      "instance_style": "lowerCamelCase",
+      "define_alias_style": "camelCase",
+      "assertion_name_style": "PascalCase"
     },
-    "variable_map": {
-      "length": {
-        "type": "int",
-        "default": 60,
-        "source": "Rule22"
+    "actor_map": [
+      { "legata_actor": "OwnShip", "rebeca_class": "Ship", "rebeca_instance": "s1" }
+    ],
+    "variable_map": [
+      {
+        "legata_concept": "ship length determines light requirements",
+        "legata_var": "Vessel.Length",
+        "legata_value": "50",
+        "rebeca_class": "Ship",
+        "rebeca_statevar": "ship_length",
+        "rebeca_type": "int",
+        "bounds": { "min": 0, "max": 300 },
+        "rebeca_init_value": ["60"],
+        "is_new": false
       },
-      "mastheadLightRange": {
-        "type": "int",
-        "default": 6,
-        "source": "Rule22"
+      {
+        "legata_concept": "masthead light range in nautical miles",
+        "legata_var": "Vessel.Light.Masthead.Range",
+        "legata_value": "6",
+        "rebeca_class": "Ship",
+        "rebeca_statevar": "masthead_light_range",
+        "rebeca_type": "int",
+        "bounds": { "min": 0, "max": 30 },
+        "rebeca_init_value": ["6"],
+        "is_new": false
       },
-      "sideLightRange": {
-        "type": "int",
-        "default": 3,
-        "source": "Rule22"
+      {
+        "legata_concept": "side light range in nautical miles",
+        "legata_var": "Vessel.Light.Side.Range",
+        "legata_value": "3",
+        "rebeca_class": "Ship",
+        "rebeca_statevar": "side_light_range",
+        "rebeca_type": "int",
+        "bounds": { "min": 0, "max": 30 },
+        "rebeca_init_value": ["3"],
+        "is_new": false
       },
-      "sternLightRange": {
-        "type": "int",
-        "default": 3,
-        "source": "Rule22"
+      {
+        "legata_concept": "stern light range in nautical miles",
+        "legata_var": "Vessel.Light.Stern.Range",
+        "legata_value": "3",
+        "rebeca_class": "Ship",
+        "rebeca_statevar": "stern_light_range",
+        "rebeca_type": "int",
+        "bounds": { "min": 0, "max": 30 },
+        "rebeca_init_value": ["3"],
+        "is_new": false
       },
-      "towingLightRange": {
-        "type": "int",
-        "default": 3,
-        "source": "Rule22"
+      {
+        "legata_concept": "towing light range in nautical miles",
+        "legata_var": "Vessel.Light.Towing.Range",
+        "legata_value": "3",
+        "rebeca_class": "Ship",
+        "rebeca_statevar": "towing_light_range",
+        "rebeca_type": "int",
+        "bounds": { "min": 0, "max": 30 },
+        "rebeca_init_value": ["3"],
+        "is_new": false
       },
-      "signalLightRange": {
-        "type": "int",
-        "default": 3,
-        "source": "Rule22"
+      {
+        "legata_concept": "signal light range in nautical miles",
+        "legata_var": "Vessel.Light.Signal.Range",
+        "legata_value": "3",
+        "rebeca_class": "Ship",
+        "rebeca_statevar": "signal_light_range",
+        "rebeca_type": "int",
+        "bounds": { "min": 0, "max": 30 },
+        "rebeca_init_value": ["3"],
+        "is_new": false
       }
-    }
-  }
+    ]
+  },
+  "open_assumptions": []
 }

@@ -38,15 +38,18 @@ Schema: `<skills>/rebeca_tooling/schemas/abstraction-agent.schema.json` → `inp
 ## Tasks (in order)
 
 1. Validate `<legata_input>` and `<output_dir>` (schema + `safe_path`).
-2. **Read existing reference files** (for structural context only): Load `<output_dir>/<rule_id>.rebeca` and `<output_dir>/<rule_id>.property` to understand what actors and statevars already exist. **Do NOT copy actors from the reference model into `actor_map`** — the reference model may contain simulation infrastructure actors (e.g. `MapServer`, `Environment`) that are unrelated to the rule being abstracted.
+2. **Actor reconciliation** (four sub-steps):
+   - **2a — Parse reference classes**: Scan `<output_dir>/<rule_id>/<rule_id>.rebeca` for all `reactiveclass Foo(N)` declarations. Build a candidate set of concrete class names. Exclude infrastructure classes (any name containing `Server`, `Manager`, or `Environment`).
+   - **2b — Reconcile Legata actors → concrete classes**: For each Legata actor from the `define:{}` block (e.g. `OS: OwnShip`, `TS: TargetShip`): (1) Exact match — if the actor name exists as a `reactiveclass`, use it as `rebeca_class`; (2) Semantic fallback — all vessel-type actors (OwnShip, TargetShip, Vessel, …) map to the single vessel class present (e.g. `Ship`); (3) Error if no candidate found: `"No matching reactiveclass for actor: <X>"`.
+   - **2c — Assign instances from `main {}`**: Parse the `main {}` block of the reference `.rebeca`. Assign `rebeca_instance` values in Legata actor order from the matched class's instantiation list (OwnShip → first instance e.g. `s1`, TargetShip → second e.g. `s2`). Error if too few instances: `"Insufficient instances of <class> in main for actors: …"`.
+   - **2d — Variable reconciliation**: For each Legata concept extracted from the rule, identify its owning actor's `rebeca_class`, then read that class's `statevars {}` block. Semantic match: if an existing statevar covers the same concept, set `rebeca_statevar` to the existing name and `is_new = false`. No match: generate a new camelCase name per `state_var_style` naming contract and set `is_new = true`. For existing statevars, read `rebeca_init_value` from the class constructor; for new statevars with a `legata_value`, infer a deterministic `rebeca_init_value`; for new statevars without a `legata_value` (OWA), set `rebeca_init_value` to all valid choices (e.g. `["false", "true"]` for boolean).
 3. Read Legata content; extract actors and section-labelled conditions that are **directly named or implied by this specific rule**.
-4. Use existing symbols from reference files only to avoid naming collisions — do not include them in the output.
-5. Supplement with `<colreg_text>` keyword corpus (when provided).
-6. Apply naming conventions deterministically (see table below).
-7. Map each concept to a Rebeca type and bounds.
-8. Validate output against schema.
-9. Return the output contract JSON to the coordinator (do not call artifact_writer - coordinator handles persistence).
-10. On any failure emit Error Envelope.
+4. Supplement with `<colreg_text>` keyword corpus (when provided).
+5. Apply naming conventions deterministically (see table below).
+6. Map each concept to a Rebeca type and bounds.
+7. Validate output against schema.
+8. Return the output contract JSON to the coordinator (do not call artifact_writer - coordinator handles persistence).
+9. On any failure emit Error Envelope.
 
 ## Naming Contract (fixed — never changes between runs)
 
@@ -72,32 +75,57 @@ Schema: `<skills>/rebeca_tooling/schemas/abstraction-agent.schema.json` → `inp
 ```json
 {
   "status": "ok",
+  "rule_id": "Rule-19",
   "abstraction_summary": {
-    "actor_map": {
-      "OwnShip": {
-        "queue_size": 5,
-        "source": "Rule22"
-      }
+    "naming_contract": {
+      "reactive_class_style": "PascalCase",
+      "state_var_style": "camelCase",
+      "instance_style": "lowerCamelCase",
+      "define_alias_style": "camelCase",
+      "assertion_name_style": "PascalCase"
     },
-    "variable_map": {
-      "mastheadLightRange": {
-        "type": "int",
-        "default": 6,
-        "source": "Rule22"
+    "actor_map": [
+      { "legata_actor": "OwnShip",    "rebeca_class": "Ship", "rebeca_instance": "s1" },
+      { "legata_actor": "TargetShip", "rebeca_class": "Ship", "rebeca_instance": "s2" }
+    ],
+    "variable_map": [
+      {
+        "legata_concept": "engine ready for immediate manoeuvre",
+        "legata_var": "Vessel.Engine.State",
+        "legata_value": "Vessel.Engine.ON",
+        "rebeca_class": "Ship",
+        "rebeca_statevar": "engine_on",
+        "rebeca_type": "boolean",
+        "rebeca_init_value": ["false"],
+        "is_new": false
       },
-      "sideLightRange": {
-        "type": "int",
-        "default": 3,
-        "source": "Rule22"
+      {
+        "legata_concept": "vessel is power-driven type",
+        "legata_var": "Vessel.Type",
+        "legata_value": "Vessel.Type.PowerDriven",
+        "rebeca_class": "Ship",
+        "rebeca_statevar": "vessel_type_powerdriven",
+        "rebeca_type": "boolean",
+        "rebeca_init_value": ["true"],
+        "is_new": false
+      },
+      {
+        "legata_concept": "risk of collision developing",
+        "rebeca_class": "Ship",
+        "rebeca_statevar": "isRiskOfCollision",
+        "rebeca_type": "boolean",
+        "rebeca_init_value": ["false", "true"],
+        "is_new": true
       }
-    }
-  }
+    ]
+  },
+  "open_assumptions": []
 }
 ```
 
-- `actor_map`: object keyed by Rebeca class name → `{queue_size, source}`
-- `variable_map`: object keyed by camelCase state variable name → `{type, default, source}`
-- No `rule_id` or `naming_contract` at the top level.
+- `actor_map`: **array** of `{legata_actor, rebeca_class, rebeca_instance}`. Multiple Legata actors can share the same `rebeca_class` but must have distinct `rebeca_instance` values assigned in Legata actor order.
+- `variable_map`: **array** of `VariableEntry`. Each entry carries `rebeca_class` (concrete class), `rebeca_statevar` (exact statevar name), `rebeca_init_value` (always an array: 1 element = deterministic, 2+ = OWA non-deterministic), and `is_new`.
+- `open_assumptions`: reserved for Legata concepts that are genuinely out of scope of formal modeling (e.g. "due regard", "captain's intentions") and cannot be mapped to any statevar.
 
 ## Error Envelope (failure)
 
@@ -112,13 +140,15 @@ Schema: `<skills>/rebeca_tooling/schemas/abstraction-agent.schema.json` → `inp
 
 ## Failure Modes
 
-| Condition                            | `message` prefix                          |
-|--------------------------------------|-------------------------------------------|
-| `<legata_input>` escapes `~`          | `"Invalid path: …"`                       |
-| Legata file unreadable               | `"Failed to read legata file: …"`         |
-| Snapshot JSON malformed              | `"Invalid snapshot JSON: …"`              |
-| Empty abstraction (no actors/vars)   | `"Abstraction produced no symbols: …"`    |
-| Output schema violation              | `"Output schema validation failed: …"`    |
+| Condition                                    | `message` prefix                                        |
+|----------------------------------------------|---------------------------------------------------------|
+| `<legata_input>` escapes `~`                 | `"Invalid path: …"`                                     |
+| Legata file unreadable                       | `"Failed to read legata file: …"`                       |
+| Snapshot JSON malformed                      | `"Invalid snapshot JSON: …"`                            |
+| Empty abstraction (no actors/vars)           | `"Abstraction produced no symbols: …"`                  |
+| No concrete class matches legata_actor       | `"No matching reactiveclass for actor: …"`              |
+| Fewer main-block instances than actors       | `"Insufficient instances of <class> in main for actors: …"` |
+| Output schema violation                      | `"Output schema validation failed: …"`                  |
 
 ## Implementation Notes
 

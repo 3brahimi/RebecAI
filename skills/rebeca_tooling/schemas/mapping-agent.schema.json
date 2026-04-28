@@ -28,12 +28,15 @@
 
     "VariableEntry": {
       "type": "object",
-      "required": ["legata_concept", "rebeca_name", "rebeca_type", "define_alias", "source"],
+      "required": ["legata_concept", "rebeca_class", "rebeca_statevar", "rebeca_type", "rebeca_init_value", "is_new"],
       "additionalProperties": false,
       "properties": {
-        "legata_concept": { "type": "string" },
-        "rebeca_name":    { "type": "string" },
-        "rebeca_type":    { "type": "string", "enum": ["boolean", "int"] },
+        "legata_concept":    { "type": "string" },
+        "legata_var":        { "type": "string" },
+        "legata_value":      { "type": "string" },
+        "rebeca_class":      { "type": "string" },
+        "rebeca_statevar":   { "type": "string" },
+        "rebeca_type":       { "type": "string", "enum": ["boolean", "int"] },
         "bounds": {
           "type": "object",
           "required": ["min", "max"],
@@ -43,8 +46,12 @@
             "max": { "type": "integer" }
           }
         },
-        "define_alias":  { "type": "string" },
-        "source":        { "type": "string", "enum": ["condition", "exclusion", "assurance", "inferred"] }
+        "rebeca_init_value": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "is_new":            { "type": "boolean" }
       }
     },
 

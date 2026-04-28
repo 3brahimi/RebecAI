@@ -34,11 +34,11 @@ Analyse the Step03 abstraction summary alongside the existing `.rebeca` and `.pr
 1. **Read existing files** (read-only): Load `<output_dir>/<rule_id>.rebeca` and `<output_dir>/<rule_id>.property` to understand the current model structure — which actors exist, which statevars are declared, which `define` aliases are already present.
 2. Validate `<legata_input>` and `<output_dir>` (schema + `safe_path`).
 3. Parse the Legata file: extract condition/assurance/exclusion clauses and numeric thresholds.
-4. Using `abstraction_summary.actor_map` (object keyed by class name → `{queue_size, source}`) and `abstraction_summary.variable_map` (object keyed by camelCase var name → `{type, default, source}`), derive:
-   - Which **new statevars** need to be added (or existing ones updated) in which `reactiveclass` (keys of `actor_map`).
-   - Which **`define` aliases** need to be added/updated in the `.property` file (keys of `variable_map`).
-   - The **canonical assertion lines** for this rule — one entry per clause (e.g. Rule22.a, Rule22.b.Large, Rule22.b.Small, Rule22.c).
-   - The **queue size** for each `reactiveclass` (from `actor_map[className].queue_size`).
+4. Using `abstraction_summary.actor_map` (array of `{legata_actor, rebeca_class, rebeca_instance}`) and `abstraction_summary.variable_map` (array of `{legata_concept, legata_var, legata_value, rebeca_class, rebeca_statevar, rebeca_type, bounds, rebeca_init_value, is_new}`), derive:
+   - **`statevar_patches`**: group by `rebeca_class`; include **only entries where `is_new == true`**; each entry: `type` from `rebeca_type`, `name` from `rebeca_statevar`. For initialization in the constructor: if `rebeca_init_value` has 1 element → emit `statevarName = value;`; if 2+ elements (OWA) → emit `statevarName = ?(val1, val2, ...);` using Rebeca's built-in non-deterministic assignment.
+   - **`queue_size_patches`**: use `rebeca_class` from `actor_map` as `reactiveclass`.
+   - **`define_patches`**: one Boolean Atomic Proposition (AP) per `variable_map` entry. AP expression: `rebeca_instance.rebeca_statevar [op legata_value]` where `rebeca_instance` comes from the `actor_map` entry whose `rebeca_class` matches the variable's `rebeca_class`; operator is inferred from `legata_value` (boolean value → `== true`/`== false`; numeric → `>=`, `>`, etc. per Legata clause text); AP name is camelCase derived from `legata_concept` per `define_alias_style` naming contract. **Use `rebeca_statevar` directly — never invent statevar names.**
+   - **`assertion_lines`**: re-read Legata clause structure to determine condition/assurance/exclusion roles; build assertions using only AP names defined in `define_patches`; format: `RuleN: !condAP || assureAP;`. Forbidden operators: `->`, `=>`. Only `||` and `&&`.
 5. Assemble the `concept_mapping` output contract and return it to the coordinator.
 6. Do **NOT** write or modify any file on disk.
 7. On any failure emit the Error Envelope.
@@ -71,34 +71,40 @@ Forbidden operators: `->` and `=>` are never emitted; `||` and `&&` only.
 ```json
 {
   "status": "ok",
-  "rule_id": "Rule-22",
+  "rule_id": "Rule-19",
   "concept_mapping": {
     "statevar_patches": [
       {
-        "reactiveclass": "Vessel",
+        "reactiveclass": "Ship",
         "add_statevars": [
-          { "type": "boolean", "name": "isLightOn", "default": "false" },
-          { "type": "int",     "name": "lightRange", "default": "0"   }
+          {
+            "type": "boolean",
+            "name": "isRiskOfCollision",
+            "init": "?(false, true)"
+          }
         ]
       }
     ],
     "queue_size_patches": [
-      { "reactiveclass": "Vessel", "queue_size": 10 }
+      { "reactiveclass": "Ship", "queue_size": 10 }
     ],
     "define_patches": [
-      { "alias": "lightOn",      "expr": "vessel.isLightOn == true" },
-      { "alias": "lightRangeOk", "expr": "vessel.lightRange >= 3"   }
+      { "ap": "engineReady",    "expr": "s1.engine_on == true" },
+      { "ap": "isPowerDriven",  "expr": "s1.vessel_type_powerdriven == true" },
+      { "ap": "collisionRisk",  "expr": "s1.isRiskOfCollision == true" }
     ],
     "assertion_lines": [
-      "Rule22a_s1: !ship1LongerThan50m || (ship1HasAllLights && ship1LightRangeOK);",
-      "Rule22a_s2: !ship2LongerThan50m || (ship2HasAllLights && ship2LightRangeOK);"
+      "Rule19: !isPowerDriven || engineReady;",
+      "Rule19d: !collisionRisk || engineReady;"
     ]
   },
-  "open_assumptions": [
-    "Threshold for 'lightRange' defaulted to > 0 — verify against Legata source"
-  ]
+  "open_assumptions": []
 }
 ```
+
+- `statevar_patches`: only `is_new == true` variables; `init` field uses `?(val1, val2, ...)` for OWA or a plain value for deterministic
+- `define_patches`: `ap` is the Boolean Atomic Proposition name; `expr` uses the concrete `rebeca_instance.rebeca_statevar` reference from `actor_map`/`variable_map`
+- `assertion_lines`: reference only AP names from `define_patches`; no raw actor names or instance references
 
 ## Error Envelope (failure)
 

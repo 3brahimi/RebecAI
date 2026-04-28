@@ -149,21 +149,25 @@ class TestStep04Mapping:
             sys.path.insert(0, {str(_SCRIPTS)!r})
             from transformation_utils import get_canonical_assertion, format_rebeca_define
 
-            actor_map = {json.dumps(step03["abstraction_summary"]["actor_map"])}
-            variable_map = {json.dumps(step03["abstraction_summary"]["variable_map"])}
+            actor_map = {repr(step03["abstraction_summary"]["actor_map"])}
+            variable_map = {repr(step03["abstraction_summary"]["variable_map"])}
 
-            # Build statevars and init block
-            actor = list(actor_map.keys())[0]           # OwnShip
-            queue = list(actor_map.values())[0]["queue_size"]
+            # Build statevars and init block from array-of-objects format
+            actor_entry = actor_map[0]
+            actor = actor_entry["rebeca_class"]
+            instance = actor_entry["rebeca_instance"]
+            new_vars = [v for v in variable_map if v["is_new"]]
             statevars = "\\n".join(
-                f"    int {{v}};" for v in variable_map
+                f"    {{v['rebeca_type']}} {{v['rebeca_statevar']}};" for v in new_vars
             )
             init_vals = "\\n".join(
-                f"    {{v}} = {{meta.get('default', 0)}};"
-                for v, meta in variable_map.items()
+                f"    {{v['rebeca_statevar']}} = {{v['rebeca_init_value'][0]}};"
+                if len(v["rebeca_init_value"]) == 1
+                else f"    {{v['rebeca_statevar']}} = ?({{', '.join(v['rebeca_init_value'])}});"
+                for v in new_vars
             )
 
-            model = f\"\"\"reactiveclass {{actor}}({{queue}}) {{{{
+            model = f\"\"\"reactiveclass {{actor}}(50) {{{{
               statevars {{{{
             {{statevars}}
               }}}}
@@ -172,7 +176,7 @@ class TestStep04Mapping:
               }}}}
             }}}}
             main {{{{
-              {{actor}} os():();
+              {{actor}} {{instance}}():();
             }}}}\"\"\"
 
             # Build property using canonical assertion pattern
@@ -181,13 +185,18 @@ class TestStep04Mapping:
             assure = "(mastheadOk && sideOk && sternOk && towingOk && signalOk)"
             assertion = get_canonical_assertion(cond, "false", assure)
 
+            def statevar_ref(concept_fragment, fallback_statevar):
+                match = next((v for v in variable_map if concept_fragment in v["legata_concept"]), None)
+                sv = match["rebeca_statevar"] if match else fallback_statevar
+                return f"{{instance}}.{{sv}}"
+
             define_lines = "\\n    ".join([
-                format_rebeca_define("isLarge", "os.length >= 50"),
-                format_rebeca_define("mastheadOk", "os.mastheadLightRange >= 6"),
-                format_rebeca_define("sideOk", "os.sideLightRange >= 3"),
-                format_rebeca_define("sternOk", "os.sternLightRange >= 3"),
-                format_rebeca_define("towingOk", "os.towingLightRange >= 3"),
-                format_rebeca_define("signalOk", "os.signalLightRange >= 3"),
+                format_rebeca_define("isLarge", f"{{statevar_ref('length', 'ship_length')}} >= 50"),
+                format_rebeca_define("mastheadOk", f"{{statevar_ref('masthead', 'masthead_light_range')}} >= 6"),
+                format_rebeca_define("sideOk", f"{{statevar_ref('side light', 'side_light_range')}} >= 3"),
+                format_rebeca_define("sternOk", f"{{statevar_ref('stern', 'stern_light_range')}} >= 3"),
+                format_rebeca_define("towingOk", f"{{statevar_ref('towing', 'towing_light_range')}} >= 3"),
+                format_rebeca_define("signalOk", f"{{statevar_ref('signal', 'signal_light_range')}} >= 3"),
             ])
 
             prop = f\"\"\"property {{{{

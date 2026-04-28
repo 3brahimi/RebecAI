@@ -49,12 +49,15 @@
 
     "VariableEntry": {
       "type": "object",
-      "required": ["legata_concept", "rebeca_name", "rebeca_type", "define_alias", "source"],
+      "required": ["legata_concept", "rebeca_class", "rebeca_statevar", "rebeca_type", "rebeca_init_value", "is_new"],
       "additionalProperties": false,
       "properties": {
-        "legata_concept": { "type": "string" },
-        "rebeca_name":    { "type": "string", "description": "camelCase statevar name" },
-        "rebeca_type":    { "type": "string", "enum": ["boolean", "int"] },
+        "legata_concept":    { "type": "string", "description": "Raw Legata rule text describing the concept" },
+        "legata_var":        { "type": "string", "description": "Legata-side variable/attribute (e.g. Vessel.Type)" },
+        "legata_value":      { "type": "string", "description": "Specific value or threshold from the Legata rule (e.g. Vessel.Type.PowerDriven, 100)" },
+        "rebeca_class":      { "type": "string", "description": "Concrete reactiveclass this variable was reconciled to (PascalCase)" },
+        "rebeca_statevar":   { "type": "string", "description": "Exact statevar name in the class (existing: as-is; new: camelCase per naming contract)" },
+        "rebeca_type":       { "type": "string", "enum": ["boolean", "int"] },
         "bounds": {
           "type": "object",
           "description": "Integer bounds (omitted for boolean).",
@@ -65,8 +68,13 @@
             "max": { "type": "integer" }
           }
         },
-        "define_alias":  { "type": "string", "description": "camelCase property define identifier" },
-        "source":        { "type": "string", "enum": ["condition", "exclusion", "assurance", "inferred"] }
+        "rebeca_init_value": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "description": "Always an array. 1 element = deterministic init; 2+ elements = OWA non-deterministic (emits statevar = ?(val1, val2, ...); in constructor)"
+        },
+        "is_new":            { "type": "boolean", "description": "true = statevar must be added to statevars{}; false = already exists in rebeca_class" }
       }
     },
 

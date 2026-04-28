@@ -28,10 +28,33 @@ VALID_FIXTURES: dict[str, dict[str, object]] = {
     },
     "step03": {
         "status": "ok",
+        "rule_id": "Rule-22",
         "abstraction_summary": {
-            "actor_map": ["Ship"],
-            "variable_map": ["speed"],
+            "naming_contract": {
+                "reactive_class_style": "PascalCase",
+                "state_var_style": "camelCase",
+                "instance_style": "lowerCamelCase",
+                "define_alias_style": "camelCase",
+                "assertion_name_style": "PascalCase",
+            },
+            "actor_map": [
+                {"legata_actor": "OwnShip", "rebeca_class": "Ship", "rebeca_instance": "s1"},
+            ],
+            "variable_map": [
+                {
+                    "legata_concept": "ship length determines light requirements",
+                    "legata_var": "Vessel.Length",
+                    "legata_value": "50",
+                    "rebeca_class": "Ship",
+                    "rebeca_statevar": "ship_length",
+                    "rebeca_type": "int",
+                    "bounds": {"min": 0, "max": 300},
+                    "rebeca_init_value": ["60"],
+                    "is_new": False,
+                },
+            ],
         },
+        "open_assumptions": [],
     },
     "step04": {
         "status": "ok",
