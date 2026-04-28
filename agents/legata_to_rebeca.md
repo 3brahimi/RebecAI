@@ -59,10 +59,13 @@ else
 property{
     define{
         // Here goes the definition of Boolean Atomic Propositions
+        // ap1 = (rebec.statevar == value);
+        // ap2 = (rebec.statevar >= value);
     }
 
     Assertion{
         // Here goes the assertion of Boolean Invariants
+        // invariant1: !ap1 || ap2;
     }
 }
 PROPERTY
