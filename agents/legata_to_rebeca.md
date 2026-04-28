@@ -4,7 +4,7 @@ description: |
   Coordinator for the Legata→Rebeca pipeline.
   Runs a fixed linear sequence of steps: abstraction → mapping → synthesis → verification → packaging → reporting.
   Fail-fast: any step failure stops the pipeline immediately.
-tools: ["*"]
+tools: ["Read", "Grep", "Glob", "Bash", "Edit", "Write"]
 skills:
   - legata_to_rebeca
   - rebeca_tooling

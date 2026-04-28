@@ -7,7 +7,7 @@ description: |
   Does NOT touch any file on disk. The synthesis_agent uses this mapping to perform
   the actual surgical refinements.
 schema: <skills>/rebeca_tooling/schemas/mapping-agent.schema.json
-tools: ["*"]
+tools: ["Read", "Grep", "Glob", "Bash", "Edit", "Write"]
 skills:
   - legata_to_rebeca
 ---

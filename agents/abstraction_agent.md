@@ -6,7 +6,7 @@ description: |
   naming conventions, discretizes to Rebeca-compatible types, and emits a
   JSON contract into coordinator shared_state.step03.
 schema: <skills>/rebeca_tooling/schemas/abstraction-agent.schema.json
-tools: ["*"]
+tools: ["Read", "Grep", "Glob", "Bash", "Edit", "Write"]
 skills:
   - rebeca_tooling
   - rebeca_handbook
