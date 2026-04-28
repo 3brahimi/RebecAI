@@ -274,19 +274,53 @@ def _strip_optional_skills_from_agents(agents_dir: Path, optional_skills: Set[st
     Works directly on the `skills:` block assuming consistent formatting.
     """
     import re as _re
+
     for agent_file in agents_dir.glob("*.md"):
         try:
             text = agent_file.read_text(encoding="utf-8")
             original = text
 
-            # Remove skill list items: lines like "  - skill_name"
-            for skill_name in optional_skills:
-                pattern = rf"^  - {_re.escape(skill_name)}\s*$"
-                text = _re.sub(pattern, "", text, flags=_re.MULTILINE)
+            # Attempt to operate only on YAML frontmatter when present for safer edits
+            fm_match = _re.match(r'^---\n(.*?\n)---\n(.*)', text, _re.DOTALL)
+            if not fm_match:
+                # Fallback: simple whole-file removal (legacy behaviour)
+                for skill_name in optional_skills:
+                    pattern = rf"^  - {_re.escape(skill_name)}\s*$"
+                    text = _re.sub(pattern, "", text, flags=_re.MULTILINE)
+                text = _re.sub(r"\n{3,}", "\n\n", text)
+            else:
+                fm_body = fm_match.group(1)
+                rest = fm_match.group(2)
 
-            # Clean up any blank lines left in the skills: block (optional)
-            # Replace multiple consecutive blank lines with a single blank line
-            text = _re.sub(r"\n\n\n+", "\n\n", text)
+                # Locate the `skills:` block (header + its indented block)
+                skills_match = _re.search(r'(^skills:[ \t]*\n)((?:[ \t].*\n)*)', fm_body, _re.MULTILINE)
+                if skills_match:
+                    header = skills_match.group(1)
+                    block = skills_match.group(2)
+
+                    # Remove any list items referencing optional skills
+                    for skill_name in optional_skills:
+                        item_pat = rf'^[ \t]*-[ \t]*{_re.escape(skill_name)}\s*$'
+                        block = _re.sub(item_pat, '', block, flags=_re.MULTILINE)
+
+                    # Remove leading blank lines inside the skills block (between header and first item)
+                    block = _re.sub(r'^\s*\n+', '', block)
+
+                    # If no list items remain, replace the block with an explicit empty list
+                    if not block.strip():
+                        new_skills = 'skills: []\n'
+                    else:
+                        if not block.endswith('\n'):
+                            block = block + '\n'
+                        new_skills = header + block
+
+                    # Reconstruct frontmatter with normalized skills block
+                    fm_body = fm_body[:skills_match.start()] + new_skills + fm_body[skills_match.end():]
+
+                # Normalize excessive blank lines in frontmatter
+                fm_body = _re.sub(r"\n{3,}", "\n\n", fm_body)
+
+                text = f"---\n{fm_body}---\n{rest}"
 
             if text != original:
                 agent_file.write_text(text, encoding="utf-8")
