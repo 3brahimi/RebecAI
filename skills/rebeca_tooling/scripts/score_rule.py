@@ -554,7 +554,7 @@ def main() -> None:
     property_file  = final_paths(rule_id, base).property
     abs_path       = step_artifact_path(rule_id, "step02_abstraction", base)
     cm_path        = step_artifact_path(rule_id, "step03_mapping", base)
-    rmc_dir        = verification_paths(rule_id, base_dir=base).rule_verification_dir / "rmc"
+    rmc_dir        = verification_paths(rule_id, run_id="current", base_dir=base).rule_verification_dir / "rmc"
 
     abs_raw  = _read_json(abs_path)
     abs_data = abs_raw.get("abstraction_summary", abs_raw)
