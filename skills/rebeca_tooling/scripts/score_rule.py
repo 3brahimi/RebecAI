@@ -50,7 +50,11 @@ class CriterionResult:
     detail: Dict[str, Any]
 
     def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
+        # Canonical output uses 'max' as the field name (not 'max_score')
+        d = asdict(self)
+        # map max_score -> max for backward compatibility with existing callers
+        d['max'] = d.pop('max_score')
+        return d
 
 
 # ---------------------------------------------------------------------------

@@ -110,10 +110,10 @@ The agent file lives at `.github/agents/legata_to_rebeca.agent.md`. Copilot Chat
 Transform Rule-22 to Rebeca.
 
 rule_id:            Rule-22
-legata_input:       legata/colreg/Rule22.txt
-reference_model:    legata/rebeca/SimulationModelCode.rebeca
-reference_property: legata/rebeca/SimulationModelCode.property
-output_dir:         output
+legata_input:       `colreg/Rule22.txt`
+reference_model:    `rebeca/reference.rebeca`
+reference_property: `rebeca/reference.property`
+output_dir:         `output/`
 ```
 
 ## Architecture: Multi-Agent Orchestration
