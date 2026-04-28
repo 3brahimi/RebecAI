@@ -7,7 +7,7 @@ description: |
   Also generates alternative candidate formulations (base, temporal).
   ALL outputs are tagged is_candidate=true and MUST pass Step06 (verification_exec) before promotion.
 schema: <skills>/rebeca_tooling/schemas/synthesis-agent.schema.json
-tools: ["Read", "Grep", "Glob", "Bash", "Edit", "Write"]
+tools: ["*"]
 skills:
   - rebeca_handbook
 ---

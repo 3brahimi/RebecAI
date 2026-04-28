@@ -238,6 +238,41 @@ def create_surgical_symlink(src: Path, link: Path):
 # reject with a "Validation failed: Unrecognized key(s)" error.
 _GEMINI_UNSUPPORTED_KEYS = {"version", "user-invocable", "schema", "skills"}
 
+# Platform tool contracts (frontmatter `tools:` must match the consuming harness)
+_CLAUDE_TOOLS_YAML = '["Read", "Grep", "Glob", "Bash", "Edit", "Write"]'
+_COPILOT_TOOLS_YAML = '[vscode, execute, read, agent, edit, search, todo]'
+_GEMINI_TOOLS_YAML = '["*"]'
+
+
+def _atomic_write_text(path: Path, text: str, encoding: str = "utf-8") -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(text, encoding=encoding)
+    os.replace(tmp, path)
+
+
+def _rewrite_frontmatter_tools(markdown_text: str, tools_yaml: str) -> str:
+    """Return markdown_text with YAML frontmatter `tools:` replaced/inserted.
+
+    `tools_yaml` must be a YAML list fragment, e.g. '["*"]' or '[vscode, read]'.
+    """
+    fm_match = re.match(r'^---\n(.*?\n)---\n(.*)', markdown_text, re.DOTALL)
+    if not fm_match:
+        return markdown_text
+
+    fm_body, rest = fm_match.group(1), fm_match.group(2)
+    # Remove existing tools key (scalar or block), then append normalized tools at end.
+    fm_body = re.sub(r'^tools:[^\n]*\n(?:[ \t].*\n)*', '', fm_body, flags=re.MULTILINE)
+    fm_body = fm_body.rstrip() + f"\ntools: {tools_yaml}\n"
+    return f"---\n{fm_body}---\n{rest}"
+
+
+def _write_agent_copy_with_tools(src: Path, dest: Path, tools_yaml: str) -> None:
+    text = src.read_text(encoding="utf-8")
+    text = _rewrite_frontmatter_tools(text, tools_yaml)
+    _atomic_write_text(dest, text)
+    print(f"  ✓ Copied (tools={tools_yaml}): {dest}")
+
 def _write_gemini_agent(src: Path, dest: Path) -> None:
     """Copy an agent .md file to dest, stripping Gemini-incompatible frontmatter keys."""
     import re as _re
@@ -263,7 +298,9 @@ def _write_gemini_agent(src: Path, dest: Path) -> None:
         if not skip_indent:
             filtered_lines.append(line)
     dest.parent.mkdir(parents=True, exist_ok=True)
-    dest.write_text(f"---\n{''.join(filtered_lines)}---\n{rest}")
+    out = f"---\n{''.join(filtered_lines)}---\n{rest}"
+    out = _rewrite_frontmatter_tools(out, _GEMINI_TOOLS_YAML)
+    _atomic_write_text(dest, out)
     print(f"  ✓ Copied (gemini-clean): {dest}")
 
 
@@ -332,6 +369,7 @@ def _strip_optional_skills_from_agents(agents_dir: Path, optional_skills: Set[st
 def link_to_target(target_root: Path, primary_truth: Path, owned_skills: set[str], is_github: bool = False):
     if not target_root: return
     is_gemini = target_root.name == ".gemini" or target_root.parent.name == ".gemini"
+    is_claude = target_root.name == ".claude" or target_root.parent.name == ".claude"
     print(f"  Linking to {target_root}...")
 
     if target_root.is_symlink(): target_root.unlink()
@@ -349,7 +387,12 @@ def link_to_target(target_root: Path, primary_truth: Path, owned_skills: set[str
             if dest.is_symlink() or dest.exists():
                 dest.unlink() if dest.is_symlink() else dest.unlink()
             _write_gemini_agent(agent, dest)
+        elif is_claude:
+            _write_agent_copy_with_tools(agent, dest, _CLAUDE_TOOLS_YAML)
+        elif is_github:
+            _write_agent_copy_with_tools(agent, dest, _COPILOT_TOOLS_YAML)
         else:
+            # Default legacy behaviour for other targets: symlink
             create_surgical_symlink(agent, dest)
 
     # 2. Skills — only skills this repo owns, never third-party skills
@@ -521,16 +564,16 @@ def main():
         print()
 
         if symlink_targets:
-            print(f"[2] Symlinks into AI agent roots:")
+            print(f"[2] AI agent roots (agents copied; skills linked):")
             for t_root, is_github in symlink_targets:
                 label = t_root.name + (" (GitHub/Copilot)" if is_github else "")
                 print(f"  {label}  →  {t_root}")
                 if src_root:
                     for a in sorted((src_root / "agents").glob("*.md")):
                         link_name = a.stem + ".agent.md" if is_github else a.name
-                        print(f"    agents/{link_name}  →  {primary_target / 'agents' / a.name}")
+                        print(f"    agents/{link_name}  (copy)  ←  {primary_target / 'agents' / a.name}")
                     for s in sorted(p for p in (src_root / "skills").iterdir() if p.is_dir() and p.name != "__pycache__"):
-                        print(f"    skills/{s.name}/  →  {primary_target / 'skills' / s.name}/")
+                        print(f"    skills/{s.name}/  (link)  →  {primary_target / 'skills' / s.name}/")
             print()
 
         if not args.no_rmc:
@@ -687,10 +730,24 @@ def main():
     # Skills are symlinked under .gemini/skills/ so Python resolves them fine.
     # RMC jar lives only under primary_target/rmc/ — reuse that path.
     if not args.target_root:
+        # Claude and GitHub installs now also write physical agent copies.
+        # Patch placeholders in those copies too, but keep <install_root> bound
+        # to the primary truth where the RMC jar resides.
+        claude_root = CLAUDE_ROOT_LOCAL if args.mode == "local" else CLAUDE_ROOT_GLOBAL
+        claude_scripts = claude_root / "skills" / "rebeca_tooling" / "scripts"
+        patch_agent_placeholders(claude_root, claude_scripts, jar_for_patch, install_root=primary_target)
+        print(f"  ✓ Claude agent paths stamped: {claude_root / 'agents'}")
+
         gemini_root = GEMINI_ROOT_LOCAL if args.mode == "local" else GEMINI_ROOT_GLOBAL
         gemini_scripts = gemini_root / "skills" / "rebeca_tooling" / "scripts"
-        patch_agent_placeholders(gemini_root, gemini_scripts, jar_for_patch)
+        patch_agent_placeholders(gemini_root, gemini_scripts, jar_for_patch, install_root=primary_target)
         print(f"  ✓ Gemini agent paths stamped: {gemini_root / 'agents'}")
+
+        if args.mode == "local":
+            github_root = GITHUB_ROOT
+            github_scripts = github_root / "skills" / "rebeca_tooling" / "scripts"
+            patch_agent_placeholders(github_root, github_scripts, jar_for_patch, install_root=primary_target)
+            print(f"  ✓ GitHub agent paths stamped: {github_root / 'agents'}")
 
     print("\n✅ Setup Complete!")
     print(f"  Primary Truth: {primary_target}")
