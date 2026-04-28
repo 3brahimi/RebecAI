@@ -124,7 +124,7 @@ scorecard = scorer.score_rule(
 #     logic_correctness:   {score:0-2, max:2, method:"heuristic", detail:{...}},
 #     total: 0-9, max: 9
 #   }
-# - score_breakdown: {base_9pt_pct, vacuity_pct, mutation_pct}
+# - score_breakdown: {base_10pt_pct, vacuity_pct, mutation_pct}
 # - score_total: 0-100  (normalized; weights depend on which analyses ran)
 # - status: Pass|Fail|Conditional|Blocked|Unknown
 # - confidence: 0.0-1.0

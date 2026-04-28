@@ -133,8 +133,8 @@ class ReportGenerator:
                 "Unknown": 0,
             },
             "score_breakdown": {
-                "base_9pt":     0,
-                "base_9pt_pct": 0.0,
+                "base_10pt":     0,
+                "base_10pt_pct": 0.0,
                 "vacuity_pct":  0.0,
                 "mutation_pct": 0.0,
             },
