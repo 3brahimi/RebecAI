@@ -89,8 +89,14 @@ output_dir:    <output_dir>
 
 Validate the output contains exactly this structure before persisting — if not, treat as error:
 - `status: "ok"`
-- `abstraction_summary.actor_map` — object keyed by class name, each value has `queue_size` (int) and `source` (string)
-- `abstraction_summary.variable_map` — object keyed by camelCase var name, each value has `type`, `default`, `source`
+- `rule_id: "<rule_id>"`
+- `abstraction_summary` with:
+  - `naming_contract` — object with `reactive_class_style`, `state_var_style`, `instance_style`, `define_alias_style`, `assertion_name_style`
+  - `actor_map` — **array** of `{legata_actor, rebeca_class, rebeca_instance}` (no duplicates, order preserved)
+  - `variable_map` — **array** of `{legata_concept, rebeca_class, rebeca_statevar, rebeca_type, rebeca_init_value (array), is_new, legata_var?, legata_value?, bounds?}` where:
+    - `rebeca_init_value` is always an array: 1 element = deterministic, 2+ = non-deterministic (OWA)
+    - `is_new` is boolean: `false` = existing statevar, `true` = new statevar to add
+- `open_assumptions` — array of strings (may be empty)
 
 Persist the full JSON output regardless of status:
 ```bash
@@ -119,12 +125,17 @@ abstraction_summary:  <step02_abstraction.abstraction_summary>
 
 Validate the output contains exactly this structure before persisting — if not, treat as error:
 - `status: "ok"`
-- `concept_mapping.statevar_patches` — array of `{reactiveclass, add_statevars: [{type, name, default}]}`
-- `concept_mapping.queue_size_patches` — array of `{reactiveclass, queue_size}`
-- `concept_mapping.define_patches` — array of `{alias, expr}`
-- `concept_mapping.assertion_lines` — non-empty array of strings, each of the form `RuleN: !alias || alias;`
+- `rule_id: "<rule_id>"`
+- `concept_mapping` with **all four keys present**:
+  - `statevar_patches` — **non-empty** array of `{reactiveclass, add_statevars: [{type, name, init}]}` where `init` uses Rebeca OWA syntax `?(val1, val2)` for non-deterministic or a plain value for deterministic
+  - `queue_size_patches` — array of `{reactiveclass, queue_size}` (may be empty)
+  - `define_patches` — array of `{ap, expr}` (may be empty if no properties needed)
+  - `assertion_lines` — **non-empty** array of strings, each of the form `RuleN: !condAP || exclAP || assureAP;` using only AP names defined in `define_patches`
+- `open_assumptions` — array of strings (may be empty)
 
-If `concept_mapping` is a flat name→name dict, or has `assertion_line` (singular) instead of `assertion_lines` (array), or is missing any of the four keys, it is wrong — stop with error `"mapping_agent returned wrong schema"`.
+**Validation rules:**
+- If `concept_mapping` is missing, is a flat dict, has `assertion_line` (singular), or is missing any of the four keys: stop with `"mapping_agent returned wrong schema"`
+- At least one of `statevar_patches` or `assertion_lines` must be non-empty (rule must add something)
 
 Persist the full JSON output regardless of status:
 ```bash
@@ -154,10 +165,14 @@ legata_text:          <raw content of legata_input file>
 
 Validate the output contains exactly this structure before persisting — if not, treat as error:
 - `status: "ok"`
-- `patched_files.model_path` — path string ending in `.rebeca`
-- `patched_files.property_path` — path string ending in `.property`
+- `rule_id: "<rule_id>"`
+- `patched_files` — object with **both keys** present:
+  - `model_path` — path string ending in `.rebeca`, points to `<output_dir>/<rule_id>/<rule_id>.rebeca`
+  - `property_path` — path string ending in `.property`, points to `<output_dir>/<rule_id>/<rule_id>.property`
 
-If the output is missing `patched_files`, it is wrong — stop with error `"synthesis_agent returned wrong schema"`.
+**Important:** synthesis_agent applies **surgical patches only** — it reads the existing `.rebeca` and `.property` files verbatim, applies the four patch types from `concept_mapping` (add statevars, update queue sizes, add define aliases, add assertion lines), and writes the modified files. It does **NOT** rewrite the entire file content. All existing class names, message servers, `main {}`, `LTL {}`, and comments are preserved.
+
+If the output is missing `patched_files` or its keys, is malformed, or contains wrong paths: stop with error `"synthesis_agent returned wrong schema"`.
 
 Persist the full JSON output regardless of status:
 ```bash
@@ -169,7 +184,11 @@ python <scripts>/artifact_writer.py \
 ```
 
 On `status: error` or schema mismatch → stop and return the persisted error to the caller.
-On `status: ok` → the synthesis_agent writes the patched `<output_dir>/<rule_id>/<rule_id>.rebeca` and `.property` directly. Proceed to Step 05.
+On `status: ok` → the synthesis_agent has already written the patched files in place:
+- `<output_dir>/<rule_id>/<rule_id>.rebeca`
+- `<output_dir>/<rule_id>/<rule_id>.property`
+
+Proceed immediately to Step 05.
 
 ---
 

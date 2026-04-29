@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "mapping-agent contract",
-  "description": "Input and output schemas for the mapping-agent (Step04).",
+  "description": "Input and output schemas for the mapping-agent (Step03). Consumes abstraction summary and produces concept mapping (surgical patches only, no file I/O).",
 
   "definitions": {
     "ErrorEnvelope": {
@@ -75,6 +75,77 @@
         "actor_map":       { "type": "array", "items": { "$ref": "#/definitions/ActorEntry" } },
         "variable_map":    { "type": "array", "items": { "$ref": "#/definitions/VariableEntry" } }
       }
+    },
+
+    "StateVarPatch": {
+      "type": "object",
+      "required": ["reactiveclass", "add_statevars"],
+      "additionalProperties": false,
+      "properties": {
+        "reactiveclass": { "type": "string" },
+        "add_statevars": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["type", "name", "init"],
+            "additionalProperties": false,
+            "properties": {
+              "type": { "type": "string", "enum": ["boolean", "int"] },
+              "name": { "type": "string" },
+              "init": { "type": "string", "description": "Plain value or Rebeca OWA ?(val1, val2, ...)" }
+            }
+          }
+        }
+      }
+    },
+
+    "QueueSizePatch": {
+      "type": "object",
+      "required": ["reactiveclass", "queue_size"],
+      "additionalProperties": false,
+      "properties": {
+        "reactiveclass": { "type": "string" },
+        "queue_size": { "type": "integer", "minimum": 1 }
+      }
+    },
+
+    "DefinePatch": {
+      "type": "object",
+      "required": ["ap", "expr"],
+      "additionalProperties": false,
+      "properties": {
+        "ap":   { "type": "string", "description": "Boolean Atomic Proposition name (camelCase)" },
+        "expr": { "type": "string", "description": "Expression using instance.statevar, comparisons, || and &&" }
+      }
+    },
+
+    "ConceptMapping": {
+      "type": "object",
+      "required": ["statevar_patches", "queue_size_patches", "define_patches", "assertion_lines"],
+      "additionalProperties": false,
+      "properties": {
+        "statevar_patches": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/StateVarPatch" },
+          "description": "List of new statevars to add per reactiveclass (only is_new==true vars)"
+        },
+        "queue_size_patches": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/QueueSizePatch" },
+          "description": "Queue size updates per reactiveclass (may be empty)"
+        },
+        "define_patches": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/DefinePatch" },
+          "description": "Boolean Atomic Propositions to add to property define block (may be empty)"
+        },
+        "assertion_lines": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1,
+          "description": "Assertion lines of form RuleN: !cond || excl || assure; (non-empty)"
+        }
+      }
     }
   },
 
@@ -94,14 +165,13 @@
     "oneOf": [
       {
         "type": "object",
-        "required": ["status", "rule_id", "model_artifact", "property_artifact", "open_assumptions"],
+        "required": ["status", "rule_id", "concept_mapping", "open_assumptions"],
         "additionalProperties": false,
         "properties": {
-          "status":            { "type": "string", "const": "ok" },
-          "rule_id":           { "type": "string" },
-          "model_artifact":    { "$ref": "#/definitions/Artifact" },
-          "property_artifact": { "$ref": "#/definitions/Artifact" },
-          "open_assumptions":  { "type": "array", "items": { "type": "string" } }
+          "status":           { "type": "string", "const": "ok" },
+          "rule_id":          { "type": "string" },
+          "concept_mapping":  { "$ref": "#/definitions/ConceptMapping" },
+          "open_assumptions": { "type": "array", "items": { "type": "string" } }
         }
       },
       { "$ref": "#/definitions/ErrorEnvelope" }
